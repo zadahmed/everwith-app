@@ -1,0 +1,78 @@
+//
+//  AppCoordinator.swift
+//  EverWith
+//
+//  Created by Zahid Ahmed on 04/10/2025.
+//
+
+import SwiftUI
+
+extension Notification.Name {
+    static let onboardingCompleted = Notification.Name("onboardingCompleted")
+}
+
+@main
+struct EverWithApp: App {
+    init() {
+        configureApp()
+    }
+    
+    var body: some Scene {
+        WindowGroup {
+            AppCoordinator()
+        }
+    }
+    
+    private func configureApp() {
+        // Configure global app appearance
+        GlobalAppearance.configure()
+        
+        // Configure Google Sign In when SDK is added
+        GoogleSignInConfig.configure()
+        
+        // Configure any other app-wide settings
+        configureAppearance()
+    }
+    
+    private func configureAppearance() {
+        // Configure global app appearance if needed
+        // This could include navigation bar styling, etc.
+    }
+}
+
+struct AppCoordinator: View {
+    @StateObject private var authService = AuthenticationService()
+    @State private var hasCompletedOnboarding = false
+    
+    var body: some View {
+        Group {
+            if !hasCompletedOnboarding {
+                OnboardingView()
+                    .onAppear {
+                        checkOnboardingStatus()
+                    }
+            } else {
+                switch authService.authenticationState {
+                case .loading:
+                    LoadingView()
+                case .authenticated(let user):
+                    HomeView(user: user)
+                case .unauthenticated:
+                    AuthenticationView()
+                case .error(let message):
+                    ErrorView(message: message) {
+                        authService.authenticationState = .unauthenticated
+                    }
+                }
+            }
+        }
+        .environmentObject(authService)
+        .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
+            hasCompletedOnboarding = true
+        }
+    }
+    
+    private func checkOnboardingStatus() {
+        hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    }
+}

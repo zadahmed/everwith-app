@@ -43,6 +43,9 @@ struct EverWithApp: App {
 struct AppCoordinator: View {
     @StateObject private var authService = AuthenticationService()
     @State private var hasCompletedOnboarding = false
+    @State private var showRestoreView = false
+    @State private var showTogetherView = false
+    @State private var showExportView = false
     
     var body: some View {
         Group {
@@ -57,6 +60,24 @@ struct AppCoordinator: View {
                     LoadingView()
                 case .authenticated(let user):
                     HomeView(user: user)
+                        .onReceive(NotificationCenter.default.publisher(for: .navigateToRestore)) { _ in
+                            showRestoreView = true
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: .navigateToTogether)) { _ in
+                            showTogetherView = true
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: .navigateToExport)) { _ in
+                            showExportView = true
+                        }
+                        .sheet(isPresented: $showRestoreView) {
+                            RestoreView()
+                        }
+                        .sheet(isPresented: $showTogetherView) {
+                            TogetherSceneView()
+                        }
+                        .sheet(isPresented: $showExportView) {
+                            ExportView()
+                        }
                 case .unauthenticated:
                     AuthenticationView()
                 case .error(let message):

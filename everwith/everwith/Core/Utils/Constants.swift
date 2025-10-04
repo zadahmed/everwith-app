@@ -43,3 +43,11 @@ struct Constants {
         static let appConfig = "AppConfig"
     }
 }
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let navigateToRestore = Notification.Name("navigateToRestore")
+    static let navigateToExport = Notification.Name("navigateToExport")
+    static let navigateToImport = Notification.Name("navigateToImport")
+    static let navigateToTogether = Notification.Name("navigateToTogether")
+}

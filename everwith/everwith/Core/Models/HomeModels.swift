@@ -82,23 +82,25 @@ struct HeroAction: Identifiable {
     
     static let actions: [HeroAction] = [
         HeroAction(
-            title: "Restore",
+            title: "Restore a photo",
             subtitle: "Bring memories back to life",
             description: "Upload old photos and let our AI restore them to their former glory",
             icon: "photo.badge.plus",
             gradient: [Color.honeyGold.opacity(0.8), Color.warmLinen.opacity(0.6)],
             action: {
-                print("Restore action tapped")
+                // Navigate to Import with restore mode
+                NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.restore)
             }
         ),
         HeroAction(
             title: "Together Scene",
             subtitle: "Create beautiful tributes",
-            description: "Share restored memories with loved ones and create lasting tributes",
+            description: "Compose beautiful scenes with multiple photos and backgrounds",
             icon: "heart.circle",
             gradient: [Color.sky.opacity(0.8), Color.fern.opacity(0.6)],
             action: {
-                print("Together Scene action tapped")
+                // Navigate to Import with compose mode
+                NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.compose)
             }
         )
     ]

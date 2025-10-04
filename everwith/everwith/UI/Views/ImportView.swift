@@ -12,68 +12,80 @@ import UniformTypeIdentifiers
 struct ImportView: View {
     let mode: ImportMode
     @Binding var isPresented: Bool
+    @Binding var selectedPhotos: [ImportedPhoto]
     @State private var selectedSource: ImportSource = .library
-    @State private var selectedPhotos: [ImportedPhoto] = []
     @State private var importState: ImportState = .idle
     @State private var importProgress: ImportProgress?
     @State private var showPhotosPicker = false
     @State private var showFilesPicker = false
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
     
     private let configuration: ImportConfiguration
     
-    init(mode: ImportMode, isPresented: Binding<Bool>) {
+    init(mode: ImportMode, isPresented: Binding<Bool>, selectedPhotos: Binding<[ImportedPhoto]>) {
         self.mode = mode
         self._isPresented = isPresented
+        self._selectedPhotos = selectedPhotos
         self.configuration = ImportConfiguration.forMode(mode)
     }
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                ImportHeaderView(mode: mode)
-                
-                // Tab Selection
-                ImportTabSelector(selectedSource: $selectedSource)
-                
-                // Content Area
-                ImportContentView(
-                    source: selectedSource,
-                    mode: mode,
-                    selectedPhotos: selectedPhotos,
-                    onPhotosSelected: handlePhotosSelected,
-                    onFilesSelected: handleFilesSelected
-                )
-                
-                // Inline Tip
-                ImportTipView()
-                
-                // Progress Row (when importing)
-                if case .importing = importState, let progress = importProgress {
-                    ImportProgressView(
-                        progress: progress,
-                        onCancel: cancelImport
+            GeometryReader { geometry in
+                VStack(spacing: 0) {
+                    // Header
+                    ImportHeaderView(mode: mode)
+                        .padding(.top, geometry.safeAreaInsets.top)
+                    
+                    // Tab Selection
+                    ImportTabSelector(selectedSource: $selectedSource)
+                    
+                    // Content Area
+                    ImportContentView(
+                        source: selectedSource,
+                        mode: mode,
+                        selectedPhotos: selectedPhotos,
+                        showPhotosPicker: $showPhotosPicker,
+                        onPhotosSelected: { _ in },
+                        onFilesSelected: handleFilesSelected
                     )
+                    
+                    // Inline Tip
+                    ImportTipView()
+                    
+                    // Progress Row (when importing)
+                    if case .importing = importState, let progress = importProgress {
+                        ImportProgressView(
+                            progress: progress,
+                            onCancel: cancelImport
+                        )
+                    }
+                    
+                    // Action Buttons
+                    ImportActionButtons(
+                        mode: mode,
+                        selectedPhotos: selectedPhotos,
+                        importState: importState,
+                        onImport: startImport,
+                        onCancel: { isPresented = false }
+                    )
+                    .padding(.bottom, geometry.safeAreaInsets.bottom)
                 }
-                
-                // Action Buttons
-                ImportActionButtons(
-                    mode: mode,
-                    selectedPhotos: selectedPhotos,
-                    importState: importState,
-                    onImport: startImport,
-                    onCancel: { isPresented = false }
-                )
             }
             .navigationBarHidden(true)
             .background(Color.warmLinen)
         }
         .photosPicker(
             isPresented: $showPhotosPicker,
-            selection: .constant(nil),
+            selection: $selectedPhotoItems,
             matching: .images,
             photoLibrary: .shared()
         )
+        .onChange(of: selectedPhotoItems) { _, newItems in
+            Task {
+                await loadPhotosFromPicker(newItems)
+            }
+        }
         .fileImporter(
             isPresented: $showFilesPicker,
             allowedContentTypes: [.image],
@@ -84,9 +96,49 @@ struct ImportView: View {
     }
     
     // MARK: - Private Methods
-    private func handlePhotosSelected(_ photos: [ImportedPhoto]) {
-        selectedPhotos = photos
-        importState = .idle
+    private func loadPhotosFromPicker(_ items: [PhotosPickerItem]) async {
+        importState = .importing
+        importProgress = ImportProgress(current: 0, total: items.count, fileName: nil)
+        
+        var newPhotos: [ImportedPhoto] = []
+        
+        for (index, item) in items.enumerated() {
+            do {
+                if let data = try await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    let importedPhoto = ImportedPhoto(
+                        image: image,
+                        fileName: "Photo \(index + 1)",
+                        fileSize: Int64(data.count),
+                        source: .library,
+                        importedAt: Date()
+                    )
+                    newPhotos.append(importedPhoto)
+                    
+                    await MainActor.run {
+                        importProgress = ImportProgress(
+                            current: index + 1,
+                            total: items.count,
+                            fileName: "Photo \(index + 1)"
+                        )
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    importState = .failed(error)
+                }
+                return
+            }
+            
+            // Simulate processing delay
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+        }
+        
+        await MainActor.run {
+            selectedPhotos = newPhotos
+            importState = .idle
+            importProgress = nil
+        }
     }
     
     private func handleFilesSelected() {
@@ -257,6 +309,7 @@ struct ImportContentView: View {
     let source: ImportSource
     let mode: ImportMode
     let selectedPhotos: [ImportedPhoto]
+    @Binding var showPhotosPicker: Bool
     let onPhotosSelected: ([ImportedPhoto]) -> Void
     let onFilesSelected: () -> Void
     
@@ -267,6 +320,7 @@ struct ImportContentView: View {
                 LibraryContentView(
                     mode: mode,
                     selectedPhotos: selectedPhotos,
+                    showPhotosPicker: $showPhotosPicker,
                     onPhotosSelected: onPhotosSelected
                 )
             case .files:
@@ -286,8 +340,8 @@ struct ImportContentView: View {
 struct LibraryContentView: View {
     let mode: ImportMode
     let selectedPhotos: [ImportedPhoto]
+    @Binding var showPhotosPicker: Bool
     let onPhotosSelected: ([ImportedPhoto]) -> Void
-    @State private var showPhotosPicker = false
     
     var body: some View {
         VStack(spacing: ModernDesignSystem.Spacing.lg) {
@@ -358,12 +412,6 @@ struct LibraryContentView: View {
             }
             .disabled(selectedPhotos.count >= mode.maxPhotos)
         }
-        .photosPicker(
-            isPresented: $showPhotosPicker,
-            selection: .constant(nil),
-            matching: .images,
-            photoLibrary: .shared()
-        )
     }
 }
 
@@ -621,5 +669,5 @@ struct ImportActionButtons: View {
 }
 
 #Preview {
-    ImportView(mode: .restore, isPresented: .constant(true))
+    ImportView(mode: .restore, isPresented: .constant(true), selectedPhotos: .constant([]))
 }

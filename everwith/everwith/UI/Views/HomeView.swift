@@ -12,9 +12,17 @@ struct HomeView: View {
     @State private var projects: [Project] = Project.mockProjects
     @State private var scrollOffset: CGFloat = 0
     @State private var isTabBarExpanded = true
+    @State private var showImportView = false
+    @State private var importMode: ImportMode = .restore
+    @State private var selectedPhotos: [ImportedPhoto] = []
     
-    private let tabBarHeight: CGFloat = 80
-    private let collapsedTabBarHeight: CGFloat = 60
+    private func tabBarHeight(for geometry: GeometryProxy) -> CGFloat {
+        ResponsiveDesign.adaptiveTabBarHeight(baseHeight: 80, for: geometry)
+    }
+    
+    private func collapsedTabBarHeight(for geometry: GeometryProxy) -> CGFloat {
+        ResponsiveDesign.adaptiveTabBarHeight(baseHeight: 60, for: geometry)
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -29,13 +37,13 @@ struct HomeView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                .ignoresSafeArea()
+                .ignoresSafeArea(.all)
                 
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         // Header Section
                         HomeHeaderView(user: user)
-                            .padding(.top, geometry.safeAreaInsets.top + ModernDesignSystem.Spacing.lg)
+                            .padding(.top, ModernDesignSystem.Spacing.lg)
                         
                         // Hero Actions Section
                         HeroActionsSection()
@@ -47,7 +55,7 @@ struct HomeView: View {
                         
                         // Bottom spacing for tab bar
                         Spacer()
-                            .frame(height: tabBarHeight + ModernDesignSystem.Spacing.lg)
+                            .frame(height: tabBarHeight(for: geometry) + geometry.safeAreaInsets.bottom + ResponsiveDesign.adaptiveSpacing(baseSpacing: ModernDesignSystem.Spacing.lg, for: geometry))
                     }
                 }
                 .scrollIndicators(.hidden)
@@ -69,11 +77,42 @@ struct HomeView: View {
                 VStack {
                     Spacer()
                     DynamicTabBar(isExpanded: isTabBarExpanded)
-                        .frame(height: isTabBarExpanded ? tabBarHeight : collapsedTabBarHeight)
+                        .frame(height: isTabBarExpanded ? tabBarHeight(for: geometry) : collapsedTabBarHeight(for: geometry))
+                        .padding(.bottom, geometry.safeAreaInsets.bottom)
                 }
             }
         }
-        .ignoresSafeArea(.all)
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToImport)) { notification in
+            if let mode = notification.object as? ImportMode {
+                importMode = mode
+                showImportView = true
+            }
+        }
+        .sheet(isPresented: $showImportView) {
+            ImportView(mode: importMode, isPresented: $showImportView, selectedPhotos: $selectedPhotos)
+                .onDisappear {
+                    // Handle navigation after import completion
+                    if !selectedPhotos.isEmpty {
+                        handleImportCompletion()
+                    }
+                }
+        }
+    }
+    
+    // MARK: - Private Methods
+    private func handleImportCompletion() {
+        // Navigate to the appropriate screen based on import mode
+        switch importMode {
+        case .restore:
+            // Navigate to Restore screen
+            NotificationCenter.default.post(name: .navigateToRestore, object: nil)
+        case .compose:
+            // Navigate to Together Scene
+            NotificationCenter.default.post(name: .navigateToTogether, object: nil)
+        }
+        
+        // Clear selected photos
+        selectedPhotos.removeAll()
     }
 }
 

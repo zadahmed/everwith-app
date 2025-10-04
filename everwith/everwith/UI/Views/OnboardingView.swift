@@ -35,6 +35,7 @@ struct OnboardingView: View {
                 VStack(spacing: 0) {
                     // iOS 26 Liquid Glass Header
                     LiquidGlassHeader()
+                        .padding(.top, geometry.safeAreaInsets.top)
                     
                     // Main Content
                     TabView(selection: $currentPage) {

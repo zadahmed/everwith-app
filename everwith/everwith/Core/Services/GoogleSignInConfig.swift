@@ -6,16 +6,19 @@
 //
 
 import Foundation
+import GoogleSignIn
 
 class GoogleSignInConfig {
     static func configure() {
-        // Configure Google Sign In
-        // This will be implemented when Google Sign In SDK is added
-        print("Google Sign In configuration placeholder")
+        // Configure Google Sign In with your client ID
+        guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let clientId = plist["CLIENT_ID"] as? String else {
+            print("⚠️ GoogleService-Info.plist not found or CLIENT_ID missing")
+            return
+        }
         
-        // In production, you would:
-        // 1. Add GoogleSignIn-iOS package
-        // 2. Add GoogleService-Info.plist
-        // 3. Configure GIDSignIn.sharedInstance.configuration
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+        print("✅ Google Sign In configured with client ID: \(clientId.prefix(20))...")
     }
 }

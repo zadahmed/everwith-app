@@ -42,10 +42,12 @@ struct EverWithApp: App {
 
 struct AppCoordinator: View {
     @StateObject private var authService = AuthenticationService()
+    @StateObject private var sessionManager = SessionManager.shared
     @State private var hasCompletedOnboarding = false
     @State private var showRestoreView = false
     @State private var showTogetherView = false
     @State private var showExportView = false
+    @State private var showSessionExpiredAlert = false
     
     var body: some View {
         Group {
@@ -79,7 +81,7 @@ struct AppCoordinator: View {
                             ExportView()
                         }
                 case .unauthenticated:
-                    AuthenticationView()
+                    ModernAuthenticationView()
                 case .error(let message):
                     ErrorView(message: message) {
                         authService.authenticationState = .unauthenticated
@@ -88,8 +90,25 @@ struct AppCoordinator: View {
             }
         }
         .environmentObject(authService)
+        .environmentObject(sessionManager)
         .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
             hasCompletedOnboarding = true
+        }
+        .onReceive(sessionManager.$sessionExpired) { expired in
+            if expired {
+                showSessionExpiredAlert = true
+            }
+        }
+        .alert("Session Expired", isPresented: $showSessionExpiredAlert) {
+            Button("OK") {
+                sessionManager.clearSessionExpired()
+                // Force logout
+                Task {
+                    await authService.signOut()
+                }
+            }
+        } message: {
+            Text("Your session has expired. Please sign in again.")
         }
     }
     

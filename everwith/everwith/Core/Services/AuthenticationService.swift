@@ -18,11 +18,14 @@ class AuthenticationService: NSObject, ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let userKey = "current_user"
     private let tokenKey = "access_token"
-    private let baseURL = "http://localhost:8000" // Change this to your backend URL
+    private let tokenExpiryKey = "token_expiry"
+    private let sessionTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    private var cancellables = Set<AnyCancellable>()
     
     override init() {
         super.init()
         loadStoredUser()
+        startSessionValidation()
     }
     
     // MARK: - Apple Sign In
@@ -42,7 +45,9 @@ class AuthenticationService: NSObject, ObservableObject {
     
     // MARK: - Google Sign In
     func signInWithGoogle() async -> SignInResult {
-        guard let presentingViewController = UIApplication.shared.windows.first?.rootViewController else {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
+              let presentingViewController = window.rootViewController else {
             return .failure(AuthenticationError.noPresentingViewController)
         }
         
@@ -75,12 +80,12 @@ class AuthenticationService: NSObject, ObservableObject {
     // MARK: - Email/Password Authentication
     func signUpWithEmail(email: String, password: String, name: String) async -> SignInResult {
         let request = AuthRequest(email: email, password: password, name: name)
-        return await authenticateWithBackend(request: request, endpoint: "/api/auth/register")
+        return await authenticateWithBackend(request: request, endpoint: AppConfiguration.AuthEndpoints.register)
     }
     
     func signInWithEmail(email: String, password: String) async -> SignInResult {
         let request = LoginRequest(email: email, password: password)
-        return await authenticateWithBackend(request: request, endpoint: "/api/auth/login")
+        return await authenticateWithBackend(request: request, endpoint: AppConfiguration.AuthEndpoints.login)
     }
     
     // MARK: - Guest Sign In
@@ -98,6 +103,88 @@ class AuthenticationService: NSObject, ObservableObject {
         return .success(guestUser)
     }
     
+    // MARK: - Session Management
+    func validateSession() async -> Bool {
+        guard let token = userDefaults.string(forKey: tokenKey) else {
+            await forceLogout(reason: "No token found")
+            return false
+        }
+        
+        // Check if token is expired
+        if isTokenExpired() {
+            await forceLogout(reason: "Token expired")
+            return false
+        }
+        
+        // Validate token with backend
+        return await validateTokenWithBackend(token)
+    }
+    
+    private func isTokenExpired() -> Bool {
+        guard let expiryDate = userDefaults.object(forKey: tokenExpiryKey) as? Date else {
+            return true // No expiry date means expired
+        }
+        return Date() >= expiryDate
+    }
+    
+    private func validateTokenWithBackend(_ token: String) async -> Bool {
+        guard let url = URL(string: AppConfiguration.authURL(for: AppConfiguration.AuthEndpoints.me)) else {
+            return false
+        }
+        
+        do {
+            let _: UserResponse = try await NetworkService.shared.makeRequest(
+                url: url,
+                method: .GET,
+                responseType: UserResponse.self
+            )
+            return true
+        } catch {
+            print("Token validation failed: \(error)")
+            return false
+        }
+    }
+    
+    private func startSessionValidation() {
+        // Validate session every minute
+        sessionTimer
+            .sink { [weak self] _ in
+                Task {
+                    await self?.checkSessionValidity()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func checkSessionValidity() async {
+        guard case .authenticated = authenticationState else { return }
+        
+        let isValid = await validateSession()
+        if !isValid {
+            await forceLogout(reason: "Session expired")
+        }
+    }
+    
+    private func forceLogout(reason: String) async {
+        print("Force logout: \(reason)")
+        
+        // Sign out from Google if user was signed in with Google
+        if let user = currentUser, user.provider == .google {
+            GIDSignIn.sharedInstance.signOut()
+        }
+        
+        // Clear stored user data
+        userDefaults.removeObject(forKey: userKey)
+        userDefaults.removeObject(forKey: tokenKey)
+        userDefaults.removeObject(forKey: tokenExpiryKey)
+        
+        // Update state
+        await MainActor.run {
+            self.currentUser = nil
+            self.authenticationState = .unauthenticated
+        }
+    }
+    
     // MARK: - Sign Out
     func signOut() async {
         // Sign out from Google if user was signed in with Google
@@ -111,6 +198,7 @@ class AuthenticationService: NSObject, ObservableObject {
         // Clear stored user data
         userDefaults.removeObject(forKey: userKey)
         userDefaults.removeObject(forKey: tokenKey)
+        userDefaults.removeObject(forKey: tokenExpiryKey)
         
         // Update state
         DispatchQueue.main.async {
@@ -122,11 +210,11 @@ class AuthenticationService: NSObject, ObservableObject {
     // MARK: - Backend Integration
     private func authenticateWithBackend(idToken: String, provider: User.AuthProvider) async -> SignInResult {
         let request = GoogleAuthRequest(id_token: idToken)
-        return await authenticateWithBackend(request: request, endpoint: "/api/auth/google")
+        return await authenticateWithBackend(request: request, endpoint: AppConfiguration.AuthEndpoints.google, provider: provider)
     }
     
-    private func authenticateWithBackend<T: Codable>(request: T, endpoint: String) async -> SignInResult {
-        guard let url = URL(string: "\(baseURL)\(endpoint)") else {
+    private func authenticateWithBackend<T: Codable>(request: T, endpoint: String, provider: User.AuthProvider = .email) async -> SignInResult {
+        guard let url = URL(string: AppConfiguration.authURL(for: endpoint)) else {
             return .failure(AuthenticationError.networkError)
         }
         
@@ -169,7 +257,7 @@ class AuthenticationService: NSObject, ObservableObject {
     
     private func logoutFromBackend() async {
         guard let token = userDefaults.string(forKey: tokenKey),
-              let url = URL(string: "\(baseURL)/api/auth/logout") else {
+              let url = URL(string: AppConfiguration.authURL(for: AppConfiguration.AuthEndpoints.logout)) else {
             return
         }
         
@@ -204,6 +292,10 @@ class AuthenticationService: NSObject, ObservableObject {
     
     private func storeToken(_ token: String) {
         userDefaults.set(token, forKey: tokenKey)
+        
+        // Store token expiry (30 minutes from now by default)
+        let expiryDate = Date().addingTimeInterval(30 * 60) // 30 minutes
+        userDefaults.set(expiryDate, forKey: tokenExpiryKey)
     }
     
     private func loadStoredUser() {
@@ -215,9 +307,17 @@ class AuthenticationService: NSObject, ObservableObject {
             return
         }
         
-        DispatchQueue.main.async {
-            self.currentUser = user
-            self.authenticationState = .authenticated(user)
+        // Check if session is still valid
+        Task {
+            let isValid = await validateSession()
+            await MainActor.run {
+                if isValid {
+                    self.currentUser = user
+                    self.authenticationState = .authenticated(user)
+                } else {
+                    self.authenticationState = .unauthenticated
+                }
+            }
         }
     }
     
@@ -302,7 +402,12 @@ extension AuthenticationService: ASAuthorizationControllerDelegate {
 // MARK: - ASAuthorizationControllerPresentationContextProviding
 extension AuthenticationService: ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return UIApplication.shared.windows.first { $0.isKeyWindow }!
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            // Fallback to key window if available
+            return UIApplication.shared.windows.first { $0.isKeyWindow } ?? UIWindow()
+        }
+        return window
     }
 }
 

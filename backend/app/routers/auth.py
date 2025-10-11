@@ -27,6 +27,13 @@ async def register(user: UserCreate):
                 detail="Email already registered"
             )
         
+        # Validate password length (additional check)
+        if len(user.password) > 72:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be no more than 72 characters long"
+            )
+        
         # Create new user
         hashed_password = get_password_hash(user.password)
         db_user = DBUser(
@@ -61,6 +68,13 @@ async def register(user: UserCreate):
         }
     except HTTPException:
         raise
+    except ValueError as e:
+        # Handle Pydantic validation errors
+        logger.error(f"Validation error during registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Error during registration: {e}")
         raise HTTPException(

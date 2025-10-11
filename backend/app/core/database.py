@@ -1,24 +1,41 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
 import os
+from app.models.database import User, Message, Event
 
-# Database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./everwith.db")
+# MongoDB connection settings
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "everwith_db")
 
-# Create engine
-engine = create_engine(DATABASE_URL)
+# Global client instance
+client: AsyncIOMotorClient = None
 
-# Create SessionLocal class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+async def init_db():
+    """Initialize MongoDB connection and Beanie"""
+    global client
+    
+    print(f"🔗 Connecting to MongoDB...")
+    print(f"🗄️ Database: {DATABASE_NAME}")
+    print(f"🔗 Connection URL: {MONGODB_URL.replace('://', '://***:***@') if '@' in MONGODB_URL else MONGODB_URL}")
+    
+    # Create motor client
+    client = AsyncIOMotorClient(MONGODB_URL)
+    
+    # Initialize Beanie with the database and document models
+    await init_beanie(
+        database=client[DATABASE_NAME],
+        document_models=[User, Message, Event]
+    )
+    
+    print(f"✅ Connected to MongoDB: {DATABASE_NAME}")
 
-# Create Base class
-Base = declarative_base()
+async def close_db():
+    """Close MongoDB connection"""
+    global client
+    if client:
+        client.close()
+        print("✅ MongoDB connection closed")
 
-# Dependency to get database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def get_client() -> AsyncIOMotorClient:
+    """Get the MongoDB client instance"""
+    return client

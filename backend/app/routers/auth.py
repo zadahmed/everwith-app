@@ -1,72 +1,186 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.models.schemas import User, UserCreate, UserLogin, Token
+from app.models.schemas import User, UserCreate, UserLogin, GoogleAuthRequest
 from app.models.database import User as DBUser
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
+from app.services.google_auth import google_auth_service
 from datetime import timedelta
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 @router.post("/register", response_model=dict)
-async def register(user: UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists
-    db_user = db.query(DBUser).filter(DBUser.email == user.email).first()
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+async def register(user: UserCreate):
+    """
+    Register a new user with email and password
+    """
+    try:
+        # Check if user already exists
+        existing_user = await DBUser.find_one(DBUser.email == user.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create new user
+        hashed_password = get_password_hash(user.password)
+        db_user = DBUser(
+            email=user.email,
+            name=user.name,
+            hashed_password=hashed_password,
+            is_google_user=False
         )
-    
-    # Create new user
-    hashed_password = get_password_hash(user.password)
-    db_user = DBUser(
-        email=user.email,
-        name=user.name,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    
-    return {
-        "message": "User created successfully",
-        "user": User.from_orm(db_user),
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+        
+        await db_user.insert()
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.email}, expires_delta=access_token_expires
+        )
+        
+        return {
+            "message": "User created successfully",
+            "user": {
+                "id": str(db_user.id),
+                "email": db_user.email,
+                "name": db_user.name,
+                "profile_image_url": db_user.profile_image_url,
+                "is_google_user": db_user.is_google_user,
+                "is_active": db_user.is_active,
+                "created_at": db_user.created_at,
+                "updated_at": db_user.updated_at
+            },
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during registration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during registration"
+        )
 
 @router.post("/login", response_model=dict)
-async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
-    # Authenticate user
-    user = db.query(DBUser).filter(DBUser.email == user_credentials.email).first()
-    if not user or not verify_password(user_credentials.password, user.hashed_password):
+async def login(user_credentials: UserLogin):
+    """
+    Login with email and password
+    """
+    try:
+        # Authenticate user
+        user = await DBUser.find_one(DBUser.email == user_credentials.email)
+        if not user or not user.hashed_password or not verify_password(user_credentials.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is deactivated"
+            )
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.email}, expires_delta=access_token_expires
+        )
+        
+        return {
+            "message": "Login successful",
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "name": user.name,
+                "profile_image_url": user.profile_image_url,
+                "is_google_user": user.is_google_user,
+                "is_active": user.is_active,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at
+            },
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during login: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during login"
+        )
+
+@router.post("/google", response_model=dict)
+async def google_auth(google_request: GoogleAuthRequest):
+    """
+    Authenticate with Google Sign-In
+    """
+    try:
+        result = await google_auth_service.authenticate_google_user(google_request.id_token)
+        return result
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            detail=str(e)
         )
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    
+    except Exception as e:
+        logger.error(f"Error during Google authentication: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during Google authentication"
+        )
+
+@router.get("/me", response_model=dict)
+async def get_current_user_info(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get current user information
+    """
     return {
-        "message": "Login successful",
-        "user": User.from_orm(user),
-        "access_token": access_token,
-        "token_type": "bearer"
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "name": current_user.name,
+        "profile_image_url": current_user.profile_image_url,
+        "is_google_user": current_user.is_google_user,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at,
+        "updated_at": current_user.updated_at
     }
 
-@router.get("/me", response_model=User)
-async def get_current_user_info(current_user: DBUser = Depends(get_current_user)):
-    return User.from_orm(current_user)
+@router.post("/logout", response_model=dict)
+async def logout():
+    """
+    Logout endpoint (client should discard the token)
+    """
+    return {"message": "Logout successful"}
+
+@router.post("/refresh", response_model=dict)
+async def refresh_token(current_user: DBUser = Depends(get_current_user)):
+    """
+    Refresh access token
+    """
+    try:
+        # Create new access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": current_user.email}, expires_delta=access_token_expires
+        )
+        
+        return {
+            "message": "Token refreshed successfully",
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    except Exception as e:
+        logger.error(f"Error during token refresh: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during token refresh"
+        )

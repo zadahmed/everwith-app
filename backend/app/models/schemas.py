@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from datetime import datetime
 
@@ -8,15 +8,33 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class GoogleAuthRequest(BaseModel):
+    id_token: str  # Google ID token from client
+
+class GoogleUserInfo(BaseModel):
+    google_id: str
+    email: EmailStr
+    name: str
+    picture: Optional[str] = None
+
 class User(UserBase):
     id: str
     profile_image_url: Optional[str] = None
+    is_google_user: bool = False
+    is_active: bool = True
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

@@ -9,6 +9,7 @@ import Foundation
 import AuthenticationServices
 import Combine
 import UIKit
+import GoogleSignIn
 
 class AuthenticationService: NSObject, ObservableObject {
     @Published var authenticationState: AuthenticationState = .loading
@@ -16,6 +17,8 @@ class AuthenticationService: NSObject, ObservableObject {
     
     private let userDefaults = UserDefaults.standard
     private let userKey = "current_user"
+    private let tokenKey = "access_token"
+    private let baseURL = "http://localhost:8000" // Change this to your backend URL
     
     override init() {
         super.init()
@@ -39,22 +42,45 @@ class AuthenticationService: NSObject, ObservableObject {
     
     // MARK: - Google Sign In
     func signInWithGoogle() async -> SignInResult {
-        // Simulate Google Sign In for demo purposes
-        // In production, integrate with Google Sign In SDK
+        guard let presentingViewController = UIApplication.shared.windows.first?.rootViewController else {
+            return .failure(AuthenticationError.noPresentingViewController)
+        }
         
-        try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds delay
-        
-        let googleUser = User(
-            id: UUID().uuidString,
-            email: "user@gmail.com",
-            name: "Google User",
-            profileImageURL: nil,
-            provider: .google,
-            createdAt: Date()
-        )
-        
-        await signInUser(googleUser)
-        return .success(googleUser)
+        do {
+            // Configure Google Sign-In
+            guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+                  let plist = NSDictionary(contentsOfFile: path),
+                  let clientId = plist["CLIENT_ID"] as? String else {
+                return .failure(AuthenticationError.googleConfigurationError)
+            }
+            
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+            
+            // Perform Google Sign-In
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+            let user = result.user
+            
+            guard let idToken = user.idToken?.tokenString else {
+                return .failure(AuthenticationError.missingGoogleToken)
+            }
+            
+            // Send ID token to backend for verification
+            return await authenticateWithBackend(idToken: idToken, provider: .google)
+            
+        } catch {
+            return .failure(error)
+        }
+    }
+    
+    // MARK: - Email/Password Authentication
+    func signUpWithEmail(email: String, password: String, name: String) async -> SignInResult {
+        let request = AuthRequest(email: email, password: password, name: name)
+        return await authenticateWithBackend(request: request, endpoint: "/api/auth/register")
+    }
+    
+    func signInWithEmail(email: String, password: String) async -> SignInResult {
+        let request = LoginRequest(email: email, password: password)
+        return await authenticateWithBackend(request: request, endpoint: "/api/auth/login")
     }
     
     // MARK: - Guest Sign In
@@ -76,12 +102,15 @@ class AuthenticationService: NSObject, ObservableObject {
     func signOut() async {
         // Sign out from Google if user was signed in with Google
         if let user = currentUser, user.provider == .google {
-            // In production: GIDSignIn.sharedInstance.signOut()
-            print("Signing out Google user")
+            GIDSignIn.sharedInstance.signOut()
         }
+        
+        // Call backend logout endpoint
+        await logoutFromBackend()
         
         // Clear stored user data
         userDefaults.removeObject(forKey: userKey)
+        userDefaults.removeObject(forKey: tokenKey)
         
         // Update state
         DispatchQueue.main.async {
@@ -90,19 +119,91 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - Backend Integration
+    private func authenticateWithBackend(idToken: String, provider: User.AuthProvider) async -> SignInResult {
+        let request = GoogleAuthRequest(id_token: idToken)
+        return await authenticateWithBackend(request: request, endpoint: "/api/auth/google")
+    }
+    
+    private func authenticateWithBackend<T: Codable>(request: T, endpoint: String) async -> SignInResult {
+        guard let url = URL(string: "\(baseURL)\(endpoint)") else {
+            return .failure(AuthenticationError.networkError)
+        }
+        
+        do {
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "POST"
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            let jsonData = try JSONEncoder().encode(request)
+            urlRequest.httpBody = jsonData
+            
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failure(AuthenticationError.networkError)
+            }
+            
+            if httpResponse.statusCode == 200 {
+                let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+                let user = User(
+                    id: authResponse.user.id,
+                    email: authResponse.user.email,
+                    name: authResponse.user.name,
+                    profileImageURL: authResponse.user.profile_image_url,
+                    provider: provider,
+                    createdAt: authResponse.user.created_at
+                )
+                
+                await signInUser(user, accessToken: authResponse.access_token)
+                return .success(user)
+            } else {
+                let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
+                let errorMessage = errorResponse?.detail ?? "Authentication failed"
+                return .failure(AuthenticationError.backendError(errorMessage))
+            }
+        } catch {
+            return .failure(error)
+        }
+    }
+    
+    private func logoutFromBackend() async {
+        guard let token = userDefaults.string(forKey: tokenKey),
+              let url = URL(string: "\(baseURL)/api/auth/logout") else {
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            _ = try await URLSession.shared.data(for: request)
+        } catch {
+            print("Logout request failed: \(error)")
+        }
+    }
+    
     // MARK: - Private Methods
-    private func signInUser(_ user: User) async {
+    private func signInUser(_ user: User, accessToken: String? = nil) async {
         await MainActor.run {
             currentUser = user
             authenticationState = .authenticated(user)
         }
         storeUser(user)
+        if let token = accessToken {
+            storeToken(token)
+        }
     }
     
     private func storeUser(_ user: User) {
         if let encoded = try? JSONEncoder().encode(user) {
             userDefaults.set(encoded, forKey: userKey)
         }
+    }
+    
+    private func storeToken(_ token: String) {
+        userDefaults.set(token, forKey: tokenKey)
     }
     
     private func loadStoredUser() {
@@ -217,6 +318,9 @@ enum AuthenticationError: LocalizedError {
     case appleSignInUnknown
     case appleIdAuthenticationFailed
     case appleSignInConfigurationError
+    case googleConfigurationError
+    case missingGoogleToken
+    case backendError(String)
     
     var errorDescription: String? {
         switch self {
@@ -240,6 +344,12 @@ enum AuthenticationError: LocalizedError {
             return "Apple ID authentication failed. Please check your Apple ID settings and try again."
         case .appleSignInConfigurationError:
             return "Apple Sign In configuration error. Please ensure the app is properly configured for Apple Sign In."
+        case .googleConfigurationError:
+            return "Google Sign In configuration error. Please ensure GoogleService-Info.plist is properly configured."
+        case .missingGoogleToken:
+            return "Google authentication token is missing"
+        case .backendError(let message):
+            return message
         }
     }
     
@@ -249,8 +359,12 @@ enum AuthenticationError: LocalizedError {
             return "Make sure you're signed in to iCloud with a valid Apple ID and that Sign In with Apple is enabled for this app."
         case .appleSignInConfigurationError:
             return "The app needs to be properly configured for Apple Sign In. Please contact support if this issue persists."
+        case .googleConfigurationError:
+            return "Please ensure GoogleService-Info.plist is properly configured in your app bundle."
         case .networkError:
             return "Please check your internet connection and try again."
+        case .backendError:
+            return "Please try again or contact support if the issue persists."
         default:
             return "Please try again or contact support if the issue persists."
         }

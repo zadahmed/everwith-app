@@ -1,49 +1,75 @@
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from beanie import Document, Indexed
+from pydantic import Field, EmailStr, ConfigDict
+from typing import Optional, List
 from datetime import datetime
-import uuid
+from bson import ObjectId
 
-Base = declarative_base()
+class User(Document):
+    """User document model for MongoDB"""
+    
+    email: Indexed(EmailStr, unique=True)
+    name: str
+    hashed_password: Optional[str] = None  # None for Google OAuth users
+    profile_image_url: Optional[str] = None
+    google_id: Optional[Indexed(str, unique=True)] = None
+    is_google_user: bool = False
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "users"
+        indexes = [
+            "email",
+            "google_id",
+            "is_active"
+        ]
+    
+    def __str__(self):
+        return f"User(id={self.id}, email={self.email}, name={self.name})"
 
-class User(Base):
-    __tablename__ = "users"
+class Message(Document):
+    """Message document model for MongoDB"""
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    email = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    profile_image_url = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    content: str
+    sender_id: ObjectId
+    receiver_id: ObjectId
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships
-    sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
-    received_messages = relationship("Message", foreign_keys="Message.receiver_id", back_populates="receiver")
-    created_events = relationship("Event", back_populates="creator")
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "messages"
+        indexes = [
+            "sender_id",
+            "receiver_id",
+            "created_at"
+        ]
+    
+    def __str__(self):
+        return f"Message(id={self.id}, sender={self.sender_id}, receiver={self.receiver_id})"
 
-class Message(Base):
-    __tablename__ = "messages"
+class Event(Document):
+    """Event document model for MongoDB"""
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    content = Column(Text, nullable=False)
-    sender_id = Column(String, ForeignKey("users.id"), nullable=False)
-    receiver_id = Column(String, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    title: str
+    description: Optional[str] = None
+    date: datetime
+    location: Optional[str] = None
+    created_by: ObjectId
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Relationships
-    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_messages")
-    receiver = relationship("User", foreign_keys=[receiver_id], back_populates="received_messages")
-
-class Event(Base):
-    __tablename__ = "events"
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    date = Column(DateTime, nullable=False)
-    location = Column(String, nullable=True)
-    created_by = Column(String, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    class Settings:
+        name = "events"
+        indexes = [
+            "created_by",
+            "date",
+            "created_at"
+        ]
     
-    # Relationships
-    creator = relationship("User", back_populates="created_events")
+    def __str__(self):
+        return f"Event(id={self.id}, title={self.title}, date={self.date})"

@@ -5,7 +5,11 @@ from passlib.context import CryptContext
 from app.models.database import User
 from app.models.schemas import TokenData
 import os
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
+
+# Load environment variables
+load_dotenv()
 
 # Security setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

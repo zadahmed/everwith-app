@@ -49,9 +49,14 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    
+    # Only enable reload in development
+    reload = os.getenv("ENVIRONMENT", "development") == "development"
+    
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=reload
     )

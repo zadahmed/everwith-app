@@ -1,7 +1,11 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 import os
+from dotenv import load_dotenv
 from app.models.database import User, Message, Event
+
+# Load environment variables first
+load_dotenv()
 
 # MongoDB connection settings
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")

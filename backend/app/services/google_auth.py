@@ -5,7 +5,11 @@ from app.models.schemas import GoogleUserInfo
 from app.core.security import create_access_token
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
 import logging
+
+# Load environment variables
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 

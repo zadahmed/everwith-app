@@ -9,107 +9,102 @@ import SwiftUI
 import PhotosUI
 
 struct OnboardingView: View {
-    @State private var currentPage = 0
     @State private var permissionState: PermissionState = .notRequested
     @State private var onboardingState: OnboardingState = .cards
     @State private var showPermissionDeniedSheet = false
     @State private var showFilesPicker = false
-    
-    private let cards = OnboardingCard.cards
+    @State private var isAnimating = false
+    @State private var showContent = false
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background with subtle gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.warmLinen.opacity(0.3),
-                        Color.sky.opacity(0.1),
-                        Color.honeyGold.opacity(0.05)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Elegant background with depth
+                ElegantBackground()
+                    .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // iOS 26 Liquid Glass Header
-                    LiquidGlassHeader()
-                        .padding(.top, geometry.safeAreaInsets.top)
+                    // Status bar spacer
+                    Spacer()
+                        .frame(height: geometry.safeAreaInsets.top + 20)
                     
                     // Main Content
-                    TabView(selection: $currentPage) {
-                        ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                            OnboardingCardView(card: card)
-                                .tag(index)
-                        }
-                    }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                    .animation(.easeInOut(duration: 0.5), value: currentPage)
-                    
-                    // Bottom Section
-                    VStack(spacing: ModernDesignSystem.Spacing.lg) {
-                        // Page Indicators
-                        HStack(spacing: ModernDesignSystem.Spacing.sm) {
-                            ForEach(0..<cards.count, id: \.self) { index in
-                                Circle()
-                                    .fill(index == currentPage ? Color.honeyGold : Color.charcoal.opacity(0.3))
-                                    .frame(width: 8, height: 8)
-                                    .animation(.easeInOut(duration: 0.3), value: currentPage)
-                            }
-                        }
-                        .padding(.bottom, ModernDesignSystem.Spacing.sm)
+                    VStack(spacing: 0) {
+                        Spacer()
                         
-                        // Primary CTA Button
-                        Button(action: {
-                            if currentPage < cards.count - 1 {
-                                withAnimation(.easeInOut(duration: 0.5)) {
-                                    currentPage += 1
-                                }
-                            } else {
-                                // Safe permission request
+                        // Single Card Content
+                        SingleOnboardingCard()
+                            .scaleEffect(showContent ? 1.0 : 0.8)
+                            .opacity(showContent ? 1.0 : 0.0)
+                            .animation(.spring(response: 0.8, dampingFraction: 0.8), value: showContent)
+                        
+                        Spacer()
+                        
+                        // Action Section
+                        VStack(spacing: 24) {
+                            // Primary CTA Button
+                            Button(action: {
                                 requestPhotoPermission()
-                            }
-                        }) {
-                            HStack {
-                                Text(currentPage < cards.count - 1 ? "Continue" : "Get started")
-                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                
-                                if currentPage < cards.count - 1 {
+                            }) {
+                                HStack(spacing: 12) {
+                                    Text("Continue")
+                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                    
                                     Image(systemName: "arrow.right")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
+                                .foregroundColor(.charcoal)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.honeyGold)
+                                        .shadow(
+                                            color: Color.honeyGold.opacity(0.4),
+                                            radius: 12,
+                                            x: 0,
+                                            y: 6
+                                        )
+                                )
                             }
-                            .foregroundColor(.charcoal)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.honeyGold)
-                            .cornerRadius(ModernDesignSystem.CornerRadius.lg)
-                            .shadow(
-                                color: Color.honeyGold.opacity(0.3),
-                                radius: 8,
-                                x: 0,
-                                y: 4
-                            )
-                        }
-                        .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-                        .animation(.easeInOut(duration: 0.3), value: currentPage)
-                        
-                        // Skip Button (only on first two pages)
-                        if currentPage < cards.count - 1 {
-                            Button("Skip for now") {
-                                skipOnboarding()
+                            .scaleEffect(isAnimating ? 1.05 : 1.0)
+                            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
+                            .padding(.horizontal, 32)
+                            
+                            // Footer Links
+                            HStack(spacing: 24) {
+                                Button("Privacy") {
+                                    // Handle privacy action
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.charcoal.opacity(0.6))
+                                
+                                Text("•")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.charcoal.opacity(0.4))
+                                
+                                Button("Terms") {
+                                    // Handle terms action
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.charcoal.opacity(0.6))
                             }
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.charcoal.opacity(0.6))
-                            .padding(.bottom, ModernDesignSystem.Spacing.md)
+                            .padding(.bottom, 8)
                         }
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + 32)
                     }
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + ModernDesignSystem.Spacing.lg)
                 }
             }
         }
         .ignoresSafeArea(.all)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                showContent = true
+            }
+            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(1.0)) {
+                isAnimating = true
+            }
+        }
         .sheet(isPresented: $showPermissionDeniedSheet) {
             PermissionDeniedSheet(
                 onTryAgain: {
@@ -123,17 +118,7 @@ struct OnboardingView: View {
             )
         }
         .sheet(isPresented: $showFilesPicker) {
-            // Simple file picker placeholder
-            VStack {
-                Text("File Picker")
-                    .font(.title)
-                Text("This would open the file picker")
-                    .foregroundColor(.secondary)
-                Button("Close") {
-                    showFilesPicker = false
-                }
-            }
-            .padding()
+            FilesPickerView()
         }
     }
     
@@ -190,11 +175,6 @@ struct OnboardingView: View {
         }
     }
     
-    private func skipOnboarding() {
-        // Skip onboarding and proceed to main app
-        completeOnboarding()
-    }
-    
     private func completeOnboarding() {
         // Mark onboarding as completed and navigate to main app
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
@@ -209,135 +189,209 @@ struct OnboardingView: View {
     }
 }
 
-// MARK: - Liquid Glass Header
-struct LiquidGlassHeader: View {
+// MARK: - Elegant Background
+struct ElegantBackground: View {
+    @State private var animateGradient = false
+    
     var body: some View {
-        VStack(spacing: 0) {
-            // Status bar area with subtle glass effect
-            Rectangle()
-                .fill(Color.clear)
-                .frame(height: 44)
-                .background(
-                    // Liquid glass effect that refracts wallpaper
-                    RoundedRectangle(cornerRadius: 0)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.white.opacity(0.1),
-                                    Color.clear,
-                                    Color.white.opacity(0.05)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .background(.ultraThinMaterial)
-                        .overlay(
-                            // Subtle refraction effect
-                            RoundedRectangle(cornerRadius: 0)
-                                .stroke(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color.white.opacity(0.2),
-                                            Color.clear
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    ),
-                                    lineWidth: 0.5
-                                )
-                        )
-                )
+        ZStack {
+            // Base gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.warmLinen.opacity(0.4),
+                    Color.sky.opacity(0.15),
+                    Color.honeyGold.opacity(0.08)
+                ]),
+                startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                endPoint: animateGradient ? .bottomTrailing : .topLeading
+            )
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true), value: animateGradient)
             
-            // App branding area
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("EverWith")
-                        .font(.system(size: 24, weight: .semibold, design: .rounded))
-                        .foregroundColor(.charcoal)
-                    
-                    Text("Welcome to your journey")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.charcoal.opacity(0.7))
-                }
-                
-                Spacer()
-                
-                // Subtle logo
+            // Floating orbs for depth
+            ForEach(0..<3, id: \.self) { index in
                 Circle()
-                    .fill(Color.brandGradient)
-                    .frame(width: 40, height: 40)
-                    .overlay(
-                        Text("EW")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
+                    .fill(
+                        RadialGradient(
+                            gradient: Gradient(colors: [
+                                Color.honeyGold.opacity(0.1),
+                                Color.clear
+                            ]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 100
+                        )
                     )
+                    .frame(width: CGFloat(120 + index * 40), height: CGFloat(120 + index * 40))
+                    .offset(
+                        x: CGFloat(50 + index * 80),
+                        y: CGFloat(-100 + index * 150)
+                    )
+                    .blur(radius: 20)
+                    .opacity(0.6)
             }
-            .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-            .padding(.vertical, ModernDesignSystem.Spacing.md)
+        }
+        .onAppear {
+            animateGradient = true
         }
     }
 }
 
-// MARK: - Onboarding Card View
-struct OnboardingCardView: View {
-    let card: OnboardingCard
+// MARK: - Single Onboarding Card
+struct SingleOnboardingCard: View {
+    @State private var iconScale: CGFloat = 0.8
+    @State private var iconRotation: Double = 0
+    @State private var textOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: ModernDesignSystem.Spacing.xl) {
-            Spacer()
-            
-            // Icon with gradient background
+        VStack(spacing: 32) {
+            // Hero Icon with Animation
             ZStack {
+                // Background glow
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            gradient: Gradient(colors: [
+                                Color.honeyGold.opacity(0.3),
+                                Color.honeyGold.opacity(0.1),
+                                Color.clear
+                            ]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 80
+                        )
+                    )
+                    .frame(width: 160, height: 160)
+                    .blur(radius: 20)
+                
+                // Main icon container
                 Circle()
                     .fill(
                         LinearGradient(
-                            gradient: Gradient(colors: card.gradient),
+                            gradient: Gradient(colors: [
+                                Color.honeyGold,
+                                Color.honeyGold.opacity(0.8)
+                            ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 120, height: 120)
-                
-                Image(systemName: card.icon)
-                    .font(.system(size: 48, weight: .medium))
-                    .foregroundColor(.white)
+                    .overlay(
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 48, weight: .medium))
+                            .foregroundColor(.white)
+                    )
+                    .scaleEffect(iconScale)
+                    .rotationEffect(.degrees(iconRotation))
+                    .shadow(
+                        color: Color.honeyGold.opacity(0.4),
+                        radius: 20,
+                        x: 0,
+                        y: 10
+                    )
             }
-            .cleanGlassmorphism(
-                style: ModernDesignSystem.GlassEffect.subtle,
-                shadow: ModernDesignSystem.Shadow.light
-            )
             
             // Content
-            VStack(spacing: ModernDesignSystem.Spacing.lg) {
-                VStack(spacing: ModernDesignSystem.Spacing.md) {
-                    Text(card.title)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+            VStack(spacing: 20) {
+                Text("Restore precious photos.")
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundColor(.charcoal)
+                    .multilineTextAlignment(.center)
+                    .opacity(textOpacity)
+                
+                Text("Keep control of what you share.")
+                    .font(.system(size: 20, weight: .medium, design: .rounded))
+                    .foregroundColor(.charcoal.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .opacity(textOpacity)
+            }
+            .padding(.horizontal, 40)
+        }
+        .padding(40)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white.opacity(0.1))
+                .background(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0.2),
+                                    Color.clear
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .shadow(
+            color: Color.black.opacity(0.1),
+            radius: 30,
+            x: 0,
+            y: 15
+        )
+        .padding(.horizontal, 32)
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.3)) {
+                iconScale = 1.0
+            }
+            withAnimation(.easeInOut(duration: 0.6).delay(0.5)) {
+                textOpacity = 1.0
+            }
+            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true).delay(1.0)) {
+                iconRotation = 5
+            }
+        }
+    }
+}
+
+// MARK: - Files Picker View
+struct FilesPickerView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 32) {
+                // Icon
+                Image(systemName: "folder.badge.plus")
+                    .font(.system(size: 60, weight: .medium))
+                    .foregroundColor(.honeyGold)
+                
+                VStack(spacing: 16) {
+                    Text("No problem—use Files instead.")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(.charcoal)
                         .multilineTextAlignment(.center)
                     
-                    Text(card.subtitle)
-                        .font(.system(size: 20, weight: .medium, design: .rounded))
-                        .foregroundColor(.charcoal.opacity(0.8))
+                    Text("Select photos from your Files app to restore them.")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.charcoal.opacity(0.7))
                         .multilineTextAlignment(.center)
                 }
                 
-                Text(card.description)
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(.charcoal.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
-                    .padding(.horizontal, ModernDesignSystem.Spacing.lg)
+                Spacer()
+                
+                Button("Open Files") {
+                    // Handle file picker
+                    dismiss()
+                }
+                .buttonStyle(ModernButtonStyle(style: .primary, size: .large))
+                .padding(.horizontal, 32)
             }
-            .padding(ModernDesignSystem.Spacing.xl)
-            .cleanGlassmorphism(
-                style: ModernDesignSystem.GlassEffect.light,
-                blur: ModernDesignSystem.BlurEffect.subtle,
-                shadow: ModernDesignSystem.Shadow.subtle
-            )
-            .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-            
-            Spacer()
+            .padding(32)
+            .navigationTitle("Files")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }
@@ -348,63 +402,82 @@ struct PermissionDeniedSheet: View {
     let onUseFiles: () -> Void
     
     var body: some View {
-        VStack(spacing: ModernDesignSystem.Spacing.xl) {
-            // Header
-            VStack(spacing: ModernDesignSystem.Spacing.lg) {
-                Image(systemName: "photo.badge.exclamationmark")
-                    .font(.system(size: 60, weight: .medium))
-                    .foregroundColor(.honeyGold)
-                
-                VStack(spacing: ModernDesignSystem.Spacing.md) {
-                    Text("Photos Access Needed")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.charcoal)
-                        .multilineTextAlignment(.center)
+        NavigationView {
+            VStack(spacing: 32) {
+                // Header
+                VStack(spacing: 24) {
+                    Image(systemName: "photo.badge.exclamationmark")
+                        .font(.system(size: 60, weight: .medium))
+                        .foregroundColor(.honeyGold)
                     
-                    Text("To restore your precious memories, we need access to your photo library.")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.charcoal.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                }
-            }
-            .padding(ModernDesignSystem.Spacing.xl)
-            
-            // Options
-            VStack(spacing: ModernDesignSystem.Spacing.lg) {
-                Button(action: onTryAgain) {
-                    Text("Try Again")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundColor(.charcoal)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.honeyGold)
-                        .cornerRadius(ModernDesignSystem.CornerRadius.lg)
-                }
-                
-                Button(action: onUseFiles) {
-                    HStack {
-                        Image(systemName: "folder")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Pick from Files")
-                            .font(.system(size: 16, weight: .medium))
+                    VStack(spacing: 16) {
+                        Text("Photos Access Needed")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(.charcoal)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("To restore your precious memories, we need access to your photo library.")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(.charcoal.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
                     }
-                    .foregroundColor(.charcoal.opacity(0.8))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.md)
-                            .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
-                    )
+                }
+                .padding(.top, 32)
+                
+                Spacer()
+                
+                // Options
+                VStack(spacing: 16) {
+                    Button(action: onTryAgain) {
+                        Text("Try Again")
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
+                            .foregroundColor(.charcoal)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.honeyGold)
+                                    .shadow(
+                                        color: Color.honeyGold.opacity(0.3),
+                                        radius: 8,
+                                        x: 0,
+                                        y: 4
+                                    )
+                            )
+                    }
+                    
+                    Button(action: onUseFiles) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "folder")
+                                .font(.system(size: 16, weight: .medium))
+                            Text("Pick from Files")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.charcoal.opacity(0.8))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
+                        )
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 32)
+            }
+            .background(Color.warmLinen)
+            .navigationTitle("Permission")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cancel") {
+                        onUseFiles() // Default to files if cancelled
+                    }
                 }
             }
-            .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-            
-            Spacer()
         }
-        .padding(.top, ModernDesignSystem.Spacing.xl)
-        .background(Color.warmLinen)
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
     }

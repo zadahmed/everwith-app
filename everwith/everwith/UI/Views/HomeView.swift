@@ -18,71 +18,99 @@ struct HomeView: View {
     @State private var animateElements = false
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Vibrant Modern Background
-                ModernVibrantBackground()
-                    .ignoresSafeArea(.all)
+        ZStack {
+            // Vibrant Modern Background
+            ModernVibrantBackground()
+                .ignoresSafeArea(.all)
+            
+            VStack(spacing: 0) {
+                // Enhanced Header
+                ModernHomeHeader(user: user, showSettings: $showSettings)
                 
-                VStack(spacing: 0) {
-                    // Enhanced Header
-                    ModernHomeHeader(user: user, showSettings: $showSettings, geometry: geometry)
-                        .padding(.top, geometry.safeAreaInsets.top + ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry))
-                    
-                    ScrollView {
-                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 28, for: geometry)) {
-                            // Welcome Message
-                            WelcomeMessageCard(geometry: geometry)
-                                .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
-                                .padding(.top, ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry))
-                            
-                            // Main Action Buttons
-                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry)) {
-                                // Restore Photo Button
-                                ModernActionButton(
-                                    title: "Restore a Photo",
-                                    subtitle: "Bring memories back to life",
-                                    icon: "photo.badge.plus",
-                                    gradient: [Color.honeyGold, Color.honeyGold.opacity(0.7)],
-                                    accentColor: Color.honeyGold,
-                                    geometry: geometry,
-                                    action: {
-                                        showPhotoPicker = true
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Welcome Message
+                        WelcomeMessageCard()
+                            .padding(.horizontal, 24)
+                        
+                        // Simple Action Buttons
+                        VStack(spacing: 20) {
+                            // Restore Photo Button
+                            Button(action: {
+                                showPhotoPicker = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "photo.badge.plus")
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundColor(.white)
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text("Restore a Photo")
+                                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                                            .foregroundColor(.charcoal)
+                                        
+                                        Text("Bring memories back to life")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.charcoal.opacity(0.8))
                                     }
-                                )
-                                
-                                // Together Scene Button
-                                ModernActionButton(
-                                    title: "Together Scene",
-                                    subtitle: "Create beautiful tributes",
-                                    icon: "heart.circle.fill",
-                                    gradient: [Color.sky, Color.fern],
-                                    accentColor: Color.sky,
-                                    geometry: geometry,
-                                    action: {
-                                        showTogetherPicker = true
-                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.honeyGold)
+                                }
+                                .padding(24)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.white.opacity(0.12))
+                                        .background(.ultraThinMaterial)
                                 )
                             }
-                            .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
+                            .buttonStyle(PlainButtonStyle())
                             
-                            // Quick Stats Card
-                            QuickStatsCard(geometry: geometry)
-                                .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
-                            
-                            // Recent Projects Section
-                            if !projects.isEmpty {
-                                ModernRecentProjectsRow(projects: Array(projects.prefix(3)), geometry: geometry)
-                                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
+                            // Together Scene Button
+                            Button(action: {
+                                showTogetherPicker = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "heart.circle.fill")
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundColor(.white)
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text("Together Scene")
+                                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                                            .foregroundColor(.charcoal)
+                                        
+                                        Text("Create beautiful tributes")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.charcoal.opacity(0.8))
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.sky)
+                                }
+                                .padding(24)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.white.opacity(0.12))
+                                        .background(.ultraThinMaterial)
+                                )
                             }
-                            
-                            // Bottom spacing
-                            Spacer()
-                                .frame(height: geometry.safeAreaInsets.bottom + ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                            .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.horizontal, 24)
+                        
+                        // Bottom spacing
+                        Spacer()
+                            .frame(height: 32)
                     }
-                    .scrollIndicators(.hidden)
                 }
+                .scrollIndicators(.hidden)
             }
         }
         .onAppear {
@@ -164,23 +192,22 @@ struct ModernVibrantBackground: View {
 struct ModernHomeHeader: View {
     let user: User
     @Binding var showSettings: Bool
-    let geometry: GeometryProxy
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
-                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
                     Text("Welcome back")
-                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.charcoal.opacity(0.8))
                     
                     Image(systemName: "sparkles")
-                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.honeyGold)
                 }
                 
                 Text(user.name)
-                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 32, for: geometry), weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.charcoal)
             }
             
@@ -202,10 +229,7 @@ struct ModernHomeHeader: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(
-                            width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 44, for: geometry),
-                            height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 44, for: geometry)
-                        )
+                        .frame(width: 44, height: 44)
                         .background(.ultraThinMaterial)
                         .overlay(
                             Circle()
@@ -223,24 +247,23 @@ struct ModernHomeHeader: View {
                         )
                     
                     Image(systemName: "gearshape.fill")
-                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .medium))
+                        .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.charcoal.opacity(0.8))
                 }
             }
             .scaleEffect(1.0)
             .animation(.easeInOut(duration: 0.1), value: showSettings)
         }
-        .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
-        .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 16)
     }
 }
 
 // MARK: - Welcome Message Card
 struct WelcomeMessageCard: View {
-    let geometry: GeometryProxy
     
     var body: some View {
-        HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+        HStack(spacing: 16) {
             // Icon
             ZStack {
                 Circle()
@@ -254,36 +277,33 @@ struct WelcomeMessageCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(
-                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 50, for: geometry),
-                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 50, for: geometry)
-                    )
+                    .frame(width: 50, height: 50)
                     .background(.ultraThinMaterial)
                 
                 Image(systemName: "heart.fill")
-                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.honeyGold)
             }
             
-            VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry)) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Ready to create?")
-                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(.charcoal)
                 
                 Text("Choose how you'd like to honor your memories")
-                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.charcoal.opacity(0.7))
             }
             
             Spacer()
         }
-        .padding(ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry))
+        .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
+            RoundedRectangle(cornerRadius: 20)
                 .fill(Color.white.opacity(0.08))
                 .background(.ultraThinMaterial)
                 .overlay(
-                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -299,9 +319,9 @@ struct WelcomeMessageCard: View {
         )
         .shadow(
             color: Color.black.opacity(0.05),
-            radius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry),
+            radius: 10,
             x: 0,
-            y: ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry)
+            y: 4
         )
     }
 }

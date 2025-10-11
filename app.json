@@ -16,7 +16,8 @@
   "env": {
     "PROJECT_PATH": {
       "description": "Path to the backend folder",
-      "value": "backend"
+      "value": "backend",
+      "required": true
     },
     "DATABASE_NAME": {
       "description": "MongoDB database name",

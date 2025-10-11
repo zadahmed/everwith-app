@@ -1,0 +1,49 @@
+{
+  "name": "EverWith Backend",
+  "description": "Backend API for EverWith mobile app",
+  "repository": "https://github.com/your-username/everwith-app",
+  "logo": "",
+  "keywords": ["python", "fastapi", "mongodb", "mobile", "api"],
+  "success_url": "/",
+  "buildpacks": [
+    {
+      "url": "https://github.com/timanovsky/subdir-heroku-buildpack.git"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "PROJECT_PATH": {
+      "description": "Path to the backend folder",
+      "value": "backend"
+    },
+    "DATABASE_NAME": {
+      "description": "MongoDB database name",
+      "value": "everwith"
+    },
+    "SECRET_KEY": {
+      "description": "JWT secret key - generate a secure random string",
+      "generator": "secret"
+    },
+    "ALGORITHM": {
+      "description": "JWT algorithm",
+      "value": "HS256"
+    },
+    "ACCESS_TOKEN_EXPIRE_MINUTES": {
+      "description": "Access token expiration time in minutes",
+      "value": "30"
+    },
+    "ENVIRONMENT": {
+      "description": "Application environment",
+      "value": "production"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": []
+}

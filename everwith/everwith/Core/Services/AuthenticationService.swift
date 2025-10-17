@@ -79,11 +79,44 @@ class AuthenticationService: NSObject, ObservableObject {
     
     // MARK: - Email/Password Authentication
     func signUpWithEmail(email: String, password: String, name: String) async -> SignInResult {
+        // Validate inputs before sending to backend
+        guard !email.isEmpty, !password.isEmpty, !name.isEmpty else {
+            return .failure(AuthenticationError.backendError("All fields are required"))
+        }
+        
+        guard email.contains("@") else {
+            return .failure(AuthenticationError.backendError("Please enter a valid email address"))
+        }
+        
+        guard password.count >= 8 else {
+            return .failure(AuthenticationError.backendError("Password must be at least 8 characters long"))
+        }
+        
+        guard password.count <= 72 else {
+            return .failure(AuthenticationError.backendError("Password must be no more than 72 characters long"))
+        }
+        
         let request = AuthRequest(email: email, password: password, name: name)
         return await authenticateWithBackend(request: request, endpoint: AppConfiguration.AuthEndpoints.register)
     }
     
     func signInWithEmail(email: String, password: String) async -> SignInResult {
+        print("🔐 SIGN IN: Starting email/password authentication")
+        print("📧 EMAIL: \(email)")
+        
+        // Validate inputs before sending to backend
+        guard !email.isEmpty, !password.isEmpty else {
+            print("❌ VALIDATION: Email and password are required")
+            return .failure(AuthenticationError.backendError("Email and password are required"))
+        }
+        
+        guard email.contains("@") else {
+            print("❌ VALIDATION: Invalid email format")
+            return .failure(AuthenticationError.backendError("Please enter a valid email address"))
+        }
+        
+        print("✅ VALIDATION: Input validation passed")
+        
         let request = LoginRequest(email: email, password: password)
         return await authenticateWithBackend(request: request, endpoint: AppConfiguration.AuthEndpoints.login)
     }
@@ -226,28 +259,86 @@ class AuthenticationService: NSObject, ObservableObject {
             let jsonData = try JSONEncoder().encode(request)
             urlRequest.httpBody = jsonData
             
+            // Debug: Log the request being sent
+            if let requestString = String(data: jsonData, encoding: .utf8) {
+                print("🔐 AUTH REQUEST: Sending to \(url)")
+                print("📤 REQUEST BODY: \(requestString)")
+            }
+            
             let (data, response) = try await URLSession.shared.data(for: urlRequest)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 return .failure(AuthenticationError.networkError)
             }
             
+            // Log the response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📥 AUTH RESPONSE: Status \(httpResponse.statusCode)")
+                print("📄 RESPONSE BODY: \(responseString)")
+            }
+            
             if httpResponse.statusCode == 200 {
-                let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
-                let user = User(
-                    id: authResponse.user.id,
-                    email: authResponse.user.email,
-                    name: authResponse.user.name,
-                    profileImageURL: authResponse.user.profile_image_url,
-                    provider: provider,
-                    createdAt: authResponse.user.created_at
-                )
-                
-                await signInUser(user, accessToken: authResponse.access_token)
-                return .success(user)
+                do {
+                    // Create a custom JSON decoder with flexible date formatting
+                    let decoder = JSONDecoder()
+                    decoder.dateDecodingStrategy = .custom { decoder in
+                        let container = try decoder.singleValueContainer()
+                        let dateString = try container.decode(String.self)
+                        
+                        // Try multiple date formats
+                        let formatters = [
+                            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // 2025-10-11T23:19:17.783000
+                            "yyyy-MM-dd'T'HH:mm:ss.SSS",      // 2025-10-11T23:19:17.783
+                            "yyyy-MM-dd'T'HH:mm:ss",          // 2025-10-11T23:19:17
+                            "yyyy-MM-dd'T'HH:mm:ssZ",         // 2025-10-11T23:19:17Z
+                            "yyyy-MM-dd'T'HH:mm:ss.SSSZ"      // 2025-10-11T23:19:17.783Z
+                        ]
+                        
+                        for formatter in formatters {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = formatter
+                            if let date = dateFormatter.date(from: dateString) {
+                                return date
+                            }
+                        }
+                        
+                        // Fallback to ISO8601
+                        let iso8601Formatter = ISO8601DateFormatter()
+                        if let date = iso8601Formatter.date(from: dateString) {
+                            return date
+                        }
+                        
+                        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
+                    }
+                    
+                    let authResponse = try decoder.decode(AuthResponse.self, from: data)
+                    print("✅ AUTH SUCCESS: Successfully decoded response")
+                    print("👤 USER DATA: ID=\(authResponse.user.id), Email=\(authResponse.user.email), Name=\(authResponse.user.name)")
+                    print("🎫 ACCESS TOKEN: \(authResponse.access_token.prefix(20))...")
+                    
+                    let user = User(
+                        id: authResponse.user.id,
+                        email: authResponse.user.email,
+                        name: authResponse.user.name,
+                        profileImageURL: authResponse.user.profile_image_url,
+                        provider: provider,
+                        createdAt: authResponse.user.created_at ?? Date()
+                    )
+                    
+                    await signInUser(user, accessToken: authResponse.access_token)
+                    print("🎉 AUTH COMPLETE: User signed in successfully")
+                    return .success(user)
+                } catch {
+                    print("❌ JSON DECODING ERROR: \(error)")
+                    print("🔍 ERROR DETAILS: \(error.localizedDescription)")
+                    print("📄 RAW RESPONSE: \(String(data: data, encoding: .utf8) ?? "Unable to convert to string")")
+                    return .failure(AuthenticationError.backendError("Invalid response format from server: \(error.localizedDescription)"))
+                }
             } else {
+                // Handle different error status codes
                 let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
-                let errorMessage = errorResponse?.detail ?? "Authentication failed"
+                let errorMessage = errorResponse?.detail ?? "Authentication failed (Status: \(httpResponse.statusCode))"
+                
                 return .failure(AuthenticationError.backendError(errorMessage))
             }
         } catch {

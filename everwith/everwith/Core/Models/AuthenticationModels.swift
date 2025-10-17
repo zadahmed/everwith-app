@@ -89,8 +89,8 @@ struct BackendUser: Codable {
     let profile_image_url: String?
     let is_google_user: Bool
     let is_active: Bool
-    let created_at: Date
-    let updated_at: Date
+    let created_at: Date?
+    let updated_at: Date?
 }
 
 struct ErrorResponse: Codable {

@@ -60,8 +60,8 @@ async def register(user: UserCreate):
                 "profile_image_url": db_user.profile_image_url,
                 "is_google_user": db_user.is_google_user,
                 "is_active": db_user.is_active,
-                "created_at": db_user.created_at,
-                "updated_at": db_user.updated_at
+                "created_at": db_user.created_at.isoformat() if db_user.created_at else None,
+                "updated_at": db_user.updated_at.isoformat() if db_user.updated_at else None
             },
             "access_token": access_token,
             "token_type": "bearer"
@@ -117,8 +117,8 @@ async def login(user_credentials: UserLogin):
                 "profile_image_url": user.profile_image_url,
                 "is_google_user": user.is_google_user,
                 "is_active": user.is_active,
-                "created_at": user.created_at,
-                "updated_at": user.updated_at
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
             },
             "access_token": access_token,
             "token_type": "bearer"
@@ -164,8 +164,8 @@ async def get_current_user_info(current_user: DBUser = Depends(get_current_user)
         "profile_image_url": current_user.profile_image_url,
         "is_google_user": current_user.is_google_user,
         "is_active": current_user.is_active,
-        "created_at": current_user.created_at,
-        "updated_at": current_user.updated_at
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None
     }
 
 @router.post("/logout", response_model=dict)

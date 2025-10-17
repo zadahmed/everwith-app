@@ -120,8 +120,8 @@ class GoogleAuthService:
                 "profile_image_url": user.profile_image_url,
                 "is_google_user": user.is_google_user,
                 "is_active": user.is_active,
-                "created_at": user.created_at,
-                "updated_at": user.updated_at
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
             },
             "access_token": access_token,
             "token_type": "bearer"

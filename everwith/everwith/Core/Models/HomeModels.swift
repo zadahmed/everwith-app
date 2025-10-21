@@ -106,6 +106,127 @@ struct HeroAction: Identifiable {
     ]
 }
 
+// MARK: - Processed Image
+struct ProcessedImage: Identifiable, Codable {
+    let id: String
+    let userId: String
+    let imageType: String  // "restore" or "together"
+    let originalImageUrl: String?
+    let processedImageUrl: String
+    let thumbnailUrl: String?
+    
+    // Processing parameters
+    let qualityTarget: String?
+    let outputFormat: String?
+    let aspectRatio: String?
+    
+    // For together images
+    let subjectAUrl: String?
+    let subjectBUrl: String?
+    let backgroundPrompt: String?
+    
+    // Metadata
+    let width: Int?
+    let height: Int?
+    let fileSize: Int?
+    
+    let createdAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case imageType = "image_type"
+        case originalImageUrl = "original_image_url"
+        case processedImageUrl = "processed_image_url"
+        case thumbnailUrl = "thumbnail_url"
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case subjectAUrl = "subject_a_url"
+        case subjectBUrl = "subject_b_url"
+        case backgroundPrompt = "background_prompt"
+        case width
+        case height
+        case fileSize = "file_size"
+        case createdAt = "created_at"
+    }
+    
+    var displayType: String {
+        imageType == "restore" ? "Restored Photo" : "Together Scene"
+    }
+    
+    var icon: String {
+        imageType == "restore" ? "photo.badge.plus" : "heart.circle.fill"
+    }
+    
+    var color: Color {
+        imageType == "restore" ? .honeyGold : .sky
+    }
+}
+
+// MARK: - Image History Response
+struct ImageHistoryResponse: Codable {
+    let images: [ProcessedImage]
+    let total: Int
+    let page: Int
+    let pageSize: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case images
+        case total
+        case page
+        case pageSize = "page_size"
+    }
+}
+
+// MARK: - Processed Image Create
+struct ProcessedImageCreate: Codable {
+    let imageType: String
+    let originalImageUrl: String?
+    let processedImageUrl: String
+    let thumbnailUrl: String?
+    let qualityTarget: String?
+    let outputFormat: String?
+    let aspectRatio: String?
+    let subjectAUrl: String?
+    let subjectBUrl: String?
+    let backgroundPrompt: String?
+    let width: Int?
+    let height: Int?
+    let fileSize: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case imageType = "image_type"
+        case originalImageUrl = "original_image_url"
+        case processedImageUrl = "processed_image_url"
+        case thumbnailUrl = "thumbnail_url"
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case subjectAUrl = "subject_a_url"
+        case subjectBUrl = "subject_b_url"
+        case backgroundPrompt = "background_prompt"
+        case width
+        case height
+        case fileSize = "file_size"
+    }
+}
+
+// MARK: - Image Stats
+struct ImageStats: Codable {
+    let totalImages: Int
+    let restoreCount: Int
+    let togetherCount: Int
+    let mostRecent: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case totalImages = "total_images"
+        case restoreCount = "restore_count"
+        case togetherCount = "together_count"
+        case mostRecent = "most_recent"
+    }
+}
+
 // MARK: - Mock Data
 extension Project {
     static let mockProjects: [Project] = [

@@ -113,3 +113,59 @@ class TogetherRequest(BaseModel):
 class JobResult(BaseModel):
     output_url: str
     meta: dict
+
+# Processed Image Schemas
+class ProcessedImageCreate(BaseModel):
+    image_type: Literal["restore", "together"]
+    original_image_url: Optional[str] = None
+    processed_image_url: str
+    thumbnail_url: Optional[str] = None
+    
+    # Processing parameters
+    quality_target: Optional[str] = None
+    output_format: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    
+    # For together images
+    subject_a_url: Optional[str] = None
+    subject_b_url: Optional[str] = None
+    background_prompt: Optional[str] = None
+    
+    # Metadata
+    width: Optional[int] = None
+    height: Optional[int] = None
+    file_size: Optional[int] = None
+
+class ProcessedImage(BaseModel):
+    id: str
+    user_id: str
+    image_type: str
+    original_image_url: Optional[str] = None
+    processed_image_url: str
+    thumbnail_url: Optional[str] = None
+    
+    # Processing parameters
+    quality_target: Optional[str] = None
+    output_format: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    
+    # For together images
+    subject_a_url: Optional[str] = None
+    subject_b_url: Optional[str] = None
+    background_prompt: Optional[str] = None
+    
+    # Metadata
+    width: Optional[int] = None
+    height: Optional[int] = None
+    file_size: Optional[int] = None
+    
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class ImageHistoryResponse(BaseModel):
+    images: list[ProcessedImage]
+    total: int
+    page: int
+    page_size: int

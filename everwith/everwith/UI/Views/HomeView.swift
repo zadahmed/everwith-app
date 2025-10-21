@@ -1,5 +1,10 @@
 import SwiftUI
 
+// Import required models and views
+// User model is defined in AuthenticationModels.swift
+// RestoreView and TogetherSceneView are in the same target
+// Brand colors are defined in Assets.xcassets
+
 enum NavigationDestination: Hashable {
     case restore
     case together
@@ -17,6 +22,9 @@ struct HomeView: View {
     @State private var togetherButtonScale: CGFloat = 0.9
     @State private var buttonPressedRestore: Bool = false
     @State private var buttonPressedTogether: Bool = false
+    @State private var recentImages: [ProcessedImage] = []
+    @State private var isLoadingHistory = false
+    @StateObject private var imageProcessingService = ImageProcessingService.shared
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -211,11 +219,32 @@ struct HomeView: View {
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
                             
+                            // Recent Creations Section
+                            if !recentImages.isEmpty {
+                                VStack(alignment: .leading, spacing: adaptiveSpacing(16, for: geometry)) {
+                                    Text("Recent Creations")
+                                        .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
+                                        .foregroundColor(.charcoal)
+                                        .padding(.horizontal, adaptivePadding(for: geometry))
+                                    
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                                            ForEach(recentImages) { image in
+                                                RecentImageCard(image: image, geometry: geometry)
+                                            }
+                                        }
+                                        .padding(.horizontal, adaptivePadding(for: geometry))
+                                    }
+                                }
+                                .padding(.top, adaptiveSpacing(16, for: geometry))
+                                .opacity(animateElements ? 1 : 0)
+                            }
+                            
                             // Bottom spacing
                             Spacer()
                                 .frame(height: adaptiveSpacing(24, for: geometry))
                         }
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20))
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 12 : 20)
                     }
                     .scrollIndicators(.hidden)
                     .frame(width: geometry.size.width)
@@ -253,11 +282,33 @@ struct HomeView: View {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.4)) {
                 togetherButtonScale = 1.0
             }
+            
+            // Load recent images
+            loadRecentImages()
         }
         .sheet(isPresented: $showSettings) {
             Text("Settings Coming Soon")
                 .font(.title)
                 .padding()
+        }
+    }
+    
+    // MARK: - Load Recent Images
+    private func loadRecentImages() {
+        Task {
+            isLoadingHistory = true
+            do {
+                let history = try await imageProcessingService.fetchImageHistory(page: 1, pageSize: 10)
+                await MainActor.run {
+                    recentImages = history.images
+                    isLoadingHistory = false
+                }
+            } catch {
+                print("❌ Failed to load image history: \(error)")
+                await MainActor.run {
+                    isLoadingHistory = false
+                }
+            }
         }
     }
     
@@ -465,7 +516,7 @@ struct ModernHomeHeader: View {
             .animation(.easeInOut(duration: 0.1), value: showSettings)
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, max(geometry.safeAreaInsets.top, 16))
+        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
         .padding(.bottom, adaptiveSpacing(16, for: geometry))
     }
     
@@ -573,6 +624,97 @@ struct WelcomeMessageCard: View {
             x: 0,
             y: adaptiveSpacing(4, for: geometry)
         )
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+}
+
+// MARK: - Recent Image Card
+struct RecentImageCard: View {
+    let image: ProcessedImage
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+            // Image Thumbnail
+            AsyncImage(url: URL(string: image.processedImageUrl)) { phase in
+                switch phase {
+                case .empty:
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
+                        .overlay(
+                            ProgressView()
+                        )
+                case .success(let loadedImage):
+                    loadedImage
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
+                        .clipped()
+                case .failure:
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
+                        .overlay(
+                            Image(systemName: "photo")
+                                .foregroundColor(.gray)
+                        )
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .cornerRadius(adaptiveCornerRadius(12, for: geometry))
+            
+            // Type Badge
+            HStack(spacing: adaptiveSpacing(4, for: geometry)) {
+                Image(systemName: image.icon)
+                    .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .semibold))
+                Text(image.displayType)
+                    .font(.system(size: adaptiveFontSize(11, for: geometry), weight: .medium))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, adaptiveSpacing(8, for: geometry))
+            .padding(.vertical, adaptiveSpacing(4, for: geometry))
+            .background(
+                Capsule()
+                    .fill(image.color)
+            )
+            
+            // Date
+            Text(formatDate(image.createdAt))
+                .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .regular))
+                .foregroundColor(.charcoal.opacity(0.6))
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
     
     // MARK: - Adaptive Functions

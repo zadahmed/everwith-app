@@ -3,7 +3,7 @@ from beanie import init_beanie
 import os
 import ssl
 from dotenv import load_dotenv
-from app.models.database import User, Message, Event
+from app.models.database import User, Message, Event, ProcessedImage
 import logging
 
 # Load environment variables first
@@ -131,7 +131,7 @@ async def init_db():
     # Initialize Beanie with the database and document models
     await init_beanie(
         database=client[DATABASE_NAME],
-        document_models=[User, Message, Event]
+        document_models=[User, Message, Event, ProcessedImage]
     )
     
     logger.info(f"✅ Connected to MongoDB: {DATABASE_NAME}")

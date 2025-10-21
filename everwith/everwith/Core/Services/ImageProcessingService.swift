@@ -292,6 +292,137 @@ class ImageProcessingService: ObservableObject {
         return image
     }
     
+    // MARK: - Image History
+    
+    func saveToHistory(
+        imageType: String,
+        originalImageUrl: String?,
+        processedImageUrl: String,
+        qualityTarget: String? = nil,
+        outputFormat: String? = nil,
+        aspectRatio: String? = nil,
+        subjectAUrl: String? = nil,
+        subjectBUrl: String? = nil,
+        backgroundPrompt: String? = nil
+    ) async throws -> ProcessedImage {
+        print("💾 ImageProcessingService.saveToHistory called")
+        
+        guard let token = UserDefaults.standard.string(forKey: "access_token") else {
+            throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not authenticated"]))
+        }
+        
+        let imageData = ProcessedImageCreate(
+            imageType: imageType,
+            originalImageUrl: originalImageUrl,
+            processedImageUrl: processedImageUrl,
+            thumbnailUrl: nil,
+            qualityTarget: qualityTarget,
+            outputFormat: outputFormat,
+            aspectRatio: aspectRatio,
+            subjectAUrl: subjectAUrl,
+            subjectBUrl: subjectBUrl,
+            backgroundPrompt: backgroundPrompt,
+            width: nil,
+            height: nil,
+            fileSize: nil
+        )
+        
+        guard let url = URL(string: "\(AppConfiguration.baseURL)/images/save") else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        request.httpBody = try encoder.encode(imageData)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ImageProcessingError.invalidResponse
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
+        let savedImage = try decoder.decode(ProcessedImage.self, from: data)
+        
+        print("✅ Image saved to history: \(savedImage.id)")
+        return savedImage
+    }
+    
+    func fetchImageHistory(page: Int = 1, pageSize: Int = 20, imageType: String? = nil) async throws -> ImageHistoryResponse {
+        print("📥 ImageProcessingService.fetchImageHistory called")
+        
+        guard let token = UserDefaults.standard.string(forKey: "access_token") else {
+            throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not authenticated"]))
+        }
+        
+        var urlString = "\(AppConfiguration.baseURL)/images/history?page=\(page)&page_size=\(pageSize)"
+        if let type = imageType {
+            urlString += "&image_type=\(type)"
+        }
+        
+        guard let url = URL(string: urlString) else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ImageProcessingError.invalidResponse
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
+        let history = try decoder.decode(ImageHistoryResponse.self, from: data)
+        
+        print("✅ Fetched \(history.images.count) images from history")
+        return history
+    }
+    
+    func fetchImageStats() async throws -> ImageStats {
+        print("📊 ImageProcessingService.fetchImageStats called")
+        
+        guard let token = UserDefaults.standard.string(forKey: "access_token") else {
+            throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not authenticated"]))
+        }
+        
+        guard let url = URL(string: "\(AppConfiguration.baseURL)/images/stats") else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ImageProcessingError.invalidResponse
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
+        let stats = try decoder.decode(ImageStats.self, from: data)
+        
+        print("✅ Fetched image stats: \(stats.totalImages) total")
+        return stats
+    }
+    
     // MARK: - Reset State
     
     func resetState() {

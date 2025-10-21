@@ -46,8 +46,8 @@ struct CommonHeader: View {
             Color.clear.frame(width: adaptiveSize(80, for: geometry))
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, max(geometry.safeAreaInsets.top, 16))
-        .padding(.bottom, adaptiveSpacing(12, for: geometry))
+        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 8 : 16)
+        .padding(.bottom, adaptiveSpacing(8, for: geometry))
     }
     
     // MARK: - Adaptive Functions (matching HomeView)

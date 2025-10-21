@@ -138,7 +138,7 @@ struct ModernAuthenticationView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        .padding(.top, max(geometry.safeAreaInsets.top + 16, 36))
+                        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 24 : 36)
                         .padding(.bottom, 24)
                         .opacity(animateElements ? 1 : 0)
                         .offset(y: animateElements ? 0 : -20)
@@ -588,7 +588,7 @@ struct ModernAuthenticationView: View {
                         .offset(y: animateElements ? 0 : 30)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, max(geometry.safeAreaInsets.bottom + 16, 36))
+                    .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 20 : 36)
                 }
                 .scrollIndicators(.hidden)
                 .frame(width: geometry.size.width)

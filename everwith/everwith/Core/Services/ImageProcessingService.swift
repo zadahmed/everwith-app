@@ -415,6 +415,12 @@ class ImageProcessingService: ObservableObject {
         do {
             let history = try decoder.decode(ImageHistoryResponse.self, from: data)
             print("✅ Fetched \(history.images.count) images from history (page \(history.page) of total \(history.total))")
+            
+            // Debug: Check if images have valid data
+            for (index, image) in history.images.enumerated() {
+                print("🖼️ Image \(index + 1): Type=\(image.imageType ?? "nil"), URL=\(image.processedImageUrl != nil ? "valid" : "nil")")
+            }
+            
             return history
         } catch {
             print("❌ Failed to decode history response: \(error)")

@@ -17,8 +17,11 @@ async def save_processed_image(
     """Save a processed image to user's history"""
     try:
         # Create ProcessedImage document
+        # Debug: Log what we're storing
+        logger.info(f"🔍 Saving image for user: {current_user.id} (type: {type(current_user.id)})")
+        from bson import ObjectId, DBRef
         processed_image = db_models.ProcessedImage(
-            user_id=current_user,
+            user_id=DBRef("users", ObjectId(current_user.id)),  # Store as DBRef for consistency
             image_type=image_data.image_type,
             original_image_url=image_data.original_image_url,
             processed_image_url=image_data.processed_image_url,
@@ -89,17 +92,51 @@ async def get_image_history(
 ):
     """Get user's processed image history with pagination"""
     try:
-        # Build query - use the user Link object directly for proper DBRef matching
-        query = {"user_id": current_user}
+        # Build query - handle DBRef structure properly
+        from bson import ObjectId, DBRef
+        from pymongo import MongoClient
+        
+        # Try DBRef approach first (this is how it's actually stored)
+        query = {"user_id": DBRef("users", ObjectId(current_user.id))}
         if image_type:
             query["image_type"] = image_type
         
+        # Debug: Log the query and user info
+        logger.info(f"🔍 Querying for user_id: {current_user.id} (type: {type(current_user.id)})")
+        logger.info(f"🔍 Query: {query}")
+        
         # Get total count
         total = await db_models.ProcessedImage.find(query).count()
+        logger.info(f"🔍 Found {total} images with DBRef query: {query}")
+        
+        # If no results with DBRef, try other approaches
+        if total == 0:
+            logger.info(f"🔍 No results with DBRef, trying ObjectId approach")
+            query_objectid = {"user_id": ObjectId(current_user.id)}
+            if image_type:
+                query_objectid["image_type"] = image_type
+            total = await db_models.ProcessedImage.find(query_objectid).count()
+            logger.info(f"🔍 Found {total} images with ObjectId query: {query_objectid}")
+            query = query_objectid
+            
+            # If still no results, try direct user_id
+            if total == 0:
+                logger.info(f"🔍 No results with ObjectId, trying direct user_id approach")
+                query_direct = {"user_id": current_user.id}
+                if image_type:
+                    query_direct["image_type"] = image_type
+                total = await db_models.ProcessedImage.find(query_direct).count()
+                logger.info(f"🔍 Found {total} images with direct user_id query: {query_direct}")
+                query = query_direct
         
         # Get paginated results
         skip = (page - 1) * page_size
         images = await db_models.ProcessedImage.find(query).sort("-created_at").skip(skip).limit(page_size).to_list()
+        
+        # Debug: Log what we found
+        logger.info(f"🔍 Retrieved {len(images)} images from database")
+        for i, img in enumerate(images):
+            logger.info(f"🔍 Image {i+1}: id={img.id}, user_id={img.user_id}, type={img.image_type}")
         
         # Convert to response schema
         image_list = []
@@ -164,8 +201,21 @@ async def delete_processed_image(
         if not image:
             raise HTTPException(status_code=404, detail="Image not found")
         
-        # Check ownership
-        if str(image.user_id.id) != str(current_user.id):
+        # Check ownership - handle different user_id formats
+        user_id_str = None
+        if hasattr(image.user_id, 'id'):
+            user_id_str = str(image.user_id.id)
+        elif hasattr(image.user_id, 'ref') and hasattr(image.user_id, 'id'):
+            user_id_str = str(image.user_id.id)
+        elif isinstance(image.user_id, dict) and '$id' in image.user_id:
+            if isinstance(image.user_id['$id'], dict) and '$oid' in image.user_id['$id']:
+                user_id_str = image.user_id['$id']['$oid']
+            else:
+                user_id_str = str(image.user_id['$id'])
+        else:
+            user_id_str = str(image.user_id)
+        
+        if user_id_str != str(current_user.id):
             raise HTTPException(status_code=403, detail="Not authorized to delete this image")
         
         # Delete image
@@ -188,24 +238,62 @@ async def get_image_stats(
 ):
     """Get user's image processing statistics"""
     try:
-        # Count by type
+        # Count by type - use DBRef approach (how data is actually stored)
+        from bson import ObjectId, DBRef
+        
         restore_count = await db_models.ProcessedImage.find({
-            "user_id": current_user.id,
+            "user_id": DBRef("users", ObjectId(current_user.id)),
             "image_type": "restore"
         }).count()
         
         together_count = await db_models.ProcessedImage.find({
-            "user_id": current_user.id,
+            "user_id": DBRef("users", ObjectId(current_user.id)),
             "image_type": "together"
         }).count()
         
+        # If no results, try ObjectId approach
+        if restore_count == 0 and together_count == 0:
+            restore_count = await db_models.ProcessedImage.find({
+                "user_id": ObjectId(current_user.id),
+                "image_type": "restore"
+            }).count()
+            
+            together_count = await db_models.ProcessedImage.find({
+                "user_id": ObjectId(current_user.id),
+                "image_type": "together"
+            }).count()
+            
+            # If still no results, try direct user_id
+            if restore_count == 0 and together_count == 0:
+                restore_count = await db_models.ProcessedImage.find({
+                    "user_id": current_user.id,
+                    "image_type": "restore"
+                }).count()
+                
+                together_count = await db_models.ProcessedImage.find({
+                    "user_id": current_user.id,
+                    "image_type": "together"
+                }).count()
+        
         total_count = restore_count + together_count
         
-        # Get most recent image
+        # Get most recent image - try DBRef first, then fallbacks
         recent_image = await db_models.ProcessedImage.find_one(
-            {"user_id": current_user.id},
+            {"user_id": DBRef("users", ObjectId(current_user.id))},
             sort=[("created_at", -1)]
         )
+        
+        if not recent_image:
+            recent_image = await db_models.ProcessedImage.find_one(
+                {"user_id": ObjectId(current_user.id)},
+                sort=[("created_at", -1)]
+            )
+            
+        if not recent_image:
+            recent_image = await db_models.ProcessedImage.find_one(
+                {"user_id": current_user.id},
+                sort=[("created_at", -1)]
+            )
         
         return {
             "total_images": total_count,

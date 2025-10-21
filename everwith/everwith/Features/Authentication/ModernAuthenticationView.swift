@@ -45,8 +45,8 @@ struct ModernAuthenticationView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold.opacity(0.6),
-                                                Color.sky.opacity(0.4)
+                                                Color.everBlush.opacity(0.6),
+                                                Color.eternalRose.opacity(0.4)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -63,9 +63,9 @@ struct ModernAuthenticationView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold.opacity(0.9),
-                                                Color.sky.opacity(0.7),
-                                                Color.fern.opacity(0.6)
+                                                Color.everBlush.opacity(0.9),
+                                                Color.eternalRose.opacity(0.7),
+                                                Color.memoryViolet.opacity(0.6)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -99,7 +99,7 @@ struct ModernAuthenticationView: View {
                             }
                             .scaleEffect(logoScale)
                             .shadow(
-                                color: Color.honeyGold.opacity(0.4),
+                                color: Color.everBlush.opacity(0.4),
                                 radius: geometry.isSmallScreen ? 10 : adaptiveSpacing(15, for: geometry),
                                 x: 0,
                                 y: geometry.isSmallScreen ? 4 : adaptiveSpacing(6, for: geometry)
@@ -131,7 +131,7 @@ struct ModernAuthenticationView: View {
                                         size: geometry.isSmallScreen ? 14 : adaptiveFontSize(16, for: geometry),
                                         weight: .medium
                                     ))
-                                    .foregroundColor(.charcoal.opacity(0.65))
+                                    .foregroundColor(.shadowPlum.opacity(0.65))
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
                                     .minimumScaleFactor(0.9)
@@ -159,7 +159,7 @@ struct ModernAuthenticationView: View {
                                             size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
                                             weight: .bold
                                         ))
-                                        .foregroundColor(isSignUp ? .charcoal.opacity(0.5) : .white)
+                                        .foregroundColor(isSignUp ? .shadowPlum.opacity(0.5) : .white)
                                         .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
                                         .frame(maxWidth: .infinity)
                                         .background(
@@ -169,15 +169,15 @@ struct ModernAuthenticationView: View {
                                                         .fill(
                                                             LinearGradient(
                                                                 gradient: Gradient(colors: [
-                                                                    Color.honeyGold.opacity(0.9),
-                                                                    Color.sky.opacity(0.8)
+                                                                    Color.everBlush.opacity(0.9),
+                                                                    Color.eternalRose.opacity(0.8)
                                                                 ]),
                                                                 startPoint: .leading,
                                                                 endPoint: .trailing
                                                             )
                                                         )
                                                         .shadow(
-                                                            color: Color.honeyGold.opacity(0.4),
+                                                            color: Color.everBlush.opacity(0.4),
                                                             radius: 8,
                                                             x: 0,
                                                             y: 4
@@ -199,7 +199,7 @@ struct ModernAuthenticationView: View {
                                             size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
                                             weight: .bold
                                         ))
-                                        .foregroundColor(isSignUp ? .white : .charcoal.opacity(0.5))
+                                        .foregroundColor(isSignUp ? .white : .shadowPlum.opacity(0.5))
                                         .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
                                         .frame(maxWidth: .infinity)
                                         .background(
@@ -209,15 +209,15 @@ struct ModernAuthenticationView: View {
                                                         .fill(
                                                             LinearGradient(
                                                                 gradient: Gradient(colors: [
-                                                                    Color.honeyGold.opacity(0.9),
-                                                                    Color.sky.opacity(0.8)
+                                                                    Color.everBlush.opacity(0.9),
+                                                                    Color.eternalRose.opacity(0.8)
                                                                 ]),
                                                                 startPoint: .leading,
                                                                 endPoint: .trailing
                                                             )
                                                         )
                                                         .shadow(
-                                                            color: Color.honeyGold.opacity(0.4),
+                                                            color: Color.everBlush.opacity(0.4),
                                                             radius: 8,
                                                             x: 0,
                                                             y: 4
@@ -329,9 +329,9 @@ struct ModernAuthenticationView: View {
                                             .fill(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
-                                                        Color.honeyGold.opacity(0.9),
-                                                        Color.sky.opacity(0.8),
-                                                        Color.fern.opacity(0.7)
+                                                        Color.everBlush.opacity(0.9),
+                                                        Color.eternalRose.opacity(0.8),
+                                                        Color.memoryViolet.opacity(0.7)
                                                     ]),
                                                     startPoint: .leading,
                                                     endPoint: .trailing
@@ -354,7 +354,7 @@ struct ModernAuthenticationView: View {
                                     }
                                 )
                                 .shadow(
-                                    color: Color.honeyGold.opacity(0.4),
+                                    color: Color.everBlush.opacity(0.4),
                                     radius: 12,
                                     x: 0,
                                     y: 6
@@ -369,7 +369,7 @@ struct ModernAuthenticationView: View {
                             // Divider
                             HStack(spacing: 12) {
                                 Rectangle()
-                                    .fill(Color.charcoal.opacity(0.2))
+                                    .fill(Color.shadowPlum.opacity(0.2))
                                     .frame(height: 1)
                                 
                                 Text("or")
@@ -377,12 +377,12 @@ struct ModernAuthenticationView: View {
                                         size: geometry.isSmallScreen ? 12 : 13,
                                         weight: .medium
                                     ))
-                                    .foregroundColor(.charcoal.opacity(0.6))
+                                    .foregroundColor(.shadowPlum.opacity(0.6))
                                     .padding(.horizontal, 8)
                                     .fixedSize()
                                 
                                 Rectangle()
-                                    .fill(Color.charcoal.opacity(0.2))
+                                    .fill(Color.shadowPlum.opacity(0.2))
                                     .frame(height: 1)
                             }
                             .opacity(animateElements ? 1 : 0)
@@ -412,8 +412,8 @@ struct ModernAuthenticationView: View {
                                             .foregroundStyle(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
-                                                        Color.sky,
-                                                        Color.fern
+                                                        Color.eternalRose,
+                                                        Color.memoryViolet
                                                     ]),
                                                     startPoint: .topLeading,
                                                     endPoint: .bottomTrailing
@@ -440,8 +440,8 @@ struct ModernAuthenticationView: View {
                                                 .stroke(
                                                     LinearGradient(
                                                         gradient: Gradient(colors: [
-                                                            Color.sky.opacity(0.4),
-                                                            Color.fern.opacity(0.3)
+                                                            Color.eternalRose.opacity(0.4),
+                                                            Color.memoryViolet.opacity(0.3)
                                                         ]),
                                                         startPoint: .topLeading,
                                                         endPoint: .bottomTrailing
@@ -522,7 +522,7 @@ struct ModernAuthenticationView: View {
                                             size: geometry.isSmallScreen ? 11 : 12,
                                             weight: .regular
                                         ))
-                                        .foregroundColor(.charcoal.opacity(0.5))
+                                        .foregroundColor(.shadowPlum.opacity(0.5))
                                         .lineLimit(1)
                                 }
                                 .disabled(isLoading)
@@ -554,9 +554,9 @@ struct ModernAuthenticationView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold.opacity(0.12),
-                                                Color.sky.opacity(0.08),
-                                                Color.softBlush.opacity(0.06)
+                                                Color.everBlush.opacity(0.12),
+                                                Color.eternalRose.opacity(0.08),
+                                                Color.sunsetPeach.opacity(0.06)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -568,8 +568,8 @@ struct ModernAuthenticationView: View {
                                     .stroke(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold.opacity(0.25),
-                                                Color.sky.opacity(0.15)
+                                                Color.everBlush.opacity(0.25),
+                                                Color.eternalRose.opacity(0.15)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -579,7 +579,7 @@ struct ModernAuthenticationView: View {
                             }
                         )
                         .shadow(
-                            color: Color.honeyGold.opacity(0.15),
+                            color: Color.everBlush.opacity(0.15),
                             radius: 12,
                             x: 0,
                             y: 4
@@ -823,7 +823,7 @@ struct ModernTextField: View {
                     size: geometry.isSmallScreen ? 11 : 12,
                     weight: .medium
                 ))
-                .foregroundColor(.charcoal.opacity(0.8))
+                .foregroundColor(.shadowPlum.opacity(0.8))
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
             
@@ -836,8 +836,8 @@ struct ModernTextField: View {
                                     .foregroundStyle(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold,
-                                                Color.sky
+                                                Color.everBlush,
+                                                Color.eternalRose
                                             ]),
                                             startPoint: .top,
                                             endPoint: .bottom
@@ -865,7 +865,7 @@ struct ModernTextField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.honeyGold.opacity(0.2), lineWidth: 1.5)
+                                            .stroke(Color.everBlush.opacity(0.2), lineWidth: 1.5)
                     )
             )
         }
@@ -912,7 +912,7 @@ struct ModernPasswordField: View {
                     size: geometry.isSmallScreen ? 11 : 12,
                     weight: .medium
                 ))
-                .foregroundColor(.charcoal.opacity(0.8))
+                .foregroundColor(.shadowPlum.opacity(0.8))
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
             
@@ -925,8 +925,8 @@ struct ModernPasswordField: View {
                                     .foregroundStyle(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold,
-                                                Color.sky
+                                                Color.everBlush,
+                                                Color.eternalRose
                                             ]),
                                             startPoint: .top,
                                             endPoint: .bottom
@@ -967,7 +967,7 @@ struct ModernPasswordField: View {
                             size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
                             weight: .medium
                         ))
-                                        .foregroundColor(Color.honeyGold.opacity(0.7))
+                                        .foregroundColor(Color.everBlush.opacity(0.7))
                         .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                         .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 }
@@ -979,7 +979,7 @@ struct ModernPasswordField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.honeyGold.opacity(0.2), lineWidth: 1.5)
+                                            .stroke(Color.everBlush.opacity(0.2), lineWidth: 1.5)
                     )
             )
         }

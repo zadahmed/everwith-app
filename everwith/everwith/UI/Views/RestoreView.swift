@@ -44,12 +44,12 @@ struct RestoreView: View {
                         HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                                 .scaleEffect(buttonPressed ? 0.9 : 1.0)
                             
-                            Text("Restore Photo")
+                            Text("Photo Restore")
                                 .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -85,18 +85,18 @@ struct RestoreView: View {
                                     size: adaptiveFontSize(20, for: geometry),
                                     weight: .semibold
                                 ))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                                 .opacity(contentOpacity)
                                 .offset(y: animateElements ? 0 : 20)
                             
-                            Text("Choose a photo from your library")
+                            Text("Upload an old photo and watch it transform into HD quality")
                                 .font(.system(
                                     size: adaptiveFontSize(16, for: geometry),
                                     weight: .regular
                                 ))
-                                .foregroundColor(.charcoal.opacity(0.7))
+                                .foregroundColor(.shadowPlum.opacity(0.7))
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.9)
                                 .opacity(contentOpacity)
@@ -235,7 +235,7 @@ struct RestoreView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.charcoal.opacity(0.7))
+                                        .foregroundColor(.shadowPlum.opacity(0.7))
                                 }
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
@@ -294,7 +294,7 @@ struct RestoreView: View {
                                     size: adaptiveFontSize(20, for: geometry),
                                     weight: .bold
                                 ))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                                 .scaleEffect(processingProgress > 0 ? 1.0 : 0.8)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: processingProgress)
                         }
@@ -304,14 +304,14 @@ struct RestoreView: View {
                                 size: adaptiveFontSize(18, for: geometry),
                                 weight: .semibold
                             ))
-                            .foregroundColor(.charcoal)
+                            .foregroundColor(.shadowPlum)
                         
                         Text("This usually takes 10-30 seconds")
                             .font(.system(
                                 size: adaptiveFontSize(14, for: geometry),
                                 weight: .regular
                             ))
-                            .foregroundColor(.charcoal.opacity(0.6))
+                            .foregroundColor(.shadowPlum.opacity(0.6))
                         
                         Spacer()
                     }
@@ -383,7 +383,7 @@ struct RestoreView: View {
                                             weight: .semibold
                                         ))
                                 }
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: adaptiveSize(50, for: geometry))
                                 .background(Color.white.opacity(0.7))
@@ -424,7 +424,7 @@ struct RestoreView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.charcoal)
+                                        .foregroundColor(.shadowPlum)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: adaptiveSize(50, for: geometry))
                                         .background(Color.white.opacity(0.7))
@@ -445,7 +445,7 @@ struct RestoreView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.charcoal)
+                                        .foregroundColor(.shadowPlum)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: adaptiveSize(50, for: geometry))
                                         .background(Color.white.opacity(0.7))
@@ -461,7 +461,7 @@ struct RestoreView: View {
                 }
                         }
             }
-            .background(Color("WarmLinen"))
+            .background(Color.softCream)
             .ignoresSafeArea(.all, edges: .all)
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: Binding(

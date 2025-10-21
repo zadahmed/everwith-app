@@ -41,11 +41,11 @@ struct TogetherSceneView: View {
                         HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                             
-                            Text("Together Scene")
+                            Text("Memory Merge")
                                 .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -65,14 +65,14 @@ struct TogetherSceneView: View {
                                 size: adaptiveFontSize(64, for: geometry),
                                 weight: .light
                             ))
-                            .foregroundColor(.sky.opacity(0.6))
+                            .foregroundColor(.eternalRose.opacity(0.6))
                         
-                        Text("Create a Together Scene")
+                        Text("Create a Memory Merge")
                             .font(.system(
                                 size: adaptiveFontSize(20, for: geometry),
                                 weight: .semibold
                             ))
-                            .foregroundColor(.charcoal)
+                            .foregroundColor(.shadowPlum)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                         
@@ -81,7 +81,7 @@ struct TogetherSceneView: View {
                                 size: adaptiveFontSize(16, for: geometry),
                                 weight: .regular
                             ))
-                            .foregroundColor(.charcoal.opacity(0.7))
+                            .foregroundColor(.shadowPlum.opacity(0.7))
                             .lineLimit(2)
                             .minimumScaleFactor(0.9)
                         
@@ -105,9 +105,11 @@ struct TogetherSceneView: View {
                                     weight: .semibold
                                 ))
                                 .foregroundColor(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                                 .frame(maxWidth: adaptiveSize(280, for: geometry))
                                 .frame(height: adaptiveSize(54, for: geometry))
-                                .background(Color.sky)
+                                .background(Color.eternalRose)
                                 .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                         }
                         .padding(.top, adaptiveSpacing(16, for: geometry))
@@ -133,7 +135,7 @@ struct TogetherSceneView: View {
                                         
                                         Text("Photo \(index == 0 ? "A" : "B")")
                                             .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                                            .foregroundColor(.charcoal.opacity(0.7))
+                                            .foregroundColor(.shadowPlum.opacity(0.7))
                                     }
                                 }
                             }
@@ -155,16 +157,18 @@ struct TogetherSceneView: View {
                                                 size: adaptiveFontSize(18, for: geometry),
                                                 weight: .semibold
                                             ))
-                                        Text("Create Together Scene")
+                                        Text("Create Memory Merge")
                                             .font(.system(
                                                 size: adaptiveFontSize(17, for: geometry),
                                                 weight: .semibold
                                             ))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: adaptiveSize(54, for: geometry))
-                                    .background(Color.sky)
+                                    .background(Color.eternalRose)
                                     .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                                 }
                                 
@@ -179,7 +183,9 @@ struct TogetherSceneView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.charcoal.opacity(0.7))
+                                        .foregroundColor(.shadowPlum.opacity(0.7))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                 }
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
@@ -193,7 +199,7 @@ struct TogetherSceneView: View {
                         
                         ZStack {
                             Circle()
-                                .stroke(Color.sky.opacity(0.3), lineWidth: 8)
+                                .stroke(Color.eternalRose.opacity(0.3), lineWidth: 8)
                                 .frame(
                                     width: adaptiveSize(100, for: geometry),
                                     height: adaptiveSize(100, for: geometry)
@@ -201,7 +207,7 @@ struct TogetherSceneView: View {
                             
                             Circle()
                                 .trim(from: 0, to: processingProgress)
-                                .stroke(Color.sky, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .stroke(Color.eternalRose, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                                 .frame(
                                     width: adaptiveSize(100, for: geometry),
                                     height: adaptiveSize(100, for: geometry)
@@ -214,7 +220,7 @@ struct TogetherSceneView: View {
                                     size: adaptiveFontSize(20, for: geometry),
                                     weight: .semibold
                                 ))
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                         }
                         
                         Text("Creating your scene...")
@@ -222,14 +228,14 @@ struct TogetherSceneView: View {
                                 size: adaptiveFontSize(18, for: geometry),
                                 weight: .semibold
                             ))
-                            .foregroundColor(.charcoal)
+                            .foregroundColor(.shadowPlum)
                         
                         Text("This may take up to a minute")
                             .font(.system(
                                 size: adaptiveFontSize(14, for: geometry),
                                 weight: .regular
                             ))
-                            .foregroundColor(.charcoal.opacity(0.6))
+                            .foregroundColor(.shadowPlum.opacity(0.6))
                         
                         Spacer()
                     }
@@ -278,7 +284,7 @@ struct TogetherSceneView: View {
                                             size: adaptiveFontSize(14, for: geometry),
                                             weight: .semibold
                                         ))
-                                    Text(showingOriginals ? "Original Photos" : "Together Scene")
+                                    Text(showingOriginals ? "Original Photos" : "Memory Merge")
                                         .font(.system(
                                             size: adaptiveFontSize(15, for: geometry),
                                             weight: .semibold
@@ -289,7 +295,7 @@ struct TogetherSceneView: View {
                                 .padding(.vertical, adaptiveSpacing(8, for: geometry))
                                 .background(
                                     Capsule()
-                                        .fill(showingOriginals ? Color.gray.opacity(0.7) : Color.sky)
+                                        .fill(showingOriginals ? Color.gray.opacity(0.7) : Color.eternalRose)
                                 )
                                 .shadow(color: .black.opacity(0.15), radius: 4)
                                 .animation(.easeInOut(duration: 0.3), value: showingOriginals)
@@ -310,13 +316,15 @@ struct TogetherSceneView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .semibold
                                         ))
-                                    Text(showingOriginals ? "Show Together Scene" : "Show Original Photos")
+                                    Text(showingOriginals ? "Show Memory Merge" : "Show Original Photos")
                                         .font(.system(
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .semibold
                                         ))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                 }
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.shadowPlum)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: adaptiveSize(50, for: geometry))
                                 .background(Color.white.opacity(0.7))
@@ -338,11 +346,13 @@ struct TogetherSceneView: View {
                                                 size: adaptiveFontSize(17, for: geometry),
                                                 weight: .semibold
                                             ))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: adaptiveSize(54, for: geometry))
-                                    .background(showSaveSuccess ? Color.green : Color.sky)
+                                    .background(showSaveSuccess ? Color.green : Color.eternalRose)
                                     .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                                 }
                                 .disabled(showSaveSuccess)
@@ -357,7 +367,7 @@ struct TogetherSceneView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.charcoal)
+                                        .foregroundColor(.shadowPlum)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: adaptiveSize(50, for: geometry))
                                         .background(Color.white.opacity(0.7))
@@ -381,7 +391,7 @@ struct TogetherSceneView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.charcoal)
+                                        .foregroundColor(.shadowPlum)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: adaptiveSize(50, for: geometry))
                                         .background(Color.white.opacity(0.7))
@@ -396,7 +406,7 @@ struct TogetherSceneView: View {
                     }
                 }
             }
-            .background(Color.warmLinen)
+            .background(Color.softCream)
             .ignoresSafeArea(.all, edges: .all)
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $pickedItems, maxSelectionCount: 2 - selectedImages.count, matching: .images)
@@ -608,7 +618,7 @@ struct BackgroundOptionsView: View {
         VStack(alignment: .leading, spacing: adaptiveSpacing(12, for: geometry)) {
             Text("Background")
                 .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
-                .foregroundColor(.charcoal)
+                .foregroundColor(.shadowPlum)
             
             // Background Selection Buttons
             VStack(spacing: adaptiveSpacing(10, for: geometry)) {
@@ -681,11 +691,14 @@ struct BackgroundOptionButton: View {
             HStack {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: adaptiveFontSize(18, for: geometry)))
-                    .foregroundColor(isSelected ? .sky : .charcoal.opacity(0.3))
+                    .foregroundColor(isSelected ? .eternalRose : .shadowPlum.opacity(0.3))
                 
                 Text(option.rawValue)
                     .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
-                    .foregroundColor(.charcoal)
+                    .foregroundColor(.shadowPlum)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .multilineTextAlignment(.leading)
                 
                 Spacer()
             }
@@ -693,11 +706,11 @@ struct BackgroundOptionButton: View {
             .padding(.vertical, adaptiveSpacing(12, for: geometry))
             .background(
                 RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                    .fill(isSelected ? Color.sky.opacity(0.1) : Color.white.opacity(0.5))
+                    .fill(isSelected ? Color.eternalRose.opacity(0.1) : Color.white.opacity(0.5))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                    .stroke(isSelected ? Color.sky : Color.charcoal.opacity(0.2), lineWidth: 1.5)
+                    .stroke(isSelected ? Color.eternalRose : Color.shadowPlum.opacity(0.2), lineWidth: 1.5)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -732,19 +745,21 @@ struct CustomPromptField: View {
         VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
             Text("Describe your background")
                 .font(.system(size: adaptiveFontSize(13, for: geometry), weight: .medium))
-                .foregroundColor(.charcoal.opacity(0.7))
+                .foregroundColor(.shadowPlum.opacity(0.7))
             
             TextField("e.g., sunset beach, garden party, starry night...", text: $customPrompt)
                 .font(.system(size: adaptiveFontSize(15, for: geometry)))
                 .padding(.horizontal, adaptiveSpacing(12, for: geometry))
                 .padding(.vertical, adaptiveSpacing(10, for: geometry))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .background(
                     RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
                         .fill(Color.white.opacity(0.7))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
-                        .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
+                        .stroke(Color.shadowPlum.opacity(0.2), lineWidth: 1)
                 )
         }
     }

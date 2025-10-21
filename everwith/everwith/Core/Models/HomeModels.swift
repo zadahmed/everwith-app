@@ -52,19 +52,19 @@ struct Project: Identifiable {
     
     enum ProjectType: String, CaseIterable {
         case restore = "restore"
-        case tribute = "tribute"
+        case together = "together"
         
         var displayName: String {
             switch self {
-            case .restore: return "Restore"
-            case .tribute: return "Tribute"
+            case .restore: return "Photo Restore"
+            case .together: return "Memory Merge"
             }
         }
         
         var icon: String {
             switch self {
             case .restore: return "photo.badge.plus"
-            case .tribute: return "heart.circle"
+            case .together: return "heart.circle.fill"
             }
         }
     }
@@ -82,22 +82,22 @@ struct HeroAction: Identifiable {
     
     static let actions: [HeroAction] = [
         HeroAction(
-            title: "Restore a photo",
-            subtitle: "Bring memories back to life",
-            description: "Upload old photos and let our AI restore them to their former glory",
+            title: "Photo Restore",
+            subtitle: "Make old photos HD again",
+            description: "Upload old photos and watch them transform into HD quality",
             icon: "photo.badge.plus",
-            gradient: [Color.honeyGold.opacity(0.8), Color.warmLinen.opacity(0.6)],
+            gradient: [Color.everBlush.opacity(0.8), Color.softCream.opacity(0.6)],
             action: {
                 // Navigate to Import with restore mode
                 NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.restore)
             }
         ),
         HeroAction(
-            title: "Together Scene",
-            subtitle: "Create beautiful tributes",
-            description: "Compose beautiful scenes with multiple photos and backgrounds",
+            title: "Memory Merge",
+            subtitle: "Bring old memories together",
+            description: "Combine photos to create moments that never existed before",
             icon: "heart.circle",
-            gradient: [Color.sky.opacity(0.8), Color.fern.opacity(0.6)],
+            gradient: [Color.eternalRose.opacity(0.8), Color.memoryViolet.opacity(0.6)],
             action: {
                 // Navigate to Import with together mode
                 NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.together)
@@ -176,7 +176,7 @@ struct ProcessedImage: Identifiable, Codable {
     
     var displayType: String {
         guard let imageType = imageType else { return "Processed Image" }
-        return imageType == "restore" ? "Restored Photo" : "Together Scene"
+        return imageType == "restore" ? "Photo Restore" : "Memory Merge"
     }
     
     var icon: String {
@@ -186,7 +186,7 @@ struct ProcessedImage: Identifiable, Codable {
     
     var color: Color {
         guard let imageType = imageType else { return .gray }
-        return imageType == "restore" ? .honeyGold : .sky
+        return imageType == "restore" ? .everBlush : .eternalRose
     }
 }
 
@@ -282,7 +282,7 @@ extension Project {
             status: .shared,
             createdAt: Date().addingTimeInterval(-86400 * 5),
             updatedAt: Date().addingTimeInterval(-7200),
-            type: .tribute
+            type: .together
         ),
         Project(
             title: "Childhood Photo",

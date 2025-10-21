@@ -68,19 +68,19 @@ struct HomeView: View {
                                             .frame(width: adaptiveSize(32, for: geometry), height: adaptiveSize(32, for: geometry))
                                             .background(
                                                 Circle()
-                                                    .fill(Color.honeyGold.opacity(0.8))
+                                                    .fill(Color.everBlush.opacity(0.8))
                                             )
                                         
                                         VStack(alignment: .leading, spacing: adaptiveSpacing(3, for: geometry)) {
-                                            Text("Restore a Photo")
+                                            Text("Photo Restore")
                                                 .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
-                                                .foregroundColor(.charcoal)
+                                                .foregroundColor(.shadowPlum)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.8)
                                             
-                                            Text("Bring memories back to life")
+                                            Text("Make old photos HD again")
                                                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                                                .foregroundColor(.charcoal.opacity(0.8))
+                                                .foregroundColor(.shadowPlum.opacity(0.8))
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.9)
                                         }
@@ -89,7 +89,7 @@ struct HomeView: View {
                                         
                                         Image(systemName: "arrow.right")
                                             .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .semibold))
-                                            .foregroundColor(.honeyGold)
+                                            .foregroundColor(.everBlush)
                                             .frame(width: adaptiveSize(18, for: geometry), height: adaptiveSize(18, for: geometry))
                                     }
                                     .padding(.horizontal, adaptivePadding(for: geometry))
@@ -99,8 +99,8 @@ struct HomeView: View {
                                             .fill(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
-                                                        Color.honeyGold.opacity(0.15),
-                                                        Color.sky.opacity(0.1)
+                                                        Color.everBlush.opacity(0.15),
+                                                        Color.eternalRose.opacity(0.1)
                                                     ]),
                                                     startPoint: .topLeading,
                                                     endPoint: .bottomTrailing
@@ -112,8 +112,8 @@ struct HomeView: View {
                                                     .stroke(
                                                         LinearGradient(
                                                             gradient: Gradient(colors: [
-                                                                Color.honeyGold.opacity(0.3),
-                                                                Color.sky.opacity(0.2)
+                                                                Color.everBlush.opacity(0.3),
+                                                                Color.eternalRose.opacity(0.2)
                                                             ]),
                                                             startPoint: .topLeading,
                                                             endPoint: .bottomTrailing
@@ -122,7 +122,7 @@ struct HomeView: View {
                                                     )
                                             )
                                             .shadow(
-                                                color: Color.honeyGold.opacity(buttonPressedRestore ? 0.1 : 0.2),
+                                                color: Color.everBlush.opacity(buttonPressedRestore ? 0.1 : 0.2),
                                                 radius: buttonPressedRestore ? 4 : 8,
                                                 x: 0,
                                                 y: buttonPressedRestore ? 2 : 4
@@ -151,19 +151,19 @@ struct HomeView: View {
                                             .frame(width: adaptiveSize(32, for: geometry), height: adaptiveSize(32, for: geometry))
                                             .background(
                                                 Circle()
-                                                    .fill(Color.sky.opacity(0.8))
+                                                    .fill(Color.eternalRose.opacity(0.8))
                                             )
                                         
                                         VStack(alignment: .leading, spacing: adaptiveSpacing(3, for: geometry)) {
-                                            Text("Together Scene")
+                                            Text("Memory Merge")
                                                 .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
-                                                .foregroundColor(.charcoal)
+                                                .foregroundColor(.shadowPlum)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.8)
                                             
-                                            Text("Create beautiful tributes")
+                                            Text("Bring old memories together")
                                                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                                                .foregroundColor(.charcoal.opacity(0.8))
+                                                .foregroundColor(.shadowPlum.opacity(0.8))
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.9)
                                         }
@@ -172,7 +172,7 @@ struct HomeView: View {
                                         
                                         Image(systemName: "arrow.right")
                                             .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .semibold))
-                                            .foregroundColor(.sky)
+                                            .foregroundColor(.eternalRose)
                                             .frame(width: adaptiveSize(18, for: geometry), height: adaptiveSize(18, for: geometry))
                                     }
                                     .padding(.horizontal, adaptivePadding(for: geometry))
@@ -182,8 +182,8 @@ struct HomeView: View {
                                             .fill(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
-                                                        Color.sky.opacity(0.15),
-                                                        Color.fern.opacity(0.1)
+                                                        Color.eternalRose.opacity(0.15),
+                                                        Color.memoryViolet.opacity(0.1)
                                                     ]),
                                                     startPoint: .topLeading,
                                                     endPoint: .bottomTrailing
@@ -195,8 +195,8 @@ struct HomeView: View {
                                                     .stroke(
                                                         LinearGradient(
                                                             gradient: Gradient(colors: [
-                                                                Color.sky.opacity(0.3),
-                                                                Color.fern.opacity(0.2)
+                                                                Color.eternalRose.opacity(0.3),
+                                                                Color.memoryViolet.opacity(0.2)
                                                             ]),
                                                             startPoint: .topLeading,
                                                             endPoint: .bottomTrailing
@@ -205,7 +205,7 @@ struct HomeView: View {
                                                     )
                                             )
                                             .shadow(
-                                                color: Color.sky.opacity(buttonPressedTogether ? 0.1 : 0.2),
+                                                color: Color.eternalRose.opacity(buttonPressedTogether ? 0.1 : 0.2),
                                                 radius: buttonPressedTogether ? 4 : 8,
                                                 x: 0,
                                                 y: buttonPressedTogether ? 2 : 4
@@ -224,7 +224,7 @@ struct HomeView: View {
                                 VStack(alignment: .leading, spacing: adaptiveSpacing(16, for: geometry)) {
                                     Text("Recent Creations")
                                         .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
-                                        .foregroundColor(.charcoal)
+                                        .foregroundColor(.shadowPlum)
                                         .padding(.horizontal, adaptivePadding(for: geometry))
                                     
                                     ScrollView(.horizontal, showsIndicators: false) {
@@ -302,6 +302,10 @@ struct HomeView: View {
                 await MainActor.run {
                     recentImages = history.images
                     isLoadingHistory = false
+                    print("🏠 HomeView: Loaded \(recentImages.count) images")
+                    for (index, image) in recentImages.enumerated() {
+                        print("🏠 Image \(index + 1): Type=\(image.imageType ?? "nil"), URL=\(image.processedImageUrl != nil ? "valid" : "nil")")
+                    }
                 }
             } catch {
                 print("❌ Failed to load image history: \(error)")
@@ -355,10 +359,10 @@ struct ModernVibrantBackground: View {
             // Base vibrant gradient
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.honeyGold.opacity(0.4),
-                    Color.sky.opacity(0.3),
-                    Color.fern.opacity(0.25),
-                    Color.softBlush.opacity(0.2)
+                    Color.everBlush.opacity(0.4),
+                    Color.eternalRose.opacity(0.3),
+                    Color.memoryViolet.opacity(0.25),
+                    Color.sunsetPeach.opacity(0.2)
                 ]),
                 startPoint: animateGradient ? .topLeading : .bottomTrailing,
                 endPoint: animateGradient ? .bottomTrailing : .topLeading
@@ -369,10 +373,10 @@ struct ModernVibrantBackground: View {
             // Secondary animated gradient layer
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.sky.opacity(0.2),
-                    Color.honeyGold.opacity(0.15),
-                    Color.fern.opacity(0.1),
-                    Color.softBlush.opacity(0.15)
+                    Color.eternalRose.opacity(0.2),
+                    Color.everBlush.opacity(0.15),
+                    Color.memoryViolet.opacity(0.1),
+                    Color.sunsetPeach.opacity(0.15)
                 ]),
                 startPoint: animateGradient ? .bottomLeading : .topTrailing,
                 endPoint: animateGradient ? .topTrailing : .bottomLeading
@@ -387,7 +391,7 @@ struct ModernVibrantBackground: View {
                     .fill(
                         RadialGradient(
                             gradient: Gradient(colors: [
-                                [Color.honeyGold, Color.sky, Color.fern, Color.softBlush, Color.honeyGold, Color.sky][index].opacity(animateColors ? 0.6 : 0.3),
+                                [Color.everBlush, Color.eternalRose, Color.memoryViolet, Color.sunsetPeach, Color.everBlush, Color.eternalRose][index].opacity(animateColors ? 0.6 : 0.3),
                                 Color.clear
                             ]),
                             center: .center,
@@ -410,7 +414,7 @@ struct ModernVibrantBackground: View {
                     .fill(
                         RadialGradient(
                             gradient: Gradient(colors: [
-                                [Color.sky, Color.honeyGold, Color.fern, Color.softBlush][index % 4].opacity(0.4),
+                                [Color.eternalRose, Color.everBlush, Color.memoryViolet, Color.sunsetPeach][index % 4].opacity(0.4),
                                 Color.clear
                             ]),
                             center: .center,
@@ -456,18 +460,18 @@ struct ModernHomeHeader: View {
                 HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                     Text("Welcome back")
                         .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                        .foregroundColor(.charcoal.opacity(0.8))
+                        .foregroundColor(.shadowPlum.opacity(0.8))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     
                     Image(systemName: "sparkles")
                         .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                        .foregroundColor(.honeyGold)
+                        .foregroundColor(.everBlush)
                 }
                 
                 Text(user.name)
                     .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
-                    .foregroundColor(.charcoal)
+                    .foregroundColor(.shadowPlum)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -497,8 +501,8 @@ struct ModernHomeHeader: View {
                                 .stroke(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color.honeyGold.opacity(0.3),
-                                            Color.sky.opacity(0.2)
+                                            Color.everBlush.opacity(0.3),
+                                            Color.eternalRose.opacity(0.2)
                                         ]),
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -509,7 +513,7 @@ struct ModernHomeHeader: View {
                     
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .medium))
-                        .foregroundColor(.charcoal.opacity(0.8))
+                        .foregroundColor(.shadowPlum.opacity(0.8))
                 }
             }
             .scaleEffect(1.0)
@@ -557,8 +561,8 @@ struct WelcomeMessageCard: View {
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color.honeyGold.opacity(0.2),
-                                Color.sky.opacity(0.15)
+                                Color.everBlush.opacity(0.2),
+                                Color.eternalRose.opacity(0.15)
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -569,19 +573,19 @@ struct WelcomeMessageCard: View {
                 
                 Image(systemName: "heart.fill")
                     .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .medium))
-                    .foregroundColor(.honeyGold)
+                    .foregroundColor(.everBlush)
             }
             
             VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
                 Text("Ready to create?")
                     .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold, design: .rounded))
-                    .foregroundColor(.charcoal)
+                    .foregroundColor(.shadowPlum)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 
-                Text("Choose how you'd like to honor your memories")
+                Text("Choose how you'd like to relive your memories")
                     .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                    .foregroundColor(.charcoal.opacity(0.7))
+                    .foregroundColor(.shadowPlum.opacity(0.7))
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
             }
@@ -594,9 +598,9 @@ struct WelcomeMessageCard: View {
                 .fill(
                     LinearGradient(
                         gradient: Gradient(colors: [
-                            Color.honeyGold.opacity(0.12),
-                            Color.sky.opacity(0.08),
-                            Color.softBlush.opacity(0.06)
+                            Color.everBlush.opacity(0.12),
+                            Color.eternalRose.opacity(0.08),
+                            Color.sunsetPeach.opacity(0.06)
                         ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -608,8 +612,8 @@ struct WelcomeMessageCard: View {
                         .stroke(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color.honeyGold.opacity(0.25),
-                                    Color.sky.opacity(0.15)
+                                    Color.everBlush.opacity(0.25),
+                                    Color.eternalRose.opacity(0.15)
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -707,7 +711,7 @@ struct RecentImageCard: View {
             // Date
             Text(formatDate(image.createdAt ?? Date()))
                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .regular))
-                .foregroundColor(.charcoal.opacity(0.6))
+                .foregroundColor(.shadowPlum.opacity(0.6))
         }
     }
     

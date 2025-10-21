@@ -23,16 +23,29 @@ struct RestoreView: View {
     @State private var errorMessage: String?
     @State private var showError = false
     
+    // Animation states
+    @State private var animateElements = false
+    @State private var headerScale: CGFloat = 0.9
+    @State private var contentOpacity: Double = 0
+    @State private var buttonPressed = false
+    @State private var imageScale: CGFloat = 0.8
+    @State private var progressRotation: Double = 0
+    
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // Header
+                // Enhanced Header with Animation
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            dismiss()
+                        }
+                    }) {
                         HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                                 .foregroundColor(.charcoal)
+                                .scaleEffect(buttonPressed ? 0.9 : 1.0)
                             
                             Text("Restore Photo")
                                 .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
@@ -40,6 +53,9 @@ struct RestoreView: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .scaleEffect(headerScale)
+                    .opacity(animateElements ? 1 : 0)
+                    .offset(x: animateElements ? 0 : -20)
                     
                     Spacer()
                 }
@@ -49,72 +65,139 @@ struct RestoreView: View {
                 
                 // Main Content
                 if selectedImage == nil {
-                    // Step 1: Select Photo
+                    // Step 1: Enhanced Photo Selection
                     VStack(spacing: adaptiveSpacing(24, for: geometry)) {
+                        // Animated Icon
                         Image(systemName: "photo.badge.plus")
                             .font(.system(
                                 size: adaptiveFontSize(64, for: geometry),
                                 weight: .light
                             ))
                             .foregroundColor(.honeyGold.opacity(0.6))
+                            .scaleEffect(imageScale)
+                            .opacity(contentOpacity)
+                            .offset(y: animateElements ? 0 : 30)
                         
-                        Text("Select a photo to restore")
-                            .font(.system(
-                                size: adaptiveFontSize(20, for: geometry),
-                                weight: .semibold
-                            ))
-                            .foregroundColor(.charcoal)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        
-                        Text("Choose a photo from your library")
-                            .font(.system(
-                                size: adaptiveFontSize(16, for: geometry),
-                                weight: .regular
-                            ))
-                            .foregroundColor(.charcoal.opacity(0.7))
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.9)
-                        
-                        Button(action: { showPhotoPicker = true }) {
-                            Text("Choose Photo")
+                        // Animated Text
+                        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            Text("Select a photo to restore")
                                 .font(.system(
-                                    size: adaptiveFontSize(17, for: geometry),
+                                    size: adaptiveFontSize(20, for: geometry),
                                     weight: .semibold
                                 ))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: adaptiveSize(280, for: geometry))
-                                .frame(height: adaptiveSize(54, for: geometry))
-                                .background(Color.honeyGold)
-                                .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                                .foregroundColor(.charcoal)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .opacity(contentOpacity)
+                                .offset(y: animateElements ? 0 : 20)
+                            
+                            Text("Choose a photo from your library")
+                                .font(.system(
+                                    size: adaptiveFontSize(16, for: geometry),
+                                    weight: .regular
+                                ))
+                                .foregroundColor(.charcoal.opacity(0.7))
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.9)
+                                .opacity(contentOpacity)
+                                .offset(y: animateElements ? 0 : 20)
                         }
+                        
+                        // Enhanced Button with Animation
+                        Button(action: { 
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                buttonPressed = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showPhotoPicker = true
+                                buttonPressed = false
+                            }
+                        }) {
+                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                                Image(systemName: "photo.on.rectangle")
+                                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                                Text("Choose Photo")
+                                    .font(.system(
+                                        size: adaptiveFontSize(17, for: geometry),
+                                        weight: .semibold
+                                    ))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: adaptiveSize(280, for: geometry))
+                            .frame(height: adaptiveSize(54, for: geometry))
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.honeyGold,
+                                        Color.honeyGold.opacity(0.8)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                            .shadow(
+                                color: Color.honeyGold.opacity(buttonPressed ? 0.3 : 0.2),
+                                radius: buttonPressed ? 8 : 12,
+                                x: 0,
+                                y: buttonPressed ? 4 : 6
+                            )
+                        }
+                        .scaleEffect(buttonPressed ? 0.95 : 1.0)
+                        .opacity(contentOpacity)
+                        .offset(y: animateElements ? 0 : 20)
                         .padding(.top, adaptiveSpacing(16, for: geometry))
                         
                         Spacer()
                     }
                     .padding(.top, adaptiveSpacing(8, for: geometry))
                 } else if processedImage == nil && !isProcessing {
-                    // Step 2: Preview & Restore
+                    // Step 2: Enhanced Preview & Restore
                     ScrollView {
                         VStack(spacing: adaptiveSpacing(24, for: geometry)) {
-                            // Show selected image
+                            // Enhanced Image Display
                             Image(uiImage: selectedImage!)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(maxHeight: geometry.size.height * 0.5)
                                 .cornerRadius(adaptiveCornerRadius(16, for: geometry))
-                                .shadow(color: .black.opacity(0.1), radius: 10)
+                                .shadow(
+                                    color: .black.opacity(0.15),
+                                    radius: 15,
+                                    x: 0,
+                                    y: 8
+                                )
+                                .scaleEffect(imageScale)
+                                .opacity(contentOpacity)
                                 .padding(.horizontal, adaptivePadding(for: geometry))
                                 .padding(.top, adaptiveSpacing(8, for: geometry))
+                                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: imageScale)
                             
                             VStack(spacing: adaptiveSpacing(16, for: geometry)) {
-                                Button(action: restorePhoto) {
-                                    HStack {
+                                // Enhanced Restore Button
+                                Button(action: {
+                                    // Haptic feedback
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                    impactFeedback.impactOccurred()
+                                    
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        buttonPressed = true
+                                    }
+                                    
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        restorePhoto()
+                                        buttonPressed = false
+                                    }
+                                }) {
+                                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                                         Image(systemName: "wand.and.stars")
                                             .font(.system(
                                                 size: adaptiveFontSize(18, for: geometry),
                                                 weight: .semibold
                                             ))
+                                            .rotationEffect(.degrees(buttonPressed ? 10 : 0))
+                                            .animation(.easeInOut(duration: 0.2), value: buttonPressed)
+                                        
                                         Text("Restore Photo")
                                             .font(.system(
                                                 size: adaptiveFontSize(17, for: geometry),
@@ -124,9 +207,27 @@ struct RestoreView: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: adaptiveSize(54, for: geometry))
-                                    .background(Color.honeyGold)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.honeyGold,
+                                                Color.honeyGold.opacity(0.8)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
                                     .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                                    .shadow(
+                                        color: Color.honeyGold.opacity(buttonPressed ? 0.4 : 0.2),
+                                        radius: buttonPressed ? 12 : 16,
+                                        x: 0,
+                                        y: buttonPressed ? 6 : 8
+                                    )
                                 }
+                                .scaleEffect(buttonPressed ? 0.96 : 1.0)
+                                .opacity(contentOpacity)
+                                .offset(y: animateElements ? 0 : 20)
                                 
                                 Button(action: { selectedImage = nil; showPhotoPicker = true }) {
                                     Text("Choose Different Photo")
@@ -142,11 +243,23 @@ struct RestoreView: View {
                         .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 } else if isProcessing {
-                    // Step 3: Processing
+                    // Step 3: Enhanced Processing Animation
                     VStack(spacing: adaptiveSpacing(24, for: geometry)) {
                         Spacer()
                         
+                        // Enhanced Progress Circle
                         ZStack {
+                            // Background circle with pulsing effect
+                            Circle()
+                                .stroke(Color.honeyGold.opacity(0.2), lineWidth: 8)
+                                .frame(
+                                    width: adaptiveSize(120, for: geometry),
+                                    height: adaptiveSize(120, for: geometry)
+                                )
+                                .scaleEffect(1.0 + sin(progressRotation * .pi / 180) * 0.1)
+                                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: progressRotation)
+                            
+                            // Main progress circle
                             Circle()
                                 .stroke(Color.honeyGold.opacity(0.3), lineWidth: 8)
                                 .frame(
@@ -154,22 +267,36 @@ struct RestoreView: View {
                                     height: adaptiveSize(100, for: geometry)
                                 )
                             
+                            // Animated progress ring
                             Circle()
                                 .trim(from: 0, to: processingProgress)
-                                .stroke(Color.honeyGold, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.honeyGold,
+                                            Color.honeyGold.opacity(0.7)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                )
                                 .frame(
                                     width: adaptiveSize(100, for: geometry),
                                     height: adaptiveSize(100, for: geometry)
                                 )
                                 .rotationEffect(.degrees(-90))
-                                .animation(.linear(duration: 0.3), value: processingProgress)
+                                .animation(.easeInOut(duration: 0.5), value: processingProgress)
                             
+                            // Percentage text with scale animation
                             Text("\(Int(processingProgress * 100))%")
                                 .font(.system(
                                     size: adaptiveFontSize(20, for: geometry),
-                                    weight: .semibold
+                                    weight: .bold
                                 ))
                                 .foregroundColor(.charcoal)
+                                .scaleEffect(processingProgress > 0 ? 1.0 : 0.8)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: processingProgress)
                         }
                         
                         Text("Restoring your photo...")
@@ -189,20 +316,29 @@ struct RestoreView: View {
                         Spacer()
                     }
                 } else if let processed = processedImage {
-                    // Step 4: Result - Simple and Clean
+                    // Step 4: Enhanced Result Display
                     ScrollView {
                         VStack(spacing: adaptiveSpacing(20, for: geometry)) {
-                            // Main Image Display
+                            // Enhanced Image Display with Smooth Transitions
                             VStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                                // Image
-                                Image(uiImage: showingBefore ? selectedImage! : processed)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(maxHeight: geometry.size.height * 0.5)
-                                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
-                                    .shadow(color: .black.opacity(0.1), radius: 10)
-                                    .animation(.easeInOut(duration: 0.3), value: showingBefore)
-                                    .padding(.top, adaptiveSpacing(4, for: geometry))
+                                // Animated Image with Better Transitions
+                                ZStack {
+                                    Image(uiImage: showingBefore ? selectedImage! : processed)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(maxHeight: geometry.size.height * 0.5)
+                                        .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                                        .shadow(
+                                            color: .black.opacity(0.15),
+                                            radius: 15,
+                                            x: 0,
+                                            y: 8
+                                        )
+                                        .scaleEffect(imageScale)
+                                        .opacity(contentOpacity)
+                                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingBefore)
+                                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: imageScale)
+                                        .padding(.top, adaptiveSpacing(4, for: geometry))
                                 
                                 // Status Badge
                                 HStack(spacing: adaptiveSpacing(8, for: geometry)) {
@@ -323,8 +459,9 @@ struct RestoreView: View {
                         .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 }
+                        }
             }
-            .background(Color.warmLinen)
+            .background(Color("WarmLinen"))
             .ignoresSafeArea(.all, edges: .all)
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: Binding(
@@ -346,6 +483,24 @@ struct RestoreView: View {
             }
         } message: {
             Text(errorMessage ?? "An error occurred")
+        }
+        .onAppear {
+            // Staggered entrance animations
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                headerScale = 1.0
+                animateElements = true
+            }
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                contentOpacity = 1.0
+            }
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.3)) {
+                imageScale = 1.0
+            }
+            
+            // Start progress rotation animation
+            withAnimation(.linear(duration: 4.0).repeatForever(autoreverses: false)) {
+                progressRotation = 360
+            }
         }
     }
     
@@ -415,20 +570,28 @@ struct RestoreView: View {
     
     private func savePhoto() {
         guard let image = processedImage else { return }
+        
+        // Haptic feedback for save action
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+        
         UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
         
-        withAnimation {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
             showSaveSuccess = true
         }
         
+        // Success haptic feedback
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            let successFeedback = UINotificationFeedbackGenerator()
+            successFeedback.notificationOccurred(.success)
+        }
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation {
+            withAnimation(.easeOut(duration: 0.3)) {
                 showSaveSuccess = false
             }
         }
-        
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
     }
     
     private func sharePhoto() {

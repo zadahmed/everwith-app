@@ -40,9 +40,23 @@ async def save_processed_image(
         logger.info(f"✅ Saved processed image for user {current_user.email}")
         
         # Create response object
+        # Handle DBRef properly - extract the actual ID from the nested structure
+        user_id_str = None
+        if hasattr(processed_image.user_id, 'id'):
+            user_id_str = str(processed_image.user_id.id)
+        elif isinstance(processed_image.user_id, dict) and '$id' in processed_image.user_id:
+            # Handle MongoDB DBRef structure: {"$ref": "users", "$id": {"$oid": "..."}}
+            if isinstance(processed_image.user_id['$id'], dict) and '$oid' in processed_image.user_id['$id']:
+                user_id_str = processed_image.user_id['$id']['$oid']
+            else:
+                user_id_str = str(processed_image.user_id['$id'])
+        elif hasattr(processed_image.user_id, '__str__'):
+            # Fallback if it's a DBRef or other reference type
+            user_id_str = str(processed_image.user_id)
+        
         response_data = schemas.ProcessedImage(
             id=str(processed_image.id),
-            user_id=str(processed_image.user_id.id),
+            user_id=user_id_str,
             image_type=processed_image.image_type,
             original_image_url=processed_image.original_image_url,
             processed_image_url=processed_image.processed_image_url,
@@ -58,9 +72,6 @@ async def save_processed_image(
             file_size=processed_image.file_size,
             created_at=processed_image.created_at
         )
-        
-        # Debug: Print the response data
-        logger.info(f"🔍 Response data: {response_data.model_dump()}")
         
         return response_data
         
@@ -78,8 +89,8 @@ async def get_image_history(
 ):
     """Get user's processed image history with pagination"""
     try:
-        # Build query
-        query = {"user_id": current_user.id}
+        # Build query - use the user Link object directly for proper DBRef matching
+        query = {"user_id": current_user}
         if image_type:
             query["image_type"] = image_type
         
@@ -91,10 +102,25 @@ async def get_image_history(
         images = await db_models.ProcessedImage.find(query).sort("-created_at").skip(skip).limit(page_size).to_list()
         
         # Convert to response schema
-        image_list = [
-            schemas.ProcessedImage(
+        image_list = []
+        for img in images:
+            # Handle DBRef properly - extract the actual ID from the nested structure
+            user_id_str = None
+            if hasattr(img.user_id, 'id'):
+                user_id_str = str(img.user_id.id)
+            elif hasattr(img.user_id, 'ref') and hasattr(img.user_id, 'id'):
+                user_id_str = str(img.user_id.id)
+            elif isinstance(img.user_id, dict) and '$id' in img.user_id:
+                if isinstance(img.user_id['$id'], dict) and '$oid' in img.user_id['$id']:
+                    user_id_str = img.user_id['$id']['$oid']
+                else:
+                    user_id_str = str(img.user_id['$id'])
+            else:
+                user_id_str = str(current_user.id)  # Use current user's ID as fallback
+            
+            image_list.append(schemas.ProcessedImage(
                 id=str(img.id),
-                user_id=str(img.user_id.id),
+                user_id=user_id_str,
                 image_type=img.image_type,
                 original_image_url=img.original_image_url,
                 processed_image_url=img.processed_image_url,
@@ -109,11 +135,7 @@ async def get_image_history(
                 height=img.height,
                 file_size=img.file_size,
                 created_at=img.created_at
-            )
-            for img in images
-        ]
-        
-        logger.info(f"✅ Retrieved {len(image_list)} images for user {current_user.email}")
+            ))
         
         return schemas.ImageHistoryResponse(
             images=image_list,

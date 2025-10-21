@@ -347,13 +347,9 @@ class ImageProcessingService: ObservableObject {
             throw ImageProcessingError.invalidResponse
         }
         
-        // Debug: Print the raw response
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("💾 Raw save response: \(responseString)")
-        }
         
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        // Don't use .convertFromSnakeCase since we have manual CodingKeys that already handle snake_case
         decoder.dateDecodingStrategy = .iso8601
         
         do {
@@ -411,13 +407,9 @@ class ImageProcessingService: ObservableObject {
             throw ImageProcessingError.invalidResponse
         }
         
-        // Debug: Print the raw response
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("📥 Raw API response: \(responseString)")
-        }
         
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        // Don't use .convertFromSnakeCase since we have manual CodingKeys that already handle snake_case
         decoder.dateDecodingStrategy = .iso8601
         
         do {
@@ -471,7 +463,7 @@ class ImageProcessingService: ObservableObject {
         }
         
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        // Don't use .convertFromSnakeCase since we have manual CodingKeys that already handle snake_case
         decoder.dateDecodingStrategy = .iso8601
         let stats = try decoder.decode(ImageStats.self, from: data)
         

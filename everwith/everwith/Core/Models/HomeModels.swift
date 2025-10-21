@@ -112,7 +112,7 @@ struct ProcessedImage: Identifiable, Codable {
     let userId: String?
     let imageType: String?
     let originalImageUrl: String?
-    let processedImageUrl: String
+    let processedImageUrl: String?
     let thumbnailUrl: String?
     
     // Processing parameters
@@ -130,7 +130,7 @@ struct ProcessedImage: Identifiable, Codable {
     let height: Int?
     let fileSize: Int?
     
-    let createdAt: Date
+    let createdAt: Date?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -151,14 +151,16 @@ struct ProcessedImage: Identifiable, Codable {
         case createdAt = "created_at"
     }
     
-    // Custom initializer to handle missing fields
+    // Custom initializer to handle missing fields gracefully
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
+        
+        // Only ID is required, everything else is optional
+        id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
         userId = try? container.decode(String.self, forKey: .userId)
         imageType = try? container.decode(String.self, forKey: .imageType)
         originalImageUrl = try? container.decode(String.self, forKey: .originalImageUrl)
-        processedImageUrl = try container.decode(String.self, forKey: .processedImageUrl)
+        processedImageUrl = try? container.decode(String.self, forKey: .processedImageUrl)
         thumbnailUrl = try? container.decode(String.self, forKey: .thumbnailUrl)
         qualityTarget = try? container.decode(String.self, forKey: .qualityTarget)
         outputFormat = try? container.decode(String.self, forKey: .outputFormat)
@@ -169,7 +171,7 @@ struct ProcessedImage: Identifiable, Codable {
         width = try? container.decode(Int.self, forKey: .width)
         height = try? container.decode(Int.self, forKey: .height)
         fileSize = try? container.decode(Int.self, forKey: .fileSize)
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        createdAt = try? container.decode(Date.self, forKey: .createdAt)
     }
     
     var displayType: String {

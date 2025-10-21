@@ -660,7 +660,7 @@ struct RecentImageCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
             // Image Thumbnail
-            AsyncImage(url: URL(string: image.processedImageUrl)) { phase in
+            AsyncImage(url: image.processedImageUrl.flatMap { URL(string: $0) }) { phase in
                 switch phase {
                 case .empty:
                     Rectangle()
@@ -705,7 +705,7 @@ struct RecentImageCard: View {
             )
             
             // Date
-            Text(formatDate(image.createdAt))
+            Text(formatDate(image.createdAt ?? Date()))
                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .regular))
                 .foregroundColor(.charcoal.opacity(0.6))
         }

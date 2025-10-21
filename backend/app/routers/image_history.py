@@ -39,8 +39,8 @@ async def save_processed_image(
         
         logger.info(f"✅ Saved processed image for user {current_user.email}")
         
-        # Return response
-        return schemas.ProcessedImage(
+        # Create response object
+        response_data = schemas.ProcessedImage(
             id=str(processed_image.id),
             user_id=str(processed_image.user_id.id),
             image_type=processed_image.image_type,
@@ -58,6 +58,11 @@ async def save_processed_image(
             file_size=processed_image.file_size,
             created_at=processed_image.created_at
         )
+        
+        # Debug: Print the response data
+        logger.info(f"🔍 Response data: {response_data.model_dump()}")
+        
+        return response_data
         
     except Exception as e:
         logger.error(f"❌ Error saving processed image: {e}")

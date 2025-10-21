@@ -156,7 +156,7 @@ struct ProcessedImage: Identifiable, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         userId = try? container.decode(String.self, forKey: .userId)
-        imageType = try container.decode(String.self, forKey: .imageType)
+        imageType = try? container.decode(String.self, forKey: .imageType)
         originalImageUrl = try? container.decode(String.self, forKey: .originalImageUrl)
         processedImageUrl = try container.decode(String.self, forKey: .processedImageUrl)
         thumbnailUrl = try? container.decode(String.self, forKey: .thumbnailUrl)
@@ -173,15 +173,18 @@ struct ProcessedImage: Identifiable, Codable {
     }
     
     var displayType: String {
-        imageType == "restore" ? "Restored Photo" : "Together Scene"
+        guard let imageType = imageType else { return "Processed Image" }
+        return imageType == "restore" ? "Restored Photo" : "Together Scene"
     }
     
     var icon: String {
-        imageType == "restore" ? "photo.badge.plus" : "heart.circle.fill"
+        guard let imageType = imageType else { return "photo" }
+        return imageType == "restore" ? "photo.badge.plus" : "heart.circle.fill"
     }
     
     var color: Color {
-        imageType == "restore" ? .honeyGold : .sky
+        guard let imageType = imageType else { return .gray }
+        return imageType == "restore" ? .honeyGold : .sky
     }
 }
 

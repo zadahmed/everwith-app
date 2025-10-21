@@ -112,6 +112,13 @@ struct TogetherBackground: Codable {
     let prompt: String?
     let useUltra: Bool
     
+    enum CodingKeys: String, CodingKey {
+        case mode
+        case sceneId = "scene_id"
+        case prompt
+        case useUltra = "use_ultra"
+    }
+    
     init(mode: BackgroundMode, sceneId: String? = nil, prompt: String? = nil, useUltra: Bool = false) {
         self.mode = mode
         self.sceneId = sceneId
@@ -127,6 +134,14 @@ struct RestoreRequest: Codable {
     let outputFormat: ImageProcessingFormat
     let aspectRatio: AspectRatio
     let seed: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case imageUrl = "image_url"
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case seed
+    }
     
     init(imageUrl: String, qualityTarget: ImageProcessingQuality = .standard, outputFormat: ImageProcessingFormat = .png, aspectRatio: AspectRatio = .original, seed: Int? = nil) {
         self.imageUrl = imageUrl
@@ -147,6 +162,17 @@ struct TogetherRequest: Codable {
     let aspectRatio: AspectRatio
     let seed: Int?
     let lookControls: LookControls?
+    
+    enum CodingKeys: String, CodingKey {
+        case subjectAUrl = "subject_a_url"
+        case subjectBUrl = "subject_b_url"
+        case subjectAMaskUrl = "subject_a_mask_url"
+        case subjectBMaskUrl = "subject_b_mask_url"
+        case background
+        case aspectRatio = "aspect_ratio"
+        case seed
+        case lookControls = "look_controls"
+    }
     
     init(subjectAUrl: String, subjectBUrl: String, subjectAMaskUrl: String? = nil, subjectBMaskUrl: String? = nil, background: TogetherBackground, aspectRatio: AspectRatio = .fourFive, seed: Int? = nil, lookControls: LookControls? = nil) {
         self.subjectAUrl = subjectAUrl
@@ -249,7 +275,7 @@ enum ImageProcessingState: Equatable {
 }
 
 // MARK: - Image Processing Progress
-struct ImageProcessingProgress {
+struct ImageProcessingProgress: Equatable {
     let currentStep: String
     let totalSteps: Int
     let currentStepIndex: Int

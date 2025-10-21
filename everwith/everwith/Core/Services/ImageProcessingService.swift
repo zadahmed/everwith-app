@@ -28,6 +28,13 @@ class ImageProcessingService: ObservableObject {
     func uploadImage(_ image: UIImage, fileName: String = "image.jpg") async throws -> String {
         print("📤 ImageProcessingService.uploadImage called")
         
+        // Check if user is authenticated
+        guard let token = UserDefaults.standard.string(forKey: "access_token") else {
+            print("❌ No access token found! User needs to log in.")
+            throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Please log in to use this feature"]))
+        }
+        print("✅ Token found: \(token.prefix(20))...")
+        
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             print("❌ Failed to convert image to JPEG data")
             throw ImageProcessingError.invalidImage

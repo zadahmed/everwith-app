@@ -26,11 +26,8 @@ class NetworkService: ObservableObject {
         responseType: T.Type
     ) async throws -> T {
         
-        // Validate session before making request
-        let isSessionValid = await authService.validateSession()
-        guard isSessionValid else {
-            throw NetworkError.sessionExpired
-        }
+        // Don't pre-validate session - let the backend handle it
+        // This avoids unnecessary /api/auth/me calls before every request
         
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
@@ -38,7 +35,10 @@ class NetworkService: ObservableObject {
         
         // Add authorization header if token exists
         if let token = UserDefaults.standard.string(forKey: "access_token") {
+            print("🔑 Using token: \(token.prefix(20))...")
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } else {
+            print("⚠️ No access token found!")
         }
         
         if let body = body {

@@ -920,5 +920,49 @@ struct ExportPermissionCheckView: View {
     }
 }
 
+// MARK: - Missing Components
+
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+struct PhotoSelectionPrompt: View {
+    let onSelectPhoto: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            Image(systemName: "photo.badge.plus")
+                .font(.system(size: 64, weight: .light))
+                .foregroundColor(.honeyGold.opacity(0.6))
+            
+            Text("Select a Photo")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(.charcoal)
+            
+            Text("Choose a photo from your library")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.charcoal.opacity(0.7))
+            
+            Button(action: onSelectPhoto) {
+                Text("Choose Photo")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: 280)
+                    .frame(height: 54)
+                    .background(Color.honeyGold)
+                    .cornerRadius(16)
+            }
+            
+            Spacer()
+        }
+    }
+}
+
 #Preview {
 }

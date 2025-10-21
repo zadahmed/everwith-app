@@ -1,12 +1,15 @@
 import SwiftUI
 
+enum NavigationDestination: Hashable {
+    case restore
+    case together
+    case settings
+}
+
 struct HomeView: View {
     let user: User
-    @State private var showPhotoPicker = false
-    @State private var showTogetherPicker = false
+    @State private var navigationPath = NavigationPath()
     @State private var showSettings = false
-    @State private var selectedRestorePhotos: [ImportedPhoto] = []
-    @State private var selectedTogetherPhotos: [ImportedPhoto] = []
     @State private var animateElements = false
     @State private var headerScale: CGFloat = 0.9
     @State private var welcomeCardOpacity: Double = 0
@@ -16,12 +19,13 @@ struct HomeView: View {
     @State private var buttonPressedTogether: Bool = false
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Vibrant Modern Background
-                ModernVibrantBackground()
-                    .ignoresSafeArea()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+        NavigationStack(path: $navigationPath) {
+            GeometryReader { geometry in
+                ZStack {
+                    // Vibrant Modern Background
+                    ModernVibrantBackground()
+                        .ignoresSafeArea()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                 
                 VStack(spacing: 0) {
                     // Enhanced Header
@@ -45,7 +49,7 @@ struct HomeView: View {
                                         buttonPressedRestore = true
                                     }
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        showPhotoPicker = true
+                                        navigationPath.append(NavigationDestination.restore)
                                         buttonPressedRestore = false
                                     }
                                 }) {
@@ -128,7 +132,7 @@ struct HomeView: View {
                                         buttonPressedTogether = true
                                     }
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        showTogetherPicker = true
+                                        navigationPath.append(NavigationDestination.together)
                                         buttonPressedTogether = false
                                     }
                                 }) {
@@ -217,8 +221,22 @@ struct HomeView: View {
                     .frame(width: geometry.size.width)
                 }
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .clipped()
+            }
+            .navigationDestination(for: NavigationDestination.self) { destination in
+                switch destination {
+                case .restore:
+                    RestoreView()
+                        .navigationBarBackButtonHidden(true)
+                case .together:
+                    TogetherSceneView()
+                        .navigationBarBackButtonHidden(true)
+                case .settings:
+                    Text("Settings Coming Soon")
+                }
+            }
+            .navigationBarHidden(true)
         }
         .onAppear {
             // Staggered entrance animations
@@ -236,14 +254,7 @@ struct HomeView: View {
                 togetherButtonScale = 1.0
             }
         }
-        .sheet(isPresented: $showPhotoPicker) {
-            PhotoPickerView(mode: .restore, selectedPhotos: $selectedRestorePhotos)
-        }
-        .sheet(isPresented: $showTogetherPicker) {
-            PhotoPickerView(mode: .togetherScene, selectedPhotos: $selectedTogetherPhotos)
-        }
         .sheet(isPresented: $showSettings) {
-            // Placeholder for SettingsView - to be implemented
             Text("Settings Coming Soon")
                 .font(.title)
                 .padding()

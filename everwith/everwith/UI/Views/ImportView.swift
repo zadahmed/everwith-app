@@ -21,6 +21,8 @@ struct ImportView: View {
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var processingSettings: ProcessingSettings = ProcessingSettings()
     @State private var showSettingsSheet = false
+    @State private var showResultView = false
+    @State private var processedResult: ProcessedPhoto?
     
     @StateObject private var imageProcessingService = ImageProcessingService.shared
     
@@ -109,6 +111,18 @@ struct ImportView: View {
                 settings: $processingSettings,
                 isPresented: $showSettingsSheet
             )
+        }
+        .fullScreenCover(isPresented: $showResultView) {
+            if let result = processedResult {
+                ProcessedPhotoResultView(
+                    processedPhoto: result,
+                    isPresented: $showResultView,
+                    onDismiss: {
+                        showResultView = false
+                        isPresented = false
+                    }
+                )
+            }
         }
         .onChange(of: imageProcessingService.processingState) { _, newState in
             handleProcessingStateChange(newState)
@@ -254,6 +268,8 @@ struct ImportView: View {
                             outputUrl: result.outputUrl
                         )
                         importState = .completed(processedPhoto)
+                        processedResult = processedPhoto
+                        showResultView = true
                     }
                     
                 case .together:
@@ -288,6 +304,8 @@ struct ImportView: View {
                             outputUrl: result.outputUrl
                         )
                         importState = .completed(processedPhoto)
+                        processedResult = processedPhoto
+                        showResultView = true
                     }
                 }
             } catch {
@@ -313,8 +331,8 @@ struct ImportView: View {
             importState = .uploading
         case .processing:
             importState = .processing
-        case .completed(let result):
-            // Handle completion in startImport method
+        case .completed:
+            // Completion is handled in startImport method
             break
         case .failed(let error):
             importState = .failed(error)
@@ -329,6 +347,220 @@ struct ImportView: View {
             )
         } else {
             importProgress = nil
+        }
+    }
+}
+
+// MARK: - Processed Photo Result View
+struct ProcessedPhotoResultView: View {
+    let processedPhoto: ProcessedPhoto
+    @Binding var isPresented: Bool
+    let onDismiss: () -> Void
+    @State private var sliderPosition: CGFloat = 0.5
+    @State private var animateIn = false
+    @State private var showSavedMessage = false
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Simple dark background
+                Color.black.ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Simple Header
+                    HStack {
+                        Button(action: { onDismiss() }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("Done")
+                                    .font(.system(size: 17, weight: .regular))
+                            }
+                            .foregroundColor(.white)
+                        }
+                        
+                        Spacer()
+                        
+                        Text(processedPhoto.mode == .restore ? "✨ Restored" : "💫 Together")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, max(geometry.safeAreaInsets.top, 16))
+                    .padding(.bottom, 16)
+                    
+                    // Main Image with Before/After Slider
+                    ZStack {
+                        // Result image
+                        Image(uiImage: processedPhoto.processedImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: geometry.size.height * 0.6)
+                        
+                        // Before/After Comparison Overlay
+                        GeometryReader { imageGeometry in
+                            HStack(spacing: 0) {
+                                // Original (left side)
+                                Image(uiImage: processedPhoto.originalImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxHeight: geometry.size.height * 0.6)
+                                    .mask(
+                                        Rectangle()
+                                            .frame(width: imageGeometry.size.width * sliderPosition)
+                                    )
+                                    .overlay(
+                                        Text("Before")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(Color.black.opacity(0.6))
+                                            .cornerRadius(8)
+                                            .offset(x: 12, y: 12)
+                                            .opacity(sliderPosition > 0.1 ? 1 : 0)
+                                        , alignment: .topLeading
+                                    )
+                                
+                                Spacer()
+                            }
+                            
+                            // Slider handle
+                            VStack {
+                                Rectangle()
+                                    .fill(Color.white)
+                                    .frame(width: 3)
+                                    .overlay(
+                                        Circle()
+                                            .fill(Color.white)
+                                            .frame(width: 44, height: 44)
+                                            .shadow(color: .black.opacity(0.3), radius: 8)
+                                            .overlay(
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "chevron.left")
+                                                        .font(.system(size: 12, weight: .bold))
+                                                    Image(systemName: "chevron.right")
+                                                        .font(.system(size: 12, weight: .bold))
+                                                }
+                                                .foregroundColor(.black.opacity(0.6))
+                                            )
+                                    )
+                            }
+                            .frame(width: 44)
+                            .offset(x: imageGeometry.size.width * sliderPosition - 22)
+                            .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        sliderPosition = min(max(value.location.x / imageGeometry.size.width, 0), 1)
+                                    }
+                            )
+                        }
+                        
+                        // "After" label
+                        if sliderPosition < 0.9 {
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Text("After")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.black.opacity(0.6))
+                                        .cornerRadius(8)
+                                        .padding(.trailing, 12)
+                                        .padding(.top, 12)
+                                }
+                                Spacer()
+                            }
+                        }
+                    }
+                    .scaleEffect(animateIn ? 1.0 : 0.95)
+                    .opacity(animateIn ? 1.0 : 0.0)
+                    
+                    Spacer()
+                    
+                    // Simple instructions
+                    Text("← Swipe to compare →")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                        .padding(.bottom, 20)
+                    
+                    // Action Buttons - Simple and Clear
+                    VStack(spacing: 12) {
+                        // Primary: Save
+                        Button(action: savePhoto) {
+                            HStack(spacing: 12) {
+                                Image(systemName: showSavedMessage ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                                    .font(.system(size: 20, weight: .semibold))
+                                Text(showSavedMessage ? "Saved!" : "Save to Photos")
+                                    .font(.system(size: 17, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(
+                                showSavedMessage ? Color.green : Color.honeyGold
+                            )
+                            .cornerRadius(14)
+                        }
+                        .disabled(showSavedMessage)
+                        
+                        // Secondary: Share
+                        Button(action: sharePhoto) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 18, weight: .medium))
+                                Text("Share")
+                                    .font(.system(size: 17, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.white.opacity(0.15))
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20))
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+                animateIn = true
+            }
+        }
+    }
+    
+    private func savePhoto() {
+        UIImageWriteToSavedPhotosAlbum(processedPhoto.processedImage, nil, nil, nil)
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+            showSavedMessage = true
+        }
+        
+        // Reset after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                showSavedMessage = false
+            }
+        }
+        
+        // Haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+    
+    private func sharePhoto() {
+        let activityVC = UIActivityViewController(
+            activityItems: [processedPhoto.processedImage],
+            applicationActivities: nil
+        )
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
         }
     }
 }

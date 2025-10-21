@@ -1,6 +1,7 @@
 import os
 import io
 import uuid
+import time
 import requests
 from typing import Optional
 from fastapi import HTTPException
@@ -15,11 +16,17 @@ BFL_API_KEY = os.getenv("BFL_API_KEY")
 BFL_API_BASE = os.getenv("BFL_API_BASE", "https://api.bfl.ai/v1")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./outputs")
 
+# Validate BFL API key on startup
+if not BFL_API_KEY:
+    print("⚠️  WARNING: BFL_API_KEY not set in environment!")
+else:
+    print(f"✅ BFL API Key loaded...")
+
 # DigitalOcean Spaces Configuration
 DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
 DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
 DO_SPACES_REGION = os.getenv("DO_SPACES_REGION", "nyc3")
-DO_SPACES_BUCKET = os.getenv("DO_SPACES_BUCKET")
+DO_SPACES_BUCKET = os.getenv("DO_SPACES_BUCKET", "everwith")
 DO_SPACES_ENDPOINT = os.getenv("DO_SPACES_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
 DO_SPACES_CDN_ENDPOINT = os.getenv("DO_SPACES_CDN_ENDPOINT")
 
@@ -46,10 +53,27 @@ class ImageProcessingService:
     @staticmethod
     def _http_json(url: str, body: dict, timeout=180):
         """Make HTTP request to BFL API"""
-        headers = {"Authorization": f"Bearer {BFL_API_KEY}"}
+        if not BFL_API_KEY:
+            print("❌ BFL_API_KEY is not set!")
+            raise HTTPException(status_code=500, detail="BFL API key not configured")
+        
+        headers = {
+            "x-key": BFL_API_KEY,  # BFL uses x-key header, not Bearer
+            "Content-Type": "application/json"
+        }
+        print(f"🔵 BFL API Request: {url}")
+        print(f"📦 Body: {body}")
+        print(f"🔑 Using BFL API Key: {BFL_API_KEY[:20]}..." if BFL_API_KEY else "❌ No API key!")
+        
         r = requests.post(url, json=body, headers=headers, timeout=timeout)
+        
+        print(f"📥 Response Status: {r.status_code}")
+        print(f"📥 Response Headers: {dict(r.headers)}")
+        
         if not r.ok:
-            raise HTTPException(status_code=r.status_code, detail=r.text)
+            print(f"❌ BFL API Error {r.status_code}: {r.text}")
+            raise HTTPException(status_code=r.status_code, detail=f"BFL API Error: {r.text}")
+        print(f"✅ BFL API Success")
         return r.json()
 
     @staticmethod
@@ -63,7 +87,7 @@ class ImageProcessingService:
     @staticmethod
     def _save_image(img: Image.Image, ext: str = "png") -> str:
         """Save image to DigitalOcean Spaces and return CDN URL"""
-        fname = f"{uuid.uuid4().hex}.{ext}"
+        fname = f"everwith/{uuid.uuid4().hex}.{ext}"  # Add everwith/ prefix
         buffer = io.BytesIO()
         
         # Prepare image for saving
@@ -160,18 +184,84 @@ class ImageProcessingService:
 
     @staticmethod
     def flux_kontext_edit(image_url: str, prompt: str, strength: float = 0.8, seed: Optional[int] = None, out_format: str = "png") -> str:
-        """Call BFL Flux Kontext API for image editing"""
-        url = f"{BFL_API_BASE}/flux-pro-1.0-kontext"
+        """Call BFL Flux Kontext API for image editing/restoration (async with polling)"""
+        # Step 1: Create the job
+        url = f"{BFL_API_BASE}/flux-kontext-pro"
         body = {
             "prompt": prompt,
             "image": image_url,
-            "strength": strength,
-            "seed": seed,
-            "output_format": out_format
+            "strength": strength
         }
-        data = ImageProcessingService._http_json(url, body)
-        # Some deployments return list of urls, others a single url
-        return data.get("output_url") or (data.get("output") or [None])[0]
+        if seed:
+            body["seed"] = seed
+        
+        print(f"📤 Creating BFL job...")
+        response = ImageProcessingService._http_json(url, body)
+        
+        # Step 2: Get job ID and polling URL
+        job_id = response.get("id")
+        polling_url = response.get("polling_url") or f"{BFL_API_BASE}/get_result?id={job_id}"
+        
+        print(f"✅ Job created: {job_id}")
+        print(f"📊 Polling URL: {polling_url}")
+        
+        # Step 3: Poll for result
+        return ImageProcessingService._poll_for_result(polling_url, job_id)
+    
+    @staticmethod
+    def _poll_for_result(polling_url: str, job_id: str, max_attempts: int = 120, interval: float = 0.5) -> str:
+        """Poll BFL API for job completion (matches BFL documentation pattern)"""
+        if not BFL_API_KEY:
+            raise HTTPException(status_code=500, detail="BFL API key not configured")
+        
+        headers = {
+            "x-key": BFL_API_KEY,
+            "accept": "application/json"
+        }
+        
+        for attempt in range(max_attempts):
+            time.sleep(interval)
+            
+            print(f"⏳ Polling attempt {attempt + 1}/{max_attempts}...")
+            
+            try:
+                r = requests.get(polling_url, headers=headers, timeout=30)
+                
+                if not r.ok:
+                    print(f"❌ Polling error {r.status_code}: {r.text}")
+                    raise HTTPException(status_code=r.status_code, detail=f"Polling failed: {r.text}")
+                
+                result = r.json()
+                status = result.get("status")
+                
+                print(f"📊 Job status: {status}")
+                
+                if status == "Ready":
+                    # Extract image URL from result
+                    result_url = result.get("result", {}).get("sample")
+                    if result_url:
+                        print(f"✅ Job complete! Image ready: {result_url}")
+                        return result_url
+                    else:
+                        print(f"❌ Job ready but no result URL found: {result}")
+                        raise HTTPException(status_code=500, detail="No result URL in response")
+                
+                elif status in ["Error", "Failed"]:
+                    error_msg = result.get("error") or result.get("message", "Unknown error")
+                    print(f"❌ Generation failed: {result}")
+                    raise HTTPException(status_code=500, detail=f"BFL job failed: {error_msg}")
+                
+                # Status is Pending/Processing - continue polling
+                
+            except requests.exceptions.RequestException as e:
+                print(f"⚠️ Request error during polling: {e}")
+                if attempt == max_attempts - 1:
+                    raise HTTPException(status_code=500, detail=f"Polling request failed: {str(e)}")
+                # Otherwise continue polling
+        
+        # Max attempts reached
+        print(f"❌ Polling timeout after {max_attempts * interval} seconds")
+        raise HTTPException(status_code=504, detail="Job processing timeout")
 
     @staticmethod
     def flux_fill(image_url: str, prompt: str, mask_url: Optional[str] = None, seed: Optional[int] = None, out_format: str = "png") -> str:
@@ -189,11 +279,25 @@ class ImageProcessingService:
 
     @staticmethod
     def flux_ultra_background(prompt: str, seed: Optional[int] = None, aspect_ratio: str = "4:5") -> str:
-        """Call BFL Flux Ultra API for background generation"""
+        """Call BFL Flux Ultra API for background generation (async with polling)"""
         url = f"{BFL_API_BASE}/flux-pro-1.1-ultra"
-        body = {"prompt": prompt, "seed": seed, "aspect_ratio": aspect_ratio, "raw": True}
-        data = ImageProcessingService._http_json(url, body)
-        return data.get("output_url") or (data.get("output") or [None])[0]
+        body = {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "raw": True
+        }
+        if seed:
+            body["seed"] = seed
+        
+        print(f"📤 Creating BFL Ultra background job...")
+        response = ImageProcessingService._http_json(url, body)
+        
+        job_id = response.get("id")
+        polling_url = response.get("polling_url") or f"{BFL_API_BASE}/get_result?id={job_id}"
+        
+        print(f"✅ Background job created: {job_id}")
+        
+        return ImageProcessingService._poll_for_result(polling_url, job_id)
 
     @staticmethod
     def restore_pipeline(req: RestoreRequest) -> JobResult:

@@ -13,7 +13,7 @@ load_dotenv()
 
 # Security setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+security = HTTPBearer(auto_error=True)  # Raises 401 instead of 403 for missing tokens
 
 # JWT settings
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
@@ -39,7 +39,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 def verify_token(token: str) -> TokenData:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Invalid or expired token",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -47,14 +47,26 @@ def verify_token(token: str) -> TokenData:
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
+        
+        # Check if token is expired
+        exp = payload.get("exp")
+        if exp is None or datetime.utcnow() > datetime.fromtimestamp(exp):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
         token_data = TokenData(email=email)
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT decode error: {e}")
         raise credentials_exception
     return token_data
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> User:
+    """Get current authenticated user from JWT token"""
     token_data = verify_token(credentials.credentials)
     user = await User.find_one(User.email == token_data.email)
     if user is None:
@@ -68,3 +80,25 @@ async def get_current_user(
             detail="Inactive user"
         )
     return user
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
+) -> User | None:
+    """
+    Get current user from JWT token, but don't raise exceptions.
+    Returns None if authentication fails.
+    Used for optional authentication endpoints.
+    """
+    if credentials is None:
+        return None
+    
+    try:
+        token_data = verify_token(credentials.credentials)
+        user = await User.find_one(User.email == token_data.email)
+        if user is None or not user.is_active:
+            return None
+        return user
+    except HTTPException:
+        return None
+    except Exception:
+        return None

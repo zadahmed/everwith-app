@@ -6,8 +6,7 @@
 //
 
 import Foundation
-import Combine
-import UIKit
+import SwiftUI
 import GoogleSignIn
 
 class AuthenticationService: ObservableObject {
@@ -18,12 +17,12 @@ class AuthenticationService: ObservableObject {
     private let userKey = "current_user"
     private let tokenKey = "access_token"
     private let tokenExpiryKey = "token_expiry"
-    private let sessionTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-    private var cancellables = Set<AnyCancellable>()
     
     init() {
-        loadStoredUser()
-        startSessionValidation()
+        // Load stored user and validate session on startup
+        Task {
+            await validateSessionOnStartup()
+        }
     }
     
     // MARK: - Google Sign In
@@ -192,6 +191,53 @@ class AuthenticationService: ObservableObject {
     }
     
     // MARK: - Session Management
+    
+    /// Validates session on app startup - only called once when app launches
+    private func validateSessionOnStartup() async {
+        print("🔄 SESSION: Validating session on startup...")
+        
+        // Try to load stored user
+        guard let data = userDefaults.data(forKey: userKey),
+              let user = try? JSONDecoder().decode(User.self, from: data),
+              let token = userDefaults.string(forKey: tokenKey) else {
+            print("ℹ️ SESSION: No stored session found")
+            await MainActor.run {
+                self.authenticationState = .unauthenticated
+            }
+            return
+        }
+        
+        // Check local token expiry first
+        if isTokenExpired() {
+            print("⚠️ SESSION: Token expired locally")
+            await MainActor.run {
+                self.authenticationState = .unauthenticated
+            }
+            return
+        }
+        
+        // Validate token with backend
+        let isValid = await validateTokenWithBackend(token)
+        
+        if isValid {
+            print("✅ SESSION: Session restored successfully")
+            await MainActor.run {
+                self.currentUser = user
+                self.authenticationState = .authenticated(user)
+            }
+        } else {
+            print("⚠️ SESSION: Backend validation failed")
+            // Clear invalid session
+            userDefaults.removeObject(forKey: userKey)
+            userDefaults.removeObject(forKey: tokenKey)
+            userDefaults.removeObject(forKey: tokenExpiryKey)
+            
+            await MainActor.run {
+                self.authenticationState = .unauthenticated
+            }
+        }
+    }
+    
     func validateSession() async -> Bool {
         guard let token = userDefaults.string(forKey: tokenKey) else {
             // Silently fail - no token is expected for guest users or fresh installs
@@ -219,41 +265,39 @@ class AuthenticationService: ObservableObject {
     
     private func validateTokenWithBackend(_ token: String) async -> Bool {
         guard let url = URL(string: AppConfiguration.authURL(for: AppConfiguration.AuthEndpoints.me)) else {
+            print("❌ SESSION: Invalid URL for /me endpoint")
             return false
         }
         
         do {
-            let _: UserResponse = try await NetworkService.shared.makeRequest(
-                url: url,
-                method: .GET,
-                responseType: UserResponse.self
-            )
-            return true
+            // Make request with the token
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("ℹ️ SESSION: Invalid response from backend")
+                return false
+            }
+            
+            if httpResponse.statusCode == 200 {
+                print("✅ SESSION: Backend validation successful")
+                return true
+            } else {
+                // 401/403 is expected for invalid/expired tokens - not an error
+                print("ℹ️ SESSION: Token not valid (status: \(httpResponse.statusCode))")
+                return false
+            }
         } catch {
-            print("Token validation failed: \(error)")
+            // Network errors or other issues
+            print("ℹ️ SESSION: Could not validate with backend - \(error.localizedDescription)")
             return false
         }
     }
     
-    private func startSessionValidation() {
-        // Validate session every minute
-        sessionTimer
-            .sink { [weak self] _ in
-                Task {
-                    await self?.checkSessionValidity()
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    private func checkSessionValidity() async {
-        guard case .authenticated = authenticationState else { return }
-        
-        let isValid = await validateSession()
-        if !isValid {
-            await forceLogout(reason: "Session expired")
-        }
-    }
     
     private func forceLogout(reason: String) async {
         print("🔓 SESSION: Logging out - \(reason)")
@@ -442,33 +486,13 @@ class AuthenticationService: ObservableObject {
     private func storeToken(_ token: String) {
         userDefaults.set(token, forKey: tokenKey)
         
-        // Store token expiry (30 minutes from now by default)
-        let expiryDate = Date().addingTimeInterval(30 * 60) // 30 minutes
+        // Store token expiry (7 days from now - matches backend setting)
+        // 7 days * 24 hours * 60 minutes * 60 seconds = 604800 seconds
+        let expiryDate = Date().addingTimeInterval(7 * 24 * 60 * 60)
         userDefaults.set(expiryDate, forKey: tokenExpiryKey)
+        print("✅ Token stored with 7-day expiry: \(expiryDate)")
     }
     
-    private func loadStoredUser() {
-        guard let data = userDefaults.data(forKey: userKey),
-              let user = try? JSONDecoder().decode(User.self, from: data) else {
-            DispatchQueue.main.async {
-                self.authenticationState = .unauthenticated
-            }
-            return
-        }
-        
-        // Check if session is still valid
-        Task {
-            let isValid = await validateSession()
-            await MainActor.run {
-                if isValid {
-                    self.currentUser = user
-                    self.authenticationState = .authenticated(user)
-                } else {
-                    self.authenticationState = .unauthenticated
-                }
-            }
-        }
-    }
     
 }
 

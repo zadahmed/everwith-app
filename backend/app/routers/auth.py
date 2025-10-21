@@ -155,8 +155,14 @@ async def google_auth(google_request: GoogleAuthRequest):
 @router.get("/me", response_model=dict)
 async def get_current_user_info(current_user: DBUser = Depends(get_current_user)):
     """
-    Get current user information
+    Get current authenticated user information.
+    
+    Returns 200 with user data if authenticated.
+    Returns 401 if token is missing, invalid, or expired.
+    
+    This endpoint is used by the mobile app to validate sessions on startup.
     """
+    logger.info(f"Session validated for user: {current_user.email}")
     return {
         "id": str(current_user.id),
         "email": current_user.email,

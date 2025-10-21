@@ -4,10 +4,33 @@ from app.models.database import User
 from app.core.security import get_current_user
 from app.services.image_processing import ImageProcessingService
 import os
+import io
 import uuid
 from typing import Optional
+from PIL import Image
+import boto3
+from botocore.exceptions import ClientError
 
 router = APIRouter(prefix="/api/v1", tags=["image-processing"])
+
+# DigitalOcean Spaces Configuration for upload endpoint
+DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
+DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
+DO_SPACES_REGION = os.getenv("DO_SPACES_REGION", "nyc3")
+DO_SPACES_BUCKET = os.getenv("DO_SPACES_BUCKET")
+DO_SPACES_ENDPOINT = os.getenv("DO_SPACES_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
+DO_SPACES_CDN_ENDPOINT = os.getenv("DO_SPACES_CDN_ENDPOINT")
+
+# Initialize DigitalOcean Spaces client
+s3_client = None
+if DO_SPACES_KEY and DO_SPACES_SECRET:
+    s3_client = boto3.client(
+        's3',
+        region_name="ams3",
+        endpoint_url=DO_SPACES_ENDPOINT,
+        aws_access_key_id=DO_SPACES_KEY,
+        aws_secret_access_key=DO_SPACES_SECRET
+    )
 
 @router.post("/upload")
 async def upload_image(
@@ -15,32 +38,68 @@ async def upload_image(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Upload an image file and return a URL for processing.
+    Upload an image file to DigitalOcean Spaces and return a CDN URL.
     """
     try:
         # Validate file type
         if not file.content_type or not file.content_type.startswith('image/'):
             raise HTTPException(status_code=400, detail="File must be an image")
         
-        # Generate unique filename
+        # Generate unique filename with everwith/ prefix
         file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
-        filename = f"{uuid.uuid4().hex}.{file_extension}"
+        filename = f"everwith/{uuid.uuid4().hex}.{file_extension}"
         
-        # Save file to outputs directory
+        # Read file content
+        content = await file.read()
+        
+        # Upload to DigitalOcean Spaces if configured
+        if s3_client and DO_SPACES_BUCKET:
+            try:
+                # Determine content type
+                content_type = file.content_type or 'image/jpeg'
+                
+                # Upload to Spaces
+                s3_client.upload_fileobj(
+                    io.BytesIO(content),
+                    DO_SPACES_BUCKET,
+                    filename,
+                    ExtraArgs={
+                        'ContentType': content_type,
+                        'ACL': 'public-read',
+                        'CacheControl': 'max-age=31536000'
+                    }
+                )
+                
+                # Return CDN URL if available, otherwise direct Spaces URL
+                if DO_SPACES_CDN_ENDPOINT:
+                    file_url = f"{DO_SPACES_CDN_ENDPOINT}/{filename}"
+                else:
+                    file_url = f"https://{DO_SPACES_BUCKET}.{DO_SPACES_REGION}.digitaloceanspaces.com/{filename}"
+                
+                print(f"✅ Uploaded to Spaces: {file_url}")
+                return {"url": file_url, "filename": filename}
+                
+            except ClientError as e:
+                print(f"❌ Failed to upload to Spaces: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to upload to cloud storage: {str(e)}"
+                )
+        
+        # Fallback: Save locally (for development)
+        print("⚠️ DigitalOcean Spaces not configured - using local storage")
         output_dir = os.getenv("OUTPUT_DIR", "./outputs")
         os.makedirs(output_dir, exist_ok=True)
         file_path = os.path.join(output_dir, filename)
         
-        # Write file
         with open(file_path, "wb") as buffer:
-            content = await file.read()
             buffer.write(content)
         
-        # Return file URL (in production, this would be a cloud storage URL)
         file_url = f"file://{os.path.abspath(file_path)}"
-        
         return {"url": file_url, "filename": filename}
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -62,8 +121,16 @@ async def restore_photo(
     - Apply optional aspect ratio adjustments
     """
     try:
-        return ImageProcessingService.restore_pipeline(req)
+        print(f"🔵 Restore API called with image_url: {req.image_url}")
+        result = ImageProcessingService.restore_pipeline(req)
+        print(f"✅ Restore successful: {result.output_url}")
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"❌ Restore failed with error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Image restoration failed: {str(e)}"

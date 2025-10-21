@@ -6,497 +6,457 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct TogetherSceneView: View {
-    @State private var selectedBackground: BackgroundScene?
-    @State private var warmth: Double = 0.5
-    @State private var shadow: Double = 0.5
-    @State private var grain: Double = 0.3
+    @StateObject private var imageProcessingService = ImageProcessingService.shared
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var selectedImages: [UIImage] = []
+    @State private var processedImage: UIImage?
     @State private var isProcessing = false
     @State private var processingProgress: Double = 0.0
-    @State private var showBackgroundGallery = false
-    @State private var showConsentModal = false
-    @State private var firstCompositeConsentGiven = false
-    @State private var showExportView = false
-    
-    // Mock data for demonstration
-    @State private var subjectA: UIImage? = UIImage(systemName: "person.circle.fill")
-    @State private var subjectB: UIImage? = UIImage(systemName: "person.circle.fill")
-    @State private var previewImage: UIImage?
+    @State private var showPhotoPicker = false
+    @State private var sliderPosition: CGFloat = 0.5
+    @State private var showSaveSuccess = false
+    @State private var errorMessage: String?
+    @State private var showError = false
+    @State private var pickedItems: [PhotosPickerItem] = []
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Background
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.warmLinen.opacity(0.3),
-                        Color.sky.opacity(0.1),
-                        Color.honeyGold.opacity(0.05)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea(.all)
+                Color.warmLinen
+                    .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Top Navigation Bar
-                    TogetherNavigationBar(
-                        onBack: {
-                            // Navigate back to Home
-                        },
-                        onExport: {
-                            if !firstCompositeConsentGiven {
-                                showConsentModal = true
-                            } else {
-                                showExportView = true
+                    // Simple Header
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 18, weight: .semibold))
+                                Text("Back")
+                                    .font(.system(size: 17, weight: .regular))
                             }
+                            .foregroundColor(.charcoal)
                         }
-                    )
-                    .padding(.top, geometry.safeAreaInsets.top)
+                        
+                        Spacer()
+                        
+                        Text("Together Scene")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.charcoal)
+                        
+                        Spacer()
+                        
+                        Color.clear.frame(width: 80)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 12)
                     
-                    // Main Canvas Area
-                    ZStack {
-                        // Background Preview
-                        if let background = selectedBackground {
-                            BackgroundPreviewView(background: background)
-                                .ignoresSafeArea()
-                        } else {
-                            // Default background
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.warmLinen.opacity(0.5),
-                                    Color.sky.opacity(0.3)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .ignoresSafeArea()
-                        }
-                        
-                        // Canvas with cutouts
-                        TogetherCanvas(
-                            subjectA: subjectA,
-                            subjectB: subjectB,
-                            warmth: warmth,
-                            shadow: shadow,
-                            grain: grain,
-                            isProcessing: isProcessing,
-                            processingProgress: processingProgress
-                        )
-                        
-                        // Floating Controls
-                        VStack {
+                    // Main Content
+                    if selectedImages.count < 2 {
+                        // Step 1: Select Photos
+                        VStack(spacing: 24) {
                             Spacer()
                             
-                            HStack {
-                                Spacer()
-                                
-                                VStack(spacing: ModernDesignSystem.Spacing.md) {
-                                    // Background Picker
-                                    Button(action: {
-                                        showBackgroundGallery = true
-                                    }) {
-                                        HStack(spacing: ModernDesignSystem.Spacing.sm) {
-                                            Image(systemName: "photo.on.rectangle")
-                                                .font(.system(size: 16, weight: .medium))
-                                            
-                                            Text("Background")
-                                                .font(.system(size: 14, weight: .medium))
-                                        }
-                                        .foregroundColor(.charcoal)
-                                        .padding(.horizontal, ModernDesignSystem.Spacing.md)
-                                        .padding(.vertical, ModernDesignSystem.Spacing.sm)
-                                        .background(
-                                            Capsule()
-                                                .fill(Color.white.opacity(0.9))
-                                                .background(.ultraThinMaterial)
-                                        )
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                        )
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 64, weight: .light))
+                                .foregroundColor(.sky.opacity(0.6))
+                            
+                            Text("Create a Together Scene")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.charcoal)
+                            
+                            Text("Select 2 photos to combine")
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(.charcoal.opacity(0.7))
+                            
+                            // Show selected photos if any
+                            if !selectedImages.isEmpty {
+                                HStack(spacing: 12) {
+                                    ForEach(selectedImages.indices, id: \.self) { index in
+                                        Image(uiImage: selectedImages[index])
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 100, height: 120)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
                                     }
-                                    .buttonStyle(PlainButtonStyle())
-                                    
-                                    // Parameter Controls
-                                    VStack(spacing: ModernDesignSystem.Spacing.sm) {
-                                        ParameterControl(
-                                            title: "Warmth",
-                                            value: $warmth,
-                                            icon: "sun.max.fill",
-                                            color: .honeyGold
-                                        )
-                                        
-                                        ParameterControl(
-                                            title: "Shadow",
-                                            value: $shadow,
-                                            icon: "moon.fill",
-                                            color: .charcoal
-                                        )
-                                        
-                                        ParameterControl(
-                                            title: "Grain",
-                                            value: $grain,
-                                            icon: "sparkles",
-                                            color: .sky
-                                        )
-                                    }
-                                    .padding(ModernDesignSystem.Spacing.md)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.lg)
-                                            .fill(Color.white.opacity(0.9))
-                                            .background(.ultraThinMaterial)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.lg)
-                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                    )
-                                    
-                                    // Auto-balance Button
-                                    Button(action: {
-                                        autoBalanceParameters()
-                                    }) {
-                                        HStack(spacing: ModernDesignSystem.Spacing.sm) {
-                                            Image(systemName: "wand.and.stars")
-                                                .font(.system(size: 16, weight: .medium))
-                                            
-                                            Text("Auto-balance")
-                                                .font(.system(size: 14, weight: .medium))
-                                        }
-                                        .foregroundColor(.charcoal)
-                                        .padding(.horizontal, ModernDesignSystem.Spacing.md)
-                                        .padding(.vertical, ModernDesignSystem.Spacing.sm)
-                                        .background(
-                                            Capsule()
-                                                .fill(Color.honeyGold.opacity(0.9))
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .padding(.trailing, ModernDesignSystem.Spacing.lg)
-                                .padding(.bottom, geometry.safeAreaInsets.bottom + ModernDesignSystem.Spacing.lg)
                             }
+                            
+                            Button(action: { showPhotoPicker = true }) {
+                                Text(selectedImages.isEmpty ? "Choose 2 Photos" : "Choose \(2 - selectedImages.count) More")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: 280)
+                                    .frame(height: 54)
+                                    .background(Color.sky)
+                                    .cornerRadius(16)
+                            }
+                            .padding(.top, 16)
+                            
+                            Spacer()
+                        }
+                    } else if processedImage == nil && !isProcessing {
+                        // Step 2: Preview & Create
+                        ScrollView {
+                            VStack(spacing: 24) {
+                                // Show selected images
+                                HStack(spacing: 16) {
+                                    ForEach(selectedImages.indices, id: \.self) { index in
+                                        Image(uiImage: selectedImages[index])
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: geometry.size.height * 0.3)
+                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            .shadow(color: .black.opacity(0.1), radius: 10)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                
+                                VStack(spacing: 16) {
+                                    Button(action: createTogetherScene) {
+                            HStack {
+                                            Image(systemName: "wand.and.stars")
+                                                .font(.system(size: 18, weight: .semibold))
+                                            Text("Create Together Scene")
+                                                .font(.system(size: 17, weight: .semibold))
+                                        }
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 54)
+                                        .background(Color.sky)
+                                        .cornerRadius(16)
+                                    }
+                                    
+                                    Button(action: { selectedImages = []; showPhotoPicker = true }) {
+                                        Text("Choose Different Photos")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.charcoal.opacity(0.7))
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                            }
+                            .padding(.top, 20)
+                        }
+                    } else if isProcessing {
+                        // Step 3: Processing
+                        VStack(spacing: 24) {
+                                Spacer()
+                            
+                            ZStack {
+                                Circle()
+                                    .stroke(Color.sky.opacity(0.3), lineWidth: 8)
+                                    .frame(width: 100, height: 100)
+                                
+                                Circle()
+                                    .trim(from: 0, to: processingProgress)
+                                    .stroke(Color.sky, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                                    .frame(width: 100, height: 100)
+                                    .rotationEffect(.degrees(-90))
+                                    .animation(.linear(duration: 0.3), value: processingProgress)
+                                
+                                Text("\(Int(processingProgress * 100))%")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.charcoal)
+                            }
+                            
+                            Text("Creating your scene...")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.charcoal)
+                            
+                            Text("This may take up to a minute")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.charcoal.opacity(0.6))
+                            
+                            Spacer()
+                        }
+                    } else if let processed = processedImage {
+                        // Step 4: Result with Before/After
+                        VStack(spacing: 0) {
+                            // Before/After Comparison
+                            GeometryReader { imageGeometry in
+                                ZStack(alignment: .leading) {
+                                    // After image (full)
+                                    Image(uiImage: processed)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(maxWidth: .infinity)
+                                    
+                                    // Before image (masked) - show first image
+                                    if !selectedImages.isEmpty {
+                                        HStack(spacing: 8) {
+                                            Image(uiImage: selectedImages[0])
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: imageGeometry.size.width * 0.45 * sliderPosition)
+                                                .clipped()
+                                            
+                                            if selectedImages.count > 1 {
+                                                Image(uiImage: selectedImages[1])
+                                                    .resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                                    .frame(width: imageGeometry.size.width * 0.45 * sliderPosition)
+                                                    .clipped()
+                                            }
+                                        }
+                                        .mask(
+                                            Rectangle()
+                                                .frame(width: imageGeometry.size.width * sliderPosition)
+                                        )
+                                    }
+                                    
+                                    // Labels
+                                    HStack {
+                                        if sliderPosition > 0.1 {
+                                            Text("Original")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(Color.black.opacity(0.6))
+                                                .cornerRadius(8)
+                                                .padding(.leading, 12)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        if sliderPosition < 0.9 {
+                                            Text("Together")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(Color.black.opacity(0.6))
+                                                .cornerRadius(8)
+                                                .padding(.trailing, 12)
+                                        }
+                                    }
+                                    .padding(.top, 12)
+                                    
+                                    // Slider
+                                    VStack {
+                                        Rectangle()
+                                            .fill(Color.white)
+                                            .frame(width: 3)
+                                            .shadow(color: .black.opacity(0.3), radius: 2)
+                                            .overlay(
+                                                Circle()
+                                                    .fill(Color.white)
+                                                    .frame(width: 44, height: 44)
+                                                    .shadow(color: .black.opacity(0.3), radius: 8)
+                                                    .overlay(
+                                                        HStack(spacing: 4) {
+                                                            Image(systemName: "chevron.left")
+                                                                .font(.system(size: 10, weight: .bold))
+                                                            Image(systemName: "chevron.right")
+                                                                .font(.system(size: 10, weight: .bold))
+                                                        }
+                                                        .foregroundColor(.charcoal.opacity(0.6))
+                                                    )
+                                            )
+                                    }
+                                    .offset(x: imageGeometry.size.width * sliderPosition - 22)
+                                    .gesture(
+                                        DragGesture()
+                                            .onChanged { value in
+                                                sliderPosition = min(max(value.location.x / imageGeometry.size.width, 0), 1)
+                                            }
+                                    )
+                                }
+                            }
+                            .frame(height: geometry.size.height * 0.55)
+                            
+                            Spacer()
+                            
+                            // Instructions
+                            Text("← Swipe to compare →")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.charcoal.opacity(0.5))
+                                .padding(.bottom, 16)
+                            
+                            // Action Buttons
+                            VStack(spacing: 12) {
+                                Button(action: savePhoto) {
+                                    HStack {
+                                        Image(systemName: showSaveSuccess ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        Text(showSaveSuccess ? "Saved!" : "Save to Photos")
+                                            .font(.system(size: 17, weight: .semibold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 54)
+                                    .background(showSaveSuccess ? Color.green : Color.sky)
+                                    .cornerRadius(16)
+                                }
+                                .disabled(showSaveSuccess)
+                                
+                                HStack(spacing: 12) {
+                                    Button(action: sharePhoto) {
+                                        HStack {
+                                            Image(systemName: "square.and.arrow.up")
+                                            Text("Share")
+                                        }
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.charcoal)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 50)
+                                        .background(Color.white.opacity(0.5))
+                                        .cornerRadius(14)
+                                    }
+                                    
+                                    Button(action: {
+                                        selectedImages = []
+                                        processedImage = nil
+                                        pickedItems.removeAll()
+                                        showPhotoPicker = true
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "photo.badge.plus")
+                                            Text("New Scene")
+                                        }
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.charcoal)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 50)
+                                        .background(Color.white.opacity(0.5))
+                                        .cornerRadius(14)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20))
                         }
                     }
                 }
             }
         }
-        .backgroundGallerySheet(
-            isPresented: $showBackgroundGallery,
-            selectedBackground: $selectedBackground
-        )
-        .sheet(isPresented: $showConsentModal) {
-            ConsentModal(
-                isPresented: $showConsentModal,
-                onConfirm: {
-                    firstCompositeConsentGiven = true
-                    showExportView = true
+        .photosPicker(isPresented: $showPhotoPicker, selection: $pickedItems, maxSelectionCount: 2 - selectedImages.count, matching: .images)
+        .onChange(of: pickedItems) { oldValue, newValue in
+            Task {
+                // Load images from the newly picked items, respecting the remaining slots
+                let remaining = max(0, 2 - selectedImages.count)
+                let toLoad = Array(newValue.prefix(remaining))
+                for item in toLoad {
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        await MainActor.run {
+                            if selectedImages.count < 2 {
+                                selectedImages.append(uiImage)
+                            }
+                        }
+                    }
                 }
-            )
-        }
-        .sheet(isPresented: $showExportView) {
-            ExportView()
-        }
-        .onAppear {
-            // Auto-run initial preview
-            runInitialPreview()
-        }
-    }
-    
-    // MARK: - Private Methods
-    private func runInitialPreview() {
-        isProcessing = true
-        processingProgress = 0.0
-        
-        // Simulate processing
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            processingProgress += 0.05
-            
-            if processingProgress >= 1.0 {
-                timer.invalidate()
-                isProcessing = false
-                processingProgress = 0.0
-                // Set preview image
-                previewImage = UIImage(systemName: "photo.fill")
-            }
-        }
-    }
-    
-    private func autoBalanceParameters() {
-        withAnimation(.easeInOut(duration: 0.5)) {
-            warmth = 0.6
-            shadow = 0.4
-            grain = 0.2
-        }
-        
-        // Trigger preview update
-        updatePreview()
-    }
-    
-    private func updatePreview() {
-        // Simulate preview update
-        isProcessing = true
-        processingProgress = 0.0
-        
-        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
-            processingProgress += 0.1
-            
-            if processingProgress >= 1.0 {
-                timer.invalidate()
-                isProcessing = false
-                processingProgress = 0.0
-            }
-        }
-    }
-}
-
-// MARK: - Together Navigation Bar
-struct TogetherNavigationBar: View {
-    let onBack: () -> Void
-    let onExport: () -> Void
-    
-    var body: some View {
-        HStack {
-            // Back Button
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.charcoal)
-            }
-            
-            Spacer()
-            
-            // Title
-            Text("Together Scene")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                .foregroundColor(.charcoal)
-            
-            Spacer()
-            
-            // Export Button
-            Button(action: onExport) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.charcoal)
-            }
-        }
-        .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-        .padding(.vertical, ModernDesignSystem.Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.lg)
-                .fill(Color.white.opacity(0.1))
-                .background(.ultraThinMaterial)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.lg)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-        )
-        .shadow(
-            color: Color.black.opacity(0.05),
-            radius: 8,
-            x: 0,
-            y: -2
-        )
-        .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-        .padding(.top, ModernDesignSystem.Spacing.lg)
-    }
-}
-
-// MARK: - Together Canvas
-struct TogetherCanvas: View {
-    let subjectA: UIImage?
-    let subjectB: UIImage?
-    let warmth: Double
-    let shadow: Double
-    let grain: Double
-    let isProcessing: Bool
-    let processingProgress: Double
-    
-    var body: some View {
-        ZStack {
-            // Canvas Background
-            Rectangle()
-                .fill(Color.clear)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Subject Cutouts
-            HStack(spacing: ModernDesignSystem.Spacing.xl) {
-                // Subject A
-                SubjectCutout(
-                    image: subjectA,
-                    warmth: warmth,
-                    shadow: shadow,
-                    grain: grain
-                )
-                
-                // Subject B
-                SubjectCutout(
-                    image: subjectB,
-                    warmth: warmth,
-                    shadow: shadow,
-                    grain: grain
-                )
-            }
-            .padding(ModernDesignSystem.Spacing.xl)
-            
-            // Processing Overlay
-            if isProcessing {
-                ZStack {
-                    Rectangle()
-                        .fill(Color.black.opacity(0.3))
-                        .ignoresSafeArea()
-                    
-                    VStack(spacing: ModernDesignSystem.Spacing.lg) {
-                        ProgressView(value: processingProgress)
-                            .progressViewStyle(LinearProgressViewStyle(tint: .honeyGold))
-                            .scaleEffect(x: 1, y: 2, anchor: .center)
-                            .frame(width: 200)
-                        
-                        Text("Updating preview...")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
+                await MainActor.run {
+                    // Clear picked items after processing to avoid duplicate loads
+                    pickedItems.removeAll()
+                    // Auto-hide picker if we've reached 2 images
+                    if selectedImages.count >= 2 {
+                        showPhotoPicker = false
                     }
                 }
             }
         }
+        .onReceive(imageProcessingService.$processingProgress) { progress in
+            if let p = progress {
+                processingProgress = Double(p.currentStepIndex) / Double(p.totalSteps)
+            }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") {
+                clearError()
+            }
+        } message: {
+            Text(errorMessage ?? "An error occurred")
+        }
     }
-}
-
-// MARK: - Subject Cutout
-struct SubjectCutout: View {
-    let image: UIImage?
-    let warmth: Double
-    let shadow: Double
-    let grain: Double
     
-    var body: some View {
-        ZStack {
-            // Cutout Shape
-            RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.lg)
-                .fill(Color.white.opacity(0.1))
-                .frame(width: 150, height: 200)
-                .overlay(
-                    RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.lg)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+    private func createTogetherScene() {
+        guard selectedImages.count >= 2 else { return }
+        
+        Task {
+            do {
+                isProcessing = true
+                
+                let background = TogetherBackground(
+                    mode: .generate,
+                    prompt: "soft warm tribute background with gentle bokeh and natural lighting"
                 )
-            
-            // Subject Image
-            if let image = image {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 140, height: 190)
-                    .clipped()
-                    .cornerRadius(ModernDesignSystem.CornerRadius.md)
-            } else {
-                VStack(spacing: ModernDesignSystem.Spacing.sm) {
-                    Image(systemName: "person.circle")
-                        .font(.system(size: 40, weight: .medium))
-                        .foregroundColor(.charcoal.opacity(0.5))
-                    
-                    Text("Subject")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.charcoal.opacity(0.5))
+                
+                let lookControls = LookControls(
+                    warmth: 0.5,
+                    shadows: 0.5,
+                    grain: 0.3
+                )
+                
+                let result = try await imageProcessingService.togetherPhoto(
+                    subjectA: selectedImages[0],
+                    subjectB: selectedImages[1],
+                    background: background,
+                    aspectRatio: .fourFive,
+                    seed: nil,
+                    lookControls: lookControls
+                )
+                
+                let together = try await imageProcessingService.downloadProcessedImage(from: result.outputUrl)
+                
+                await MainActor.run {
+                    processedImage = together
+                    isProcessing = false
+                    sliderPosition = 0.5
                 }
+            } catch {
+                await MainActor.run {
+                    isProcessing = false
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
+                print("❌ Together failed: \(error)")
             }
         }
     }
-}
-
-// MARK: - Parameter Control
-struct ParameterControl: View {
-    let title: String
-    @Binding var value: Double
-    let icon: String
-    let color: Color
     
-    var body: some View {
-        VStack(spacing: ModernDesignSystem.Spacing.xs) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(color)
-                
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.charcoal)
-                
-                Spacer()
-            }
-            
-            Slider(value: $value, in: 0...1)
-                .accentColor(color)
-        }
+    private func clearError() {
+        errorMessage = nil
+        showError = false
     }
-}
-
-// MARK: - Consent Modal
-struct ConsentModal: View {
-    @Binding var isPresented: Bool
-    let onConfirm: () -> Void
     
-    var body: some View {
-        VStack(spacing: ModernDesignSystem.Spacing.lg) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(Color.honeyGold.opacity(0.1))
-                    .frame(width: 80, height: 80)
-                
-                Image(systemName: "heart.circle.fill")
-                    .font(.system(size: 40, weight: .medium))
-                    .foregroundColor(.honeyGold)
-            }
-            
-            // Content
-            VStack(spacing: ModernDesignSystem.Spacing.md) {
-                Text("Create Together Scene")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(.charcoal)
-                    .multilineTextAlignment(.center)
-                
-                Text("This will create a composite image using AI. By continuing, you consent to processing your photos for this purpose.")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(.charcoal.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(2)
-            }
-            
-            // Actions
-            VStack(spacing: ModernDesignSystem.Spacing.md) {
-                Button(action: {
-                    onConfirm()
-                    isPresented = false
-                }) {
-                    Text("I Understand")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.charcoal)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.honeyGold)
-                        .cornerRadius(ModernDesignSystem.CornerRadius.md)
-                }
-                
-                Button(action: {
-                    isPresented = false
-                }) {
-                    Text("Cancel")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.charcoal.opacity(0.6))
-                }
+    private func savePhoto() {
+        guard let image = processedImage else { return }
+        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+        
+        withAnimation {
+            showSaveSuccess = true
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                showSaveSuccess = false
             }
         }
-        .padding(ModernDesignSystem.Spacing.xl)
-        .background(Color.warmLinen)
-        .cornerRadius(ModernDesignSystem.CornerRadius.lg)
-        .shadow(
-            color: Color.black.opacity(0.1),
-            radius: 20,
-            x: 0,
-            y: 10
+        
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+    
+    private func sharePhoto() {
+        guard let image = processedImage else { return }
+        
+        let activityVC = UIActivityViewController(
+            activityItems: [image],
+            applicationActivities: nil
         )
-        .padding(ModernDesignSystem.Spacing.lg)
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
+        }
     }
 }
 

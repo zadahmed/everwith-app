@@ -120,7 +120,7 @@ enum PhotoPickerMode {
     var subtitleText: String {
         switch self {
         case .restore: return "Select one precious photo from your library"
-        case .togetherScene: return "Pick two photos to compose together"
+        case .togetherScene: return "Pick two photos to create together"
         }
     }
 }

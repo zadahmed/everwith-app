@@ -8,6 +8,12 @@ struct HomeView: View {
     @State private var selectedRestorePhotos: [ImportedPhoto] = []
     @State private var selectedTogetherPhotos: [ImportedPhoto] = []
     @State private var animateElements = false
+    @State private var headerScale: CGFloat = 0.9
+    @State private var welcomeCardOpacity: Double = 0
+    @State private var restoreButtonScale: CGFloat = 0.9
+    @State private var togetherButtonScale: CGFloat = 0.9
+    @State private var buttonPressedRestore: Bool = false
+    @State private var buttonPressedTogether: Bool = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -19,18 +25,28 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     // Enhanced Header
                     ModernHomeHeader(user: user, showSettings: $showSettings, geometry: geometry)
+                        .scaleEffect(headerScale)
+                        .opacity(animateElements ? 1 : 0)
                     
                     ScrollView {
                         VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                             // Welcome Message
                             WelcomeMessageCard(geometry: geometry)
                                 .padding(.horizontal, adaptivePadding(for: geometry))
+                                .opacity(welcomeCardOpacity)
+                                .offset(y: animateElements ? 0 : 20)
                             
                             // Simple Action Buttons
                             VStack(spacing: adaptiveSpacing(12, for: geometry)) {
                                 // Restore Photo Button
                                 Button(action: {
-                                    showPhotoPicker = true
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        buttonPressedRestore = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        showPhotoPicker = true
+                                        buttonPressedRestore = false
+                                    }
                                 }) {
                                     HStack(spacing: adaptiveSpacing(10, for: geometry)) {
                                         Image(systemName: "photo.badge.plus")
@@ -89,13 +105,28 @@ struct HomeView: View {
                                                         lineWidth: 1
                                                     )
                                             )
+                                            .shadow(
+                                                color: Color.honeyGold.opacity(buttonPressedRestore ? 0.1 : 0.2),
+                                                radius: buttonPressedRestore ? 4 : 8,
+                                                x: 0,
+                                                y: buttonPressedRestore ? 2 : 4
+                                            )
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
+                                .scaleEffect(buttonPressedRestore ? 0.96 : restoreButtonScale)
+                                .opacity(animateElements ? 1 : 0)
+                                .offset(x: animateElements ? 0 : -20)
                                 
                                 // Together Scene Button
                                 Button(action: {
-                                    showTogetherPicker = true
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        buttonPressedTogether = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        showTogetherPicker = true
+                                        buttonPressedTogether = false
+                                    }
                                 }) {
                                     HStack(spacing: adaptiveSpacing(10, for: geometry)) {
                                         Image(systemName: "heart.circle.fill")
@@ -154,9 +185,18 @@ struct HomeView: View {
                                                         lineWidth: 1
                                                     )
                                             )
+                                            .shadow(
+                                                color: Color.sky.opacity(buttonPressedTogether ? 0.1 : 0.2),
+                                                radius: buttonPressedTogether ? 4 : 8,
+                                                x: 0,
+                                                y: buttonPressedTogether ? 2 : 4
+                                            )
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
+                                .scaleEffect(buttonPressedTogether ? 0.96 : togetherButtonScale)
+                                .opacity(animateElements ? 1 : 0)
+                                .offset(x: animateElements ? 0 : -20)
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
                             
@@ -170,8 +210,19 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.8).delay(0.2)) {
+            // Staggered entrance animations
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                headerScale = 1.0
                 animateElements = true
+            }
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                welcomeCardOpacity = 1.0
+            }
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.3)) {
+                restoreButtonScale = 1.0
+            }
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.4)) {
+                togetherButtonScale = 1.0
             }
         }
         .sheet(isPresented: $showPhotoPicker) {

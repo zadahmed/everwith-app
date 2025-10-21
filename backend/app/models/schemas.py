@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+from pydantic import BaseModel, EmailStr, field_validator, AnyHttpUrl
+from typing import Optional, Literal
 from datetime import datetime
 
 class UserBase(BaseModel):
@@ -80,3 +80,36 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+# Image Processing Schemas
+class RestoreRequest(BaseModel):
+    image_url: AnyHttpUrl
+    quality_target: Literal["standard", "premium"] = "standard"
+    output_format: Literal["png", "webp", "jpg"] = "png"
+    aspect_ratio: Literal["original", "4:5", "1:1", "16:9"] = "original"
+    seed: Optional[int] = None
+
+class TogetherBackground(BaseModel):
+    mode: Literal["gallery", "generate"] = "gallery"
+    scene_id: Optional[str] = None       # required if gallery
+    prompt: Optional[str] = None         # used if generate
+    use_ultra: bool = False
+
+class LookControls(BaseModel):
+    warmth: float = 0.0
+    shadows: float = 0.0
+    grain: float = 0.0
+
+class TogetherRequest(BaseModel):
+    subject_a_url: AnyHttpUrl
+    subject_b_url: AnyHttpUrl
+    subject_a_mask_url: Optional[AnyHttpUrl] = None    # optional if you send cutouts with alpha elsewhere
+    subject_b_mask_url: Optional[AnyHttpUrl] = None
+    background: TogetherBackground
+    aspect_ratio: Literal["original", "4:5", "1:1", "16:9"] = "4:5"
+    seed: Optional[int] = None
+    look_controls: Optional[LookControls] = LookControls()
+
+class JobResult(BaseModel):
+    output_url: str
+    meta: dict

@@ -13,33 +13,33 @@ import UniformTypeIdentifiers
 // MARK: - Import Mode
 enum ImportMode: String, CaseIterable {
     case restore = "restore"
-    case compose = "compose"
+    case together = "together"
     
     var displayName: String {
         switch self {
         case .restore: return "Restore"
-        case .compose: return "Compose"
+        case .together: return "Together"
         }
     }
     
     var description: String {
         switch self {
-        case .restore: return "Restore a single photo"
-        case .compose: return "Compose with multiple photos"
+        case .restore: return "Restore and enhance a single photo"
+        case .together: return "Create a together photo with two subjects"
         }
     }
     
     var maxPhotos: Int {
         switch self {
         case .restore: return 1
-        case .compose: return 2
+        case .together: return 2
         }
     }
     
     var icon: String {
         switch self {
         case .restore: return "photo.badge.plus"
-        case .compose: return "photo.stack"
+        case .together: return "photo.stack"
         }
     }
 }
@@ -68,14 +68,17 @@ enum ImportSource: String, CaseIterable {
 enum ImportState: Equatable {
     case idle
     case selecting
-    case importing
-    case completed
+    case uploading
+    case processing
+    case completed(ProcessedPhoto?)
     case failed(Error)
     
     static func == (lhs: ImportState, rhs: ImportState) -> Bool {
         switch (lhs, rhs) {
-        case (.idle, .idle), (.selecting, .selecting), (.importing, .importing), (.completed, .completed):
+        case (.idle, .idle), (.selecting, .selecting), (.uploading, .uploading), (.processing, .processing):
             return true
+        case (.completed(let lhsPhoto), .completed(let rhsPhoto)):
+            return lhsPhoto?.id == rhsPhoto?.id
         case (.failed(let lhsError), .failed(let rhsError)):
             return lhsError.localizedDescription == rhsError.localizedDescription
         default:
@@ -108,6 +111,36 @@ struct ImportedPhoto: Identifiable {
     let fileSize: Int64?
     let source: ImportSource
     let importedAt: Date
+}
+
+// MARK: - Processed Photo
+struct ProcessedPhoto: Identifiable {
+    let id = UUID()
+    let originalImage: UIImage
+    let processedImage: UIImage
+    let mode: ImportMode
+    let processingSettings: ProcessingSettings
+    let processedAt: Date
+    let outputUrl: String
+}
+
+// MARK: - Processing Settings
+struct ProcessingSettings {
+    let qualityTarget: ImageProcessingQuality
+    let outputFormat: ImageProcessingFormat
+    let aspectRatio: AspectRatio
+    let background: TogetherBackground?
+    let lookControls: LookControls?
+    let seed: Int?
+    
+    init(qualityTarget: ImageProcessingQuality = .standard, outputFormat: ImageProcessingFormat = .png, aspectRatio: AspectRatio = .original, background: TogetherBackground? = nil, lookControls: LookControls? = nil, seed: Int? = nil) {
+        self.qualityTarget = qualityTarget
+        self.outputFormat = outputFormat
+        self.aspectRatio = aspectRatio
+        self.background = background
+        self.lookControls = lookControls
+        self.seed = seed
+    }
 }
 
 // MARK: - Import Configuration

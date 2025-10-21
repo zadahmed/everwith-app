@@ -56,10 +56,15 @@ struct AppCoordinator: View {
                     .onAppear {
                         checkOnboardingStatus()
                     }
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                        removal: .opacity.combined(with: .scale(scale: 1.05))
+                    ))
             } else {
                 switch authService.authenticationState {
                 case .loading:
                     LoadingView()
+                        .transition(.opacity)
                 case .authenticated(let user):
                     HomeView(user: user)
                         .onReceive(NotificationCenter.default.publisher(for: .navigateToRestore)) { _ in
@@ -80,15 +85,26 @@ struct AppCoordinator: View {
                         .sheet(isPresented: $showExportView) {
                             ExportView()
                         }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case .unauthenticated:
                     ModernAuthenticationView()
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .move(edge: .top).combined(with: .opacity)
+                        ))
                 case .error(let message):
                     ErrorView(message: message) {
                         authService.authenticationState = .unauthenticated
                     }
+                    .transition(.opacity)
                 }
             }
         }
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: hasCompletedOnboarding)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: authService.authenticationState)
         .environmentObject(authService)
         .environmentObject(sessionManager)
         .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in

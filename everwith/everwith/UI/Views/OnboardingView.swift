@@ -26,14 +26,14 @@ struct OnboardingView: View {
                 VStack(spacing: 0) {
                     // Status bar spacer
                     Spacer()
-                        .frame(height: geometry.safeAreaInsets.top + 20)
+                        .frame(height: max(geometry.safeAreaInsets.top, 20) + ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry))
                     
                     // Main Content
                     VStack(spacing: 0) {
                         Spacer()
                         
                         // Single Card Content
-                        SingleOnboardingCard()
+                        SingleOnboardingCard(geometry: geometry)
                             .scaleEffect(showContent ? 1.0 : 0.8)
                             .opacity(showContent ? 1.0 : 0.0)
                             .animation(.spring(response: 0.8, dampingFraction: 0.8), value: showContent)
@@ -41,23 +41,25 @@ struct OnboardingView: View {
                         Spacer()
                         
                         // Action Section
-                        VStack(spacing: 24) {
+                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
                             // Primary CTA Button
                             Button(action: {
-                                requestPhotoPermission()
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    requestPhotoPermission()
+                                }
                             }) {
-                                HStack(spacing: 12) {
+                                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
                                     Text("Continue")
-                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold, design: .rounded))
                                     
                                     Image(systemName: "arrow.right")
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .semibold))
                                 }
                                 .foregroundColor(.charcoal)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 56)
+                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
                                 .background(
-                                    RoundedRectangle(cornerRadius: 16)
+                                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
                                         .fill(Color.honeyGold)
                                         .shadow(
                                             color: Color.honeyGold.opacity(0.4),
@@ -69,29 +71,29 @@ struct OnboardingView: View {
                             }
                             .scaleEffect(isAnimating ? 1.05 : 1.0)
                             .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
-                            .padding(.horizontal, 32)
+                            .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
                             
                             // Footer Links
-                            HStack(spacing: 24) {
+                            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
                                 Button("Privacy") {
                                     // Handle privacy action
                                 }
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
                                 .foregroundColor(.charcoal.opacity(0.6))
                                 
                                 Text("•")
-                                    .font(.system(size: 14))
+                                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry)))
                                     .foregroundColor(.charcoal.opacity(0.4))
                                 
                                 Button("Terms") {
                                     // Handle terms action
                                 }
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
                                 .foregroundColor(.charcoal.opacity(0.6))
                             }
-                            .padding(.bottom, 8)
+                            .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry))
                         }
-                        .padding(.bottom, geometry.safeAreaInsets.bottom + 32)
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
                     }
                 }
             }
@@ -239,12 +241,13 @@ struct ElegantBackground: View {
 
 // MARK: - Single Onboarding Card
 struct SingleOnboardingCard: View {
+    let geometry: GeometryProxy
     @State private var iconScale: CGFloat = 0.8
     @State private var iconRotation: Double = 0
     @State private var textOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry)) {
             // Hero Icon with Animation
             ZStack {
                 // Background glow
@@ -258,10 +261,13 @@ struct SingleOnboardingCard: View {
                             ]),
                             center: .center,
                             startRadius: 0,
-                            endRadius: 80
+                            endRadius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 80, for: geometry)
                         )
                     )
-                    .frame(width: 160, height: 160)
+                    .frame(
+                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 160, for: geometry),
+                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 160, for: geometry)
+                    )
                     .blur(radius: 20)
                 
                 // Main icon container
@@ -276,10 +282,13 @@ struct SingleOnboardingCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 120, height: 120)
+                    .frame(
+                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry),
+                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry)
+                    )
                     .overlay(
                         Image(systemName: "photo.badge.plus")
-                            .font(.system(size: 48, weight: .medium))
+                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 48, for: geometry), weight: .medium))
                             .foregroundColor(.white)
                     )
                     .scaleEffect(iconScale)
@@ -293,28 +302,32 @@ struct SingleOnboardingCard: View {
             }
             
             // Content
-            VStack(spacing: 20) {
+            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry)) {
                 Text("Restore precious photos.")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 32, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.charcoal)
                     .multilineTextAlignment(.center)
+                    .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                    .minimumScaleFactor(0.8)
                     .opacity(textOpacity)
                 
                 Text("Keep control of what you share.")
-                    .font(.system(size: 20, weight: .medium, design: .rounded))
+                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .medium, design: .rounded))
                     .foregroundColor(.charcoal.opacity(0.8))
                     .multilineTextAlignment(.center)
+                    .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                    .minimumScaleFactor(0.8)
                     .opacity(textOpacity)
             }
-            .padding(.horizontal, 40)
+            .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry))
         }
-        .padding(40)
+        .padding(ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry))
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 24, for: geometry))
                 .fill(Color.white.opacity(0.1))
                 .background(.ultraThinMaterial)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 24, for: geometry))
                         .stroke(
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -334,7 +347,7 @@ struct SingleOnboardingCard: View {
             x: 0,
             y: 15
         )
-        .padding(.horizontal, 32)
+        .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
         .onAppear {
             withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.3)) {
                 iconScale = 1.0
@@ -354,41 +367,45 @@ struct FilesPickerView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 32) {
-                // Icon
-                Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 60, weight: .medium))
-                    .foregroundColor(.honeyGold)
-                
-                VStack(spacing: 16) {
-                    Text("No problem—use Files instead.")
-                        .font(.system(size: 20, weight: .semibold, design: .rounded))
-                        .foregroundColor(.charcoal)
-                        .multilineTextAlignment(.center)
+        GeometryReader { geometry in
+            NavigationView {
+                VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry)) {
+                    // Icon
+                    Image(systemName: "folder.badge.plus")
+                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 60, for: geometry), weight: .medium))
+                        .foregroundColor(.honeyGold)
                     
-                    Text("Select photos from your Files app to restore them.")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(.charcoal.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                }
-                
-                Spacer()
-                
-                Button("Open Files") {
-                    // Handle file picker
-                    dismiss()
-                }
-                .buttonStyle(ModernButtonStyle(style: .primary, size: .large))
-                .padding(.horizontal, 32)
-            }
-            .padding(32)
-            .navigationTitle("Files")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") {
+                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                        Text("No problem—use Files instead.")
+                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .semibold, design: .rounded))
+                            .foregroundColor(.charcoal)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                        
+                        Text("Select photos from your Files app to restore them.")
+                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .regular))
+                            .foregroundColor(.charcoal.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(geometry.isSmallScreen ? 4 : 3)
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Open Files") {
+                        // Handle file picker
                         dismiss()
+                    }
+                    .buttonStyle(ModernButtonStyle(style: .primary, size: .large))
+                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                }
+                .padding(ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                .navigationTitle("Files")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -402,87 +419,93 @@ struct PermissionDeniedSheet: View {
     let onUseFiles: () -> Void
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 32) {
-                // Header
-                VStack(spacing: 24) {
-                    Image(systemName: "photo.badge.exclamationmark")
-                        .font(.system(size: 60, weight: .medium))
-                        .foregroundColor(.honeyGold)
-                    
-                    VStack(spacing: 16) {
-                        Text("Photos Access Needed")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(.charcoal)
-                            .multilineTextAlignment(.center)
+        GeometryReader { geometry in
+            NavigationView {
+                VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry)) {
+                    // Header
+                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
+                        Image(systemName: "photo.badge.exclamationmark")
+                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 60, for: geometry), weight: .medium))
+                            .foregroundColor(.honeyGold)
                         
-                        Text("To restore your precious memories, we need access to your photo library.")
-                            .font(.system(size: 18, weight: .regular))
-                            .foregroundColor(.charcoal.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(4)
-                    }
-                }
-                .padding(.top, 32)
-                
-                Spacer()
-                
-                // Options
-                VStack(spacing: 16) {
-                    Button(action: onTryAgain) {
-                        Text("Try Again")
-                            .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            .foregroundColor(.charcoal)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.honeyGold)
-                                    .shadow(
-                                        color: Color.honeyGold.opacity(0.3),
-                                        radius: 8,
-                                        x: 0,
-                                        y: 4
-                                    )
-                            )
-                    }
-                    
-                    Button(action: onUseFiles) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "folder")
-                                .font(.system(size: 16, weight: .medium))
-                            Text("Pick from Files")
-                                .font(.system(size: 16, weight: .medium))
+                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                            Text("Photos Access Needed")
+                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 28, for: geometry), weight: .bold, design: .rounded))
+                                .foregroundColor(.charcoal)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                                .minimumScaleFactor(0.8)
+                            
+                            Text("To restore your precious memories, we need access to your photo library.")
+                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .regular))
+                                .foregroundColor(.charcoal.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(4)
+                                .lineLimit(geometry.isSmallScreen ? 5 : 3)
                         }
-                        .foregroundColor(.charcoal.opacity(0.8))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
-                        )
+                    }
+                    .padding(.top, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                    
+                    Spacer()
+                    
+                    // Options
+                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                        Button(action: onTryAgain) {
+                            Text("Try Again")
+                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold, design: .rounded))
+                                .foregroundColor(.charcoal)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
+                                .background(
+                                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
+                                        .fill(Color.honeyGold)
+                                        .shadow(
+                                            color: Color.honeyGold.opacity(0.3),
+                                            radius: 8,
+                                            x: 0,
+                                            y: 4
+                                        )
+                                )
+                        }
+                        
+                        Button(action: onUseFiles) {
+                            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                                Image(systemName: "folder")
+                                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .medium))
+                                Text("Pick from Files")
+                                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .medium))
+                            }
+                            .foregroundColor(.charcoal.opacity(0.8))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 48, for: geometry))
+                            .background(Color.clear)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
+                                    .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                    .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                }
+                .background(Color.warmLinen)
+                .navigationTitle("Permission")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Cancel") {
+                            onUseFiles() // Default to files if cancelled
+                        }
                     }
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 32)
             }
-            .background(Color.warmLinen)
-            .navigationTitle("Permission")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") {
-                        onUseFiles() // Default to files if cancelled
-                    }
-                }
-            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
     }
 }
 
 #Preview {
     OnboardingView()
 }
+

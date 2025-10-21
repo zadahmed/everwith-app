@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AuthenticationServices
 
 struct ModernAuthenticationView: View {
     @EnvironmentObject private var authService: AuthenticationService
@@ -21,130 +20,223 @@ struct ModernAuthenticationView: View {
     @State private var showPassword = false
     @State private var showConfirmPassword = false
     @State private var animateElements = false
+    @State private var buttonPressedEmail: Bool = false
+    @State private var buttonPressedGoogle: Bool = false
+    @State private var formOpacity: Double = 0
+    @State private var logoScale: CGFloat = 0.8
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Modern Vibrant Background (matching HomeView)
                 ModernVibrantBackground()
-                    .ignoresSafeArea(.all)
+                    .ignoresSafeArea()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                 
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: adaptiveSpacing(20, for: geometry)) {
+                    VStack(spacing: 0) {
                         
-                        // Top spacing
-                        Spacer()
-                            .frame(height: adaptiveSpacing(40, for: geometry))
-                        
-                        // App Logo and Branding
-                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
-                            // App Logo
+                        // App Logo and Branding - Modern & Vibrant
+                        VStack(spacing: geometry.isSmallScreen ? 12 : 16) {
+                            // App Logo with vibrant gradient
                             ZStack {
+                                // Glow effect
                                 Circle()
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.honeyGold.opacity(0.8),
-                                                Color.sky.opacity(0.6)
+                                                Color(red: 0.45, green: 0.35, blue: 0.95).opacity(0.6),
+                                                Color(red: 0.95, green: 0.35, blue: 0.65).opacity(0.4)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
-                                    .frame(width: adaptiveSize(80, for: geometry), height: adaptiveSize(80, for: geometry))
-                                    .background(.ultraThinMaterial)
+                                    .frame(
+                                        width: geometry.isSmallScreen ? 72 : adaptiveSize(85, for: geometry),
+                                        height: geometry.isSmallScreen ? 72 : adaptiveSize(85, for: geometry)
+                                    )
+                                    .blur(radius: 20)
+                                
+                                // Main logo circle
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(red: 0.5, green: 0.4, blue: 1.0),    // Vibrant Purple
+                                                Color(red: 1.0, green: 0.4, blue: 0.7),    // Vibrant Pink
+                                                Color(red: 1.0, green: 0.6, blue: 0.3)     // Warm Orange
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(
+                                        width: geometry.isSmallScreen ? 68 : adaptiveSize(80, for: geometry),
+                                        height: geometry.isSmallScreen ? 68 : adaptiveSize(80, for: geometry)
+                                    )
                                     .overlay(
                                         Circle()
                                             .stroke(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [
-                                                        Color.honeyGold.opacity(0.3),
-                                                        Color.sky.opacity(0.2)
-                                                    ]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
-                                                lineWidth: 1
+                                                Color.white.opacity(0.3),
+                                                lineWidth: 2
                                             )
                                     )
                                 
                                 Text("EW")
-                                    .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
+                                    .font(.system(
+                                        size: geometry.isSmallScreen ? 26 : adaptiveFontSize(30, for: geometry),
+                                        weight: .black,
+                                        design: .rounded
+                                    ))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [.white, .white.opacity(0.95)]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
                             }
+                            .scaleEffect(logoScale)
                             .shadow(
-                                color: Color.honeyGold.opacity(0.3),
-                                radius: adaptiveSpacing(8, for: geometry),
+                                color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.4),
+                                radius: geometry.isSmallScreen ? 10 : adaptiveSpacing(15, for: geometry),
                                 x: 0,
-                                y: adaptiveSpacing(4, for: geometry)
+                                y: geometry.isSmallScreen ? 4 : adaptiveSpacing(6, for: geometry)
                             )
                             
-                            // App Name and Tagline
-                            VStack(spacing: adaptiveSpacing(6, for: geometry)) {
+                            // App Name and Tagline - Modern
+                            VStack(spacing: geometry.isSmallScreen ? 6 : adaptiveSpacing(8, for: geometry)) {
                                 Text("EverWith")
-                                    .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
-                                    .foregroundColor(.charcoal)
+                                    .font(.system(
+                                        size: geometry.isSmallScreen ? 32 : adaptiveFontSize(36, for: geometry),
+                                        weight: .black,
+                                        design: .rounded
+                                    ))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(red: 0.15, green: 0.15, blue: 0.25),
+                                                Color(red: 0.25, green: 0.2, blue: 0.35)
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                                 
-                                Text("Together in every photo.")
-                                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                                    .foregroundColor(.charcoal.opacity(0.7))
+                                Text("Create beautiful memories together")
+                                    .font(.system(
+                                        size: geometry.isSmallScreen ? 14 : adaptiveFontSize(16, for: geometry),
+                                        weight: .medium
+                                    ))
+                                    .foregroundColor(.charcoal.opacity(0.65))
                                     .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.9)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
+                        .padding(.top, max(geometry.safeAreaInsets.top + 16, 36))
+                        .padding(.bottom, 24)
                         .opacity(animateElements ? 1 : 0)
                         .offset(y: animateElements ? 0 : -20)
                         
                         // Authentication Form Container
-                        VStack(spacing: adaptiveSpacing(20, for: geometry)) {
+                        VStack(spacing: geometry.isSmallScreen ? 14 : 18) {
                             
-                            // Toggle between Sign In and Sign Up
-                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            // Modern Segmented Control - Sign In / Sign Up
+                            HStack(spacing: 0) {
                                 Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                         isSignUp = false
                                         clearForm()
                                     }
                                 }) {
                                     Text("Sign In")
-                                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
-                                        .foregroundColor(isSignUp ? .charcoal.opacity(0.6) : .charcoal)
+                                        .font(.system(
+                                            size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
+                                            weight: .bold
+                                        ))
+                                        .foregroundColor(isSignUp ? .charcoal.opacity(0.5) : .white)
+                                        .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
                                         .frame(maxWidth: .infinity)
-                                        .frame(height: adaptiveSize(44, for: geometry))
                                         .background(
-                                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                                                .fill(isSignUp ? Color.clear : Color.honeyGold.opacity(0.15))
+                                            ZStack {
+                                                if !isSignUp {
+                                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                                        .fill(
+                                                            LinearGradient(
+                                                                gradient: Gradient(colors: [
+                                                                    Color(red: 0.5, green: 0.4, blue: 1.0),
+                                                                    Color(red: 0.6, green: 0.45, blue: 0.95)
+                                                                ]),
+                                                                startPoint: .leading,
+                                                                endPoint: .trailing
+                                                            )
+                                                        )
+                                                        .shadow(
+                                                            color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.4),
+                                                            radius: 8,
+                                                            x: 0,
+                                                            y: 4
+                                                        )
+                                                        .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                                                }
+                                            }
                                         )
                                 }
                                 
                                 Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                         isSignUp = true
                                         clearForm()
                                     }
                                 }) {
                                     Text("Sign Up")
-                                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
-                                        .foregroundColor(isSignUp ? .charcoal : .charcoal.opacity(0.6))
+                                        .font(.system(
+                                            size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
+                                            weight: .bold
+                                        ))
+                                        .foregroundColor(isSignUp ? .white : .charcoal.opacity(0.5))
+                                        .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
                                         .frame(maxWidth: .infinity)
-                                        .frame(height: adaptiveSize(44, for: geometry))
                                         .background(
-                                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                                                .fill(isSignUp ? Color.honeyGold.opacity(0.15) : Color.clear)
+                                            ZStack {
+                                                if isSignUp {
+                                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                                        .fill(
+                                                            LinearGradient(
+                                                                gradient: Gradient(colors: [
+                                                                    Color(red: 0.5, green: 0.4, blue: 1.0),
+                                                                    Color(red: 0.6, green: 0.45, blue: 0.95)
+                                                                ]),
+                                                                startPoint: .leading,
+                                                                endPoint: .trailing
+                                                            )
+                                                        )
+                                                        .shadow(
+                                                            color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.4),
+                                                            radius: 8,
+                                                            x: 0,
+                                                            y: 4
+                                                        )
+                                                        .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                                                }
+                                            }
                                         )
                                 }
                             }
-                            .padding(adaptiveSpacing(4, for: geometry))
+                            .padding(4)
                             .background(
-                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
-                                            .stroke(Color.honeyGold.opacity(0.2), lineWidth: 1)
-                                    )
+                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(18, for: geometry))
+                                    .fill(Color.white)
+                                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
                             )
                             
                             // Form Fields
-                            VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                            VStack(spacing: geometry.isSmallScreen ? 12 : 14) {
                                 
                                 // Name field (only for sign up)
                                 if isSignUp {
@@ -192,68 +284,102 @@ struct ModernAuthenticationView: View {
                                 }
                             }
                             
-                            // Primary Action Button
+                            // Primary Action Button - Vibrant Gradient
                             Button(action: {
-                                if isSignUp {
-                                    signUp()
-                                } else {
-                                    signIn()
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    buttonPressedEmail = true
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    if isSignUp {
+                                        signUp()
+                                    } else {
+                                        signIn()
+                                    }
+                                    buttonPressedEmail = false
                                 }
                             }) {
-                                HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                                HStack(spacing: 10) {
                                     if isLoading {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(0.8)
+                                            .scaleEffect(0.9)
                                     } else {
                                         Image(systemName: isSignUp ? "person.badge.plus.fill" : "arrow.right.circle.fill")
-                                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .medium))
+                                            .font(.system(
+                                                size: geometry.isSmallScreen ? 17 : 19,
+                                                weight: .semibold
+                                            ))
                                     }
                                     
                                     Text(isSignUp ? "Create Account" : "Sign In")
-                                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                                        .font(.system(
+                                            size: geometry.isSmallScreen ? 15 : 16,
+                                            weight: .bold
+                                        ))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                 }
                                 .foregroundColor(.white)
+                                .frame(height: geometry.isSmallScreen ? 52 : 56)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: adaptiveSize(52, for: geometry))
                                 .background(
-                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
-                                        .fill(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.honeyGold.opacity(0.8),
-                                                    Color.sky.opacity(0.6)
-                                                ]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
+                                    ZStack {
+                                        // Gradient background
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color(red: 0.5, green: 0.4, blue: 1.0),    // Purple
+                                                        Color(red: 0.7, green: 0.35, blue: 0.9),   // Purple-Pink
+                                                        Color(red: 1.0, green: 0.4, blue: 0.7)     // Pink
+                                                    ]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
                                             )
-                                        )
+                                        
+                                        // Shimmer overlay effect
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color.white.opacity(0),
+                                                        Color.white.opacity(0.15),
+                                                        Color.white.opacity(0)
+                                                    ]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
+                                            )
+                                    }
                                 )
                                 .shadow(
-                                    color: Color.honeyGold.opacity(0.3),
-                                    radius: adaptiveSpacing(8, for: geometry),
+                                    color: Color(red: 0.6, green: 0.4, blue: 0.95).opacity(0.5),
+                                    radius: 12,
                                     x: 0,
-                                    y: adaptiveSpacing(4, for: geometry)
+                                    y: 6
                                 )
                             }
+                            .scaleEffect(buttonPressedEmail ? 0.96 : 1.0)
                             .disabled(isLoading || !isFormValid)
                             .opacity(isFormValid ? 1 : 0.6)
                             .opacity(animateElements ? 1 : 0)
                             .offset(y: animateElements ? 0 : 20)
                             
                             // Divider
-                            HStack {
+                            HStack(spacing: 12) {
                                 Rectangle()
                                     .fill(Color.charcoal.opacity(0.2))
                                     .frame(height: 1)
                                 
                                 Text("or")
                                     .font(.system(
-                                        size: geometry.isSmallScreen ? 12 : ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry),
+                                        size: geometry.isSmallScreen ? 12 : 13,
                                         weight: .medium
                                     ))
                                     .foregroundColor(.charcoal.opacity(0.6))
-                                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry))
+                                    .padding(.horizontal, 8)
+                                    .fixedSize()
                                 
                                 Rectangle()
                                     .fill(Color.charcoal.opacity(0.2))
@@ -261,78 +387,78 @@ struct ModernAuthenticationView: View {
                             }
                             .opacity(animateElements ? 1 : 0)
                             
-                            // Social Sign In Buttons
-                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
-                                
-                                // Apple Sign In
-                                Button(action: {
-                                    signInWithApple()
-                                }) {
-                                    HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
-                                        Image(systemName: "applelogo")
-                                            .font(.system(
-                                                size: geometry.isSmallScreen ? 16 : ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry),
-                                                weight: .medium
-                                            ))
-                                            .foregroundColor(.charcoal)
-                                        
-                                        Text("Continue with Apple")
-                                            .font(.system(
-                                                size: geometry.isSmallScreen ? 14 : ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry),
-                                                weight: .medium
-                                            ))
-                                            .foregroundColor(.charcoal)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: geometry.isSmallScreen ? 42 : ResponsiveDesign.adaptiveButtonHeight(baseHeight: 48, for: geometry))
-                                    .background(
-                                        RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                            .fill(.ultraThinMaterial)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                                    .stroke(Color.charcoal.opacity(0.1), lineWidth: 1)
-                                            )
-                                    )
+                            // Social Sign In - Google Button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    buttonPressedGoogle = true
                                 }
-                                .disabled(isLoading)
-                                
-                                // Google Sign In
-                                Button(action: {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                     signInWithGoogle()
-                                }) {
-                                    HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
+                                    buttonPressedGoogle = false
+                                }
+                            }) {
+                                HStack(spacing: 10) {
+                                    // Google icon
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.white)
+                                            .frame(width: 26, height: 26)
+                                        
                                         Image(systemName: "globe")
                                             .font(.system(
-                                                size: geometry.isSmallScreen ? 16 : ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry),
-                                                weight: .medium
+                                                size: 15,
+                                                weight: .semibold
                                             ))
-                                            .foregroundColor(.charcoal)
-                                        
-                                        Text("Continue with Google")
-                                            .font(.system(
-                                                size: geometry.isSmallScreen ? 14 : ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry),
-                                                weight: .medium
-                                            ))
-                                            .foregroundColor(.charcoal)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: geometry.isSmallScreen ? 42 : ResponsiveDesign.adaptiveButtonHeight(baseHeight: 48, for: geometry))
-                                    .background(
-                                        RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                            .fill(.ultraThinMaterial)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                                    .stroke(Color.charcoal.opacity(0.1), lineWidth: 1)
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color(red: 0.26, green: 0.52, blue: 0.96),
+                                                        Color(red: 0.22, green: 0.68, blue: 0.33)
+                                                    ]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
                                             )
-                                    )
+                                    }
+                                    
+                                    Text("Continue with Google")
+                                        .font(.system(
+                                            size: geometry.isSmallScreen ? 14 : 15,
+                                            weight: .semibold
+                                        ))
+                                        .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                 }
-                                .disabled(isLoading)
+                                .frame(height: geometry.isSmallScreen ? 52 : 56)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.white)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [
+                                                            Color(red: 0.26, green: 0.52, blue: 0.96).opacity(0.3),
+                                                            Color(red: 0.22, green: 0.68, blue: 0.33).opacity(0.3)
+                                                        ]),
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    ),
+                                                    lineWidth: 2
+                                                )
+                                        )
+                                )
+                                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
                             }
+                            .scaleEffect(buttonPressedGoogle ? 0.96 : 1.0)
+                            .disabled(isLoading)
                             .opacity(animateElements ? 1 : 0)
                             .offset(y: animateElements ? 0 : 20)
                             
                             // Additional Options
-                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
+                            VStack(spacing: 8) {
                                 if !isSignUp {
                                     Button(action: {
                                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -342,10 +468,21 @@ struct ModernAuthenticationView: View {
                                     }) {
                                         Text("Don't have an account? Sign Up")
                                             .font(.system(
-                                                size: geometry.isSmallScreen ? 12 : ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry),
-                                                weight: .medium
+                                                size: geometry.isSmallScreen ? 13 : 14,
+                                                weight: .semibold
                                             ))
-                                            .foregroundColor(.honeyGold)
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color(red: 0.5, green: 0.4, blue: 1.0),
+                                                        Color(red: 0.7, green: 0.35, blue: 0.9)
+                                                    ]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
+                                            )
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
                                     }
                                     .disabled(isLoading)
                                 } else {
@@ -357,10 +494,21 @@ struct ModernAuthenticationView: View {
                                     }) {
                                         Text("Already have an account? Sign In")
                                             .font(.system(
-                                                size: geometry.isSmallScreen ? 12 : ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry),
-                                                weight: .medium
+                                                size: geometry.isSmallScreen ? 13 : 14,
+                                                weight: .semibold
                                             ))
-                                            .foregroundColor(.honeyGold)
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color(red: 0.5, green: 0.4, blue: 1.0),
+                                                        Color(red: 0.7, green: 0.35, blue: 0.9)
+                                                    ]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
+                                            )
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
                                     }
                                     .disabled(isLoading)
                                 }
@@ -371,10 +519,11 @@ struct ModernAuthenticationView: View {
                                 }) {
                                     Text("Continue as Guest")
                                         .font(.system(
-                                            size: geometry.isSmallScreen ? 10 : ResponsiveDesign.adaptiveFontSize(baseSize: 12, for: geometry),
+                                            size: geometry.isSmallScreen ? 11 : 12,
                                             weight: .regular
                                         ))
                                         .foregroundColor(.charcoal.opacity(0.5))
+                                        .lineLimit(1)
                                 }
                                 .disabled(isLoading)
                             }
@@ -393,59 +542,71 @@ struct ModernAuthenticationView: View {
                                     .opacity(animateElements ? 1 : 0)
                             }
                         }
-                        .padding(.horizontal, adaptiveSpacing(20, for: geometry))
-                        .padding(.vertical, adaptiveSpacing(20, for: geometry))
+                        .padding(.all, 20)
                         .background(
-                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color.honeyGold.opacity(0.12),
-                                            Color.sky.opacity(0.08),
-                                            Color.softBlush.opacity(0.06)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .background(.ultraThinMaterial)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                                        .stroke(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.honeyGold.opacity(0.25),
-                                                    Color.sky.opacity(0.15)
-                                                ]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1
+                            ZStack {
+                                // Base white background
+                                RoundedRectangle(cornerRadius: 24)
+                                    .fill(Color.white)
+                                
+                                // Subtle gradient overlay
+                                RoundedRectangle(cornerRadius: 24)
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.03),
+                                                Color(red: 1.0, green: 0.4, blue: 0.7).opacity(0.02),
+                                                Color.white.opacity(0)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
                                         )
-                                )
+                                    )
+                                
+                                // Border with gradient
+                                RoundedRectangle(cornerRadius: 24)
+                                    .stroke(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.2),
+                                                Color(red: 1.0, green: 0.4, blue: 0.7).opacity(0.15)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            }
                         )
                         .shadow(
-                            color: Color.black.opacity(0.05),
-                            radius: adaptiveSpacing(10, for: geometry),
+                            color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.1),
+                            radius: 12,
                             x: 0,
-                            y: adaptiveSpacing(4, for: geometry)
+                            y: 4
                         )
-                        .opacity(animateElements ? 1 : 0)
+                        .opacity(formOpacity)
                         .offset(y: animateElements ? 0 : 30)
-                        
-                        // Bottom spacing
-                        Spacer()
-                            .frame(height: adaptiveSpacing(24, for: geometry))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, adaptivePadding(for: geometry))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, max(geometry.safeAreaInsets.bottom + 16, 36))
                 }
                 .scrollIndicators(.hidden)
+                .frame(width: geometry.size.width)
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.8).delay(0.2)) {
+            // Staggered entrance animations
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                logoScale = 1.0
+            }
+            withAnimation(.easeInOut(duration: 0.6).delay(0.2)) {
                 animateElements = true
+            }
+            withAnimation(.easeOut(duration: 0.7).delay(0.3)) {
+                formOpacity = 1.0
             }
         }
         .alert("Authentication Error", isPresented: $showErrorAlert) {
@@ -587,35 +748,22 @@ struct ModernAuthenticationView: View {
         }
     }
     
-    private func signInWithApple() {
-        isLoading = true
+    private func signInWithGoogle() {
+        // Don't set isLoading immediately to avoid presentation conflicts
         errorMessage = nil
         
+        // Wait a brief moment for any pending UI updates to complete
         Task {
-            let result = await authService.signInWithApple()
+            // Small delay to ensure UI is ready
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
             
             await MainActor.run {
-                isLoading = false
-                
-                switch result {
-                case .success(let user):
-                    print("User signed in with Apple successfully: \(user.name) (\(user.email))")
-                    // Success! The app will automatically navigate to HomeView via auth state change
-                case .failure(let error):
-                    errorMessage = error.localizedDescription
-                    showErrorAlert = true
-                case .cancelled:
-                    break
-                }
+                isLoading = true
             }
-        }
-    }
-    
-    private func signInWithGoogle() {
-        isLoading = true
-        errorMessage = nil
-        
-        Task {
+            
+            // Additional small delay to ensure loading state is rendered
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            
             let result = await authService.signInWithGoogle()
             
             await MainActor.run {
@@ -669,35 +817,55 @@ struct ModernTextField: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                .font(.system(
+                    size: geometry.isSmallScreen ? 11 : 12,
+                    weight: .medium
+                ))
                 .foregroundColor(.charcoal.opacity(0.8))
                 .lineLimit(1)
+                .minimumScaleFactor(0.9)
             
-            HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                    .foregroundColor(.charcoal.opacity(0.6))
-                    .frame(width: adaptiveSize(20, for: geometry))
-                    .frame(minWidth: adaptiveSize(20, for: geometry))
+                    .font(.system(
+                        size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
+                        weight: .semibold
+                    ))
+                    .foregroundStyle(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.5, green: 0.4, blue: 1.0),
+                                Color(red: 0.7, green: 0.35, blue: 0.9)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
+                    .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 
                 TextField(title, text: $text)
-                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                    .foregroundColor(.charcoal)
+                    .font(.system(
+                        size: geometry.isSmallScreen ? 14 : 15,
+                        weight: .medium
+                    ))
+                    .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                     .keyboardType(keyboardType)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.9)
             }
-            .padding(.horizontal, adaptiveSpacing(12, for: geometry))
-            .padding(.vertical, adaptiveSpacing(12, for: geometry))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                            .stroke(Color.charcoal.opacity(0.1), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.15), lineWidth: 1.5)
                     )
             )
         }
@@ -738,53 +906,80 @@ struct ModernPasswordField: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                .font(.system(
+                    size: geometry.isSmallScreen ? 11 : 12,
+                    weight: .medium
+                ))
                 .foregroundColor(.charcoal.opacity(0.8))
                 .lineLimit(1)
+                .minimumScaleFactor(0.9)
             
-            HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+            HStack(spacing: 10) {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                    .foregroundColor(.charcoal.opacity(0.6))
-                    .frame(width: adaptiveSize(20, for: geometry))
-                    .frame(minWidth: adaptiveSize(20, for: geometry))
+                    .font(.system(
+                        size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
+                        weight: .semibold
+                    ))
+                    .foregroundStyle(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.5, green: 0.4, blue: 1.0),
+                                Color(red: 0.7, green: 0.35, blue: 0.9)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
+                    .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 
                 if showPassword {
                     TextField(title, text: $text)
-                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                        .foregroundColor(.charcoal)
+                        .font(.system(
+                            size: geometry.isSmallScreen ? 14 : 15,
+                            weight: .medium
+                        ))
+                        .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.9)
                 } else {
                     SecureField(title, text: $text)
-                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                        .foregroundColor(.charcoal)
+                        .font(.system(
+                            size: geometry.isSmallScreen ? 14 : 15,
+                            weight: .medium
+                        ))
+                        .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.9)
                 }
                 
                 Button(action: {
                     showPassword.toggle()
                 }) {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                        .foregroundColor(.charcoal.opacity(0.6))
-                        .frame(width: adaptiveSize(20, for: geometry))
-                        .frame(minWidth: adaptiveSize(20, for: geometry))
+                        .font(.system(
+                            size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
+                            weight: .medium
+                        ))
+                        .foregroundColor(Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.6))
+                        .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
+                        .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 }
             }
-            .padding(.horizontal, adaptiveSpacing(12, for: geometry))
-            .padding(.vertical, adaptiveSpacing(12, for: geometry))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                            .stroke(Color.charcoal.opacity(0.1), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.15), lineWidth: 1.5)
                     )
             )
         }

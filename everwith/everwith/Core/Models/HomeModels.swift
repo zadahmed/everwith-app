@@ -99,8 +99,8 @@ struct HeroAction: Identifiable {
             icon: "heart.circle",
             gradient: [Color.sky.opacity(0.8), Color.fern.opacity(0.6)],
             action: {
-                // Navigate to Import with compose mode
-                NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.compose)
+                // Navigate to Import with together mode
+                NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.together)
             }
         )
     ]

@@ -71,6 +71,13 @@ struct AppConfiguration {
         static let users = "/api/users"
     }
     
+    // MARK: - Image Processing Endpoints
+    struct ImageProcessingEndpoints {
+        static let upload = "/api/v1/upload"
+        static let restore = "/api/v1/restore"
+        static let together = "/api/v1/together"
+    }
+    
     // MARK: - Debug Information
     static var debugInfo: String {
         return """
@@ -93,6 +100,10 @@ extension AppConfiguration {
     }
     
     static func apiURL(for endpoint: String) -> String {
+        return fullURL(for: endpoint)
+    }
+    
+    static func imageProcessingURL(for endpoint: String) -> String {
         return fullURL(for: endpoint)
     }
 }

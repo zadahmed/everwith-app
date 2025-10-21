@@ -9,7 +9,7 @@ import Foundation
 import AuthenticationServices
 
 // MARK: - User Model
-struct User: Codable, Identifiable {
+struct User: Codable, Identifiable, Equatable {
     let id: String
     let email: String
     let name: String
@@ -44,11 +44,26 @@ struct User: Codable, Identifiable {
 }
 
 // MARK: - Authentication State
-enum AuthenticationState {
+enum AuthenticationState: Equatable {
     case loading
     case authenticated(User)
     case unauthenticated
     case error(String)
+    
+    static func == (lhs: AuthenticationState, rhs: AuthenticationState) -> Bool {
+        switch (lhs, rhs) {
+        case (.loading, .loading):
+            return true
+        case (.authenticated(let user1), .authenticated(let user2)):
+            return user1.id == user2.id
+        case (.unauthenticated, .unauthenticated):
+            return true
+        case (.error(let msg1), .error(let msg2)):
+            return msg1 == msg2
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Sign In Result

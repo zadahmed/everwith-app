@@ -6,12 +6,11 @@
 //
 
 import Foundation
-import AuthenticationServices
 import Combine
 import UIKit
 import GoogleSignIn
 
-class AuthenticationService: NSObject, ObservableObject {
+class AuthenticationService: ObservableObject {
     @Published var authenticationState: AuthenticationState = .loading
     @Published var currentUser: User?
     
@@ -22,57 +21,113 @@ class AuthenticationService: NSObject, ObservableObject {
     private let sessionTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     private var cancellables = Set<AnyCancellable>()
     
-    override init() {
-        super.init()
+    init() {
         loadStoredUser()
         startSessionValidation()
     }
     
-    // MARK: - Apple Sign In
-    func signInWithApple() async -> SignInResult {
-        let request = ASAuthorizationAppleIDProvider().createRequest()
-        request.requestedScopes = [.fullName, .email]
-        
-        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        authorizationController.delegate = self
-        authorizationController.presentationContextProvider = self
-        
-        return await withCheckedContinuation { continuation in
-            self.appleSignInContinuation = continuation
-            authorizationController.performRequests()
-        }
-    }
-    
     // MARK: - Google Sign In
     func signInWithGoogle() async -> SignInResult {
+        print("🔵 GOOGLE SIGN IN: Starting...")
+        
+        // Wait for any pending UI updates to complete
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        
+        // Find the appropriate presenting view controller
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let presentingViewController = window.rootViewController else {
+              let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first else {
+            print("❌ GOOGLE SIGN IN: No window scene found")
             return .failure(AuthenticationError.noPresentingViewController)
         }
         
+        // Get the top-most view controller to avoid presentation conflicts
+        var presentingViewController = window.rootViewController
+        while let presented = presentingViewController?.presentedViewController {
+            presentingViewController = presented
+        }
+        
+        guard let finalViewController = presentingViewController else {
+            print("❌ GOOGLE SIGN IN: No presenting view controller found")
+            return .failure(AuthenticationError.noPresentingViewController)
+        }
+        
+        print("✅ GOOGLE SIGN IN: Found presenting view controller: \(type(of: finalViewController))")
+        
         do {
-            // Configure Google Sign-In
-            guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
-                  let plist = NSDictionary(contentsOfFile: path),
-                  let clientId = plist["CLIENT_ID"] as? String else {
+            // Configure Google Sign-In with multiple fallback approaches
+            var clientId: String?
+            
+            // Approach 1: Try loading from GoogleService-Info.plist
+            if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+               let plist = NSDictionary(contentsOfFile: path),
+               let id = plist["CLIENT_ID"] as? String {
+                clientId = id
+                print("✅ GOOGLE SIGN IN: Found GoogleService-Info.plist")
+            }
+            // Approach 2: Try loading from Info.plist
+            else if let id = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String {
+                clientId = id
+                print("✅ GOOGLE SIGN IN: Found GIDClientID in Info.plist")
+            }
+            // Approach 3: Use configured client ID
+            else {
+                clientId = "1033332546845-859k5rlpul70f5uu9sdi05rfevi45hgf.apps.googleusercontent.com"
+                print("✅ GOOGLE SIGN IN: Using configured client ID")
+            }
+            
+            guard let finalClientId = clientId else {
+                print("❌ GOOGLE SIGN IN: Could not find client ID")
                 return .failure(AuthenticationError.googleConfigurationError)
             }
             
-            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+            print("✅ GOOGLE SIGN IN: Client ID configured: \(finalClientId.prefix(20))...")
             
-            // Perform Google Sign-In
-            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+            // Configure Google Sign-In
+            let configuration = GIDConfiguration(clientID: finalClientId)
+            GIDSignIn.sharedInstance.configuration = configuration
+            
+            print("🔵 GOOGLE SIGN IN: Presenting sign-in UI...")
+            
+            // Perform Google Sign-In with the final view controller
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: finalViewController)
             let user = result.user
             
+            print("✅ GOOGLE SIGN IN: User signed in - Email: \(user.profile?.email ?? "no email")")
+            
             guard let idToken = user.idToken?.tokenString else {
+                print("❌ GOOGLE SIGN IN: Missing ID token")
                 return .failure(AuthenticationError.missingGoogleToken)
             }
             
-            // Send ID token to backend for verification
-            return await authenticateWithBackend(idToken: idToken, provider: .google)
+            print("✅ GOOGLE SIGN IN: ID token obtained - \(idToken.prefix(20))...")
+            print("🔵 GOOGLE SIGN IN: Authenticating with backend...")
             
-        } catch {
+            // Send ID token to backend for verification
+            let authResult = await authenticateWithBackend(idToken: idToken, provider: .google)
+            
+            switch authResult {
+            case .success(let user):
+                print("🎉 GOOGLE SIGN IN: Successfully authenticated - User: \(user.name)")
+            case .failure(let error):
+                print("❌ GOOGLE SIGN IN: Backend authentication failed - \(error.localizedDescription)")
+            case .cancelled:
+                print("🚫 GOOGLE SIGN IN: Cancelled")
+            }
+            
+            return authResult
+            
+        } catch let error as NSError {
+            print("❌ GOOGLE SIGN IN: Error occurred - Code: \(error.code), Domain: \(error.domain)")
+            print("❌ GOOGLE SIGN IN: Error description: \(error.localizedDescription)")
+            
+            // Handle specific Google Sign-In errors
+            if error.domain == "com.google.GIDSignIn" {
+                if error.code == -4 {
+                    print("🚫 GOOGLE SIGN IN: User cancelled")
+                    return .cancelled
+                }
+            }
+            
             return .failure(error)
         }
     }
@@ -139,12 +194,14 @@ class AuthenticationService: NSObject, ObservableObject {
     // MARK: - Session Management
     func validateSession() async -> Bool {
         guard let token = userDefaults.string(forKey: tokenKey) else {
-            await forceLogout(reason: "No token found")
+            // Silently fail - no token is expected for guest users or fresh installs
+            print("ℹ️ SESSION: No token found (expected for guest users)")
             return false
         }
         
         // Check if token is expired
         if isTokenExpired() {
+            print("⚠️ SESSION: Token expired")
             await forceLogout(reason: "Token expired")
             return false
         }
@@ -199,11 +256,12 @@ class AuthenticationService: NSObject, ObservableObject {
     }
     
     private func forceLogout(reason: String) async {
-        print("Force logout: \(reason)")
+        print("🔓 SESSION: Logging out - \(reason)")
         
         // Sign out from Google if user was signed in with Google
         if let user = currentUser, user.provider == .google {
             GIDSignIn.sharedInstance.signOut()
+            print("🔵 GOOGLE: Signed out")
         }
         
         // Clear stored user data
@@ -412,94 +470,6 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Apple Sign In Continuation
-    private var appleSignInContinuation: CheckedContinuation<SignInResult, Never>?
-}
-
-// MARK: - ASAuthorizationControllerDelegate
-extension AuthenticationService: ASAuthorizationControllerDelegate {
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            appleSignInContinuation?.resume(returning: .failure(AuthenticationError.invalidCredential))
-            return
-        }
-        
-        let userID = appleIDCredential.user
-        let email = appleIDCredential.email
-        let fullName = appleIDCredential.fullName
-        
-        // Create user name from components
-        let name: String
-        if let fullName = fullName {
-            let formatter = PersonNameComponentsFormatter()
-            name = formatter.string(from: fullName)
-        } else {
-            name = "User" // Fallback name
-        }
-        
-        let user = User(
-            id: userID,
-            email: email ?? "no-email@privaterelay.appleid.com",
-            name: name,
-            profileImageURL: nil,
-            provider: .apple,
-            createdAt: Date()
-        )
-        
-        Task {
-            await signInUser(user)
-            appleSignInContinuation?.resume(returning: .success(user))
-        }
-    }
-    
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        if let authError = error as? ASAuthorizationError {
-            switch authError.code {
-            case .canceled:
-                appleSignInContinuation?.resume(returning: .cancelled)
-            case .failed:
-                let detailedError = AuthenticationError.appleSignInFailed(authError.localizedDescription)
-                appleSignInContinuation?.resume(returning: .failure(detailedError))
-            case .invalidResponse:
-                let detailedError = AuthenticationError.invalidAppleResponse
-                appleSignInContinuation?.resume(returning: .failure(detailedError))
-            case .notHandled:
-                let detailedError = AuthenticationError.appleSignInNotHandled
-                appleSignInContinuation?.resume(returning: .failure(detailedError))
-            case .unknown:
-                let detailedError = AuthenticationError.appleSignInUnknown
-                appleSignInContinuation?.resume(returning: .failure(detailedError))
-            @unknown default:
-                appleSignInContinuation?.resume(returning: .failure(error))
-            }
-        } else if let akError = error as? NSError {
-            // Handle Apple ID authentication errors
-            switch akError.code {
-            case -7026:
-                let detailedError = AuthenticationError.appleIdAuthenticationFailed
-                appleSignInContinuation?.resume(returning: .failure(detailedError))
-            case -1000:
-                let detailedError = AuthenticationError.appleSignInConfigurationError
-                appleSignInContinuation?.resume(returning: .failure(detailedError))
-            default:
-                appleSignInContinuation?.resume(returning: .failure(error))
-            }
-        } else {
-            appleSignInContinuation?.resume(returning: .failure(error))
-        }
-    }
-}
-
-// MARK: - ASAuthorizationControllerPresentationContextProviding
-extension AuthenticationService: ASAuthorizationControllerPresentationContextProviding {
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            // Fallback to key window if available
-            return UIApplication.shared.windows.first { $0.isKeyWindow } ?? UIWindow()
-        }
-        return window
-    }
 }
 
 // MARK: - Authentication Errors
@@ -508,12 +478,6 @@ enum AuthenticationError: LocalizedError {
     case missingUserInfo
     case invalidCredential
     case networkError
-    case appleSignInFailed(String)
-    case invalidAppleResponse
-    case appleSignInNotHandled
-    case appleSignInUnknown
-    case appleIdAuthenticationFailed
-    case appleSignInConfigurationError
     case googleConfigurationError
     case missingGoogleToken
     case backendError(String)
@@ -528,20 +492,8 @@ enum AuthenticationError: LocalizedError {
             return "Invalid authentication credential"
         case .networkError:
             return "Network error occurred"
-        case .appleSignInFailed(let message):
-            return "Apple Sign In failed: \(message)"
-        case .invalidAppleResponse:
-            return "Invalid response from Apple Sign In"
-        case .appleSignInNotHandled:
-            return "Apple Sign In request was not handled"
-        case .appleSignInUnknown:
-            return "Unknown Apple Sign In error"
-        case .appleIdAuthenticationFailed:
-            return "Apple ID authentication failed. Please check your Apple ID settings and try again."
-        case .appleSignInConfigurationError:
-            return "Apple Sign In configuration error. Please ensure the app is properly configured for Apple Sign In."
         case .googleConfigurationError:
-            return "Google Sign In configuration error. Please ensure GoogleService-Info.plist is properly configured."
+            return "Google Sign In is not configured. Please try another sign-in method."
         case .missingGoogleToken:
             return "Google authentication token is missing"
         case .backendError(let message):
@@ -551,12 +503,8 @@ enum AuthenticationError: LocalizedError {
     
     var recoverySuggestion: String? {
         switch self {
-        case .appleIdAuthenticationFailed:
-            return "Make sure you're signed in to iCloud with a valid Apple ID and that Sign In with Apple is enabled for this app."
-        case .appleSignInConfigurationError:
-            return "The app needs to be properly configured for Apple Sign In. Please contact support if this issue persists."
         case .googleConfigurationError:
-            return "Please ensure GoogleService-Info.plist is properly configured in your app bundle."
+            return "Please try email/password authentication or contact support."
         case .networkError:
             return "Please check your internet connection and try again."
         case .backendError:

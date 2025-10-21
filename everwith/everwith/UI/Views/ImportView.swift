@@ -19,6 +19,10 @@ struct ImportView: View {
     @State private var showPhotosPicker = false
     @State private var showFilesPicker = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var processingSettings: ProcessingSettings = ProcessingSettings()
+    @State private var showSettingsSheet = false
+    
+    @StateObject private var imageProcessingService = ImageProcessingService.shared
     
     private let configuration: ImportConfiguration
     
@@ -53,8 +57,13 @@ struct ImportView: View {
                     // Inline Tip
                     ImportTipView()
                     
-                    // Progress Row (when importing)
-                    if case .importing = importState, let progress = importProgress {
+                    // Progress Row (when processing)
+                    if case .uploading = importState, let progress = importProgress {
+                        ImportProgressView(
+                            progress: progress,
+                            onCancel: cancelImport
+                        )
+                    } else if case .processing = importState, let progress = importProgress {
                         ImportProgressView(
                             progress: progress,
                             onCancel: cancelImport
@@ -67,6 +76,7 @@ struct ImportView: View {
                         selectedPhotos: selectedPhotos,
                         importState: importState,
                         onImport: startImport,
+                        onSettings: { showSettingsSheet = true },
                         onCancel: { isPresented = false }
                     )
                     .padding(.bottom, geometry.safeAreaInsets.bottom)
@@ -89,15 +99,25 @@ struct ImportView: View {
         .fileImporter(
             isPresented: $showFilesPicker,
             allowedContentTypes: [.image],
-            allowsMultipleSelection: mode == .compose
+            allowsMultipleSelection: mode == .together
         ) { result in
             handleFileImportResult(result)
+        }
+        .sheet(isPresented: $showSettingsSheet) {
+            ProcessingSettingsView(
+                mode: mode,
+                settings: $processingSettings,
+                isPresented: $showSettingsSheet
+            )
+        }
+        .onChange(of: imageProcessingService.processingState) { _, newState in
+            handleProcessingStateChange(newState)
         }
     }
     
     // MARK: - Private Methods
     private func loadPhotosFromPicker(_ items: [PhotosPickerItem]) async {
-        importState = .importing
+        importState = .selecting
         importProgress = ImportProgress(current: 0, total: items.count, fileName: nil)
         
         var newPhotos: [ImportedPhoto] = []
@@ -155,7 +175,7 @@ struct ImportView: View {
     }
     
     private func importFilesFromURLs(_ urls: [URL]) {
-        importState = .importing
+        importState = .selecting
         importProgress = ImportProgress(current: 0, total: urls.count, fileName: nil)
         
         // Simulate file import process
@@ -193,22 +213,123 @@ struct ImportView: View {
             }
             
             await MainActor.run {
-                importState = .completed
+                importState = .completed(nil)
                 importProgress = nil
             }
         }
     }
     
     private func startImport() {
-        // Handle import logic here
-        print("Starting import for \(mode.displayName) with \(selectedPhotos.count) photos")
-        isPresented = false
+        print("🚀 startImport called for mode: \(mode)")
+        guard !selectedPhotos.isEmpty else { 
+            print("❌ No photos selected")
+            return 
+        }
+        
+        print("📸 Starting import with \(selectedPhotos.count) photos")
+        
+        Task {
+            do {
+                switch mode {
+                case .restore:
+                    guard let photo = selectedPhotos.first else { return }
+                    let result = try await imageProcessingService.restorePhoto(
+                        image: photo.image,
+                        qualityTarget: processingSettings.qualityTarget,
+                        outputFormat: processingSettings.outputFormat,
+                        aspectRatio: processingSettings.aspectRatio,
+                        seed: processingSettings.seed
+                    )
+                    
+                    // Download the processed image
+                    let processedImage = try await imageProcessingService.downloadProcessedImage(from: result.outputUrl)
+                    
+                    await MainActor.run {
+                        let processedPhoto = ProcessedPhoto(
+                            originalImage: photo.image,
+                            processedImage: processedImage,
+                            mode: mode,
+                            processingSettings: processingSettings,
+                            processedAt: Date(),
+                            outputUrl: result.outputUrl
+                        )
+                        importState = .completed(processedPhoto)
+                    }
+                    
+                case .together:
+                    guard selectedPhotos.count >= 2 else { return }
+                    let subjectA = selectedPhotos[0].image
+                    let subjectB = selectedPhotos[1].image
+                    
+                    let background = processingSettings.background ?? TogetherBackground(
+                        mode: .generate,
+                        prompt: "soft warm tribute background with gentle bokeh"
+                    )
+                    
+                    let result = try await imageProcessingService.togetherPhoto(
+                        subjectA: subjectA,
+                        subjectB: subjectB,
+                        background: background,
+                        aspectRatio: processingSettings.aspectRatio,
+                        seed: processingSettings.seed,
+                        lookControls: processingSettings.lookControls
+                    )
+                    
+                    // Download the processed image
+                    let processedImage = try await imageProcessingService.downloadProcessedImage(from: result.outputUrl)
+                    
+                    await MainActor.run {
+                        let processedPhoto = ProcessedPhoto(
+                            originalImage: subjectA, // Use first image as reference
+                            processedImage: processedImage,
+                            mode: mode,
+                            processingSettings: processingSettings,
+                            processedAt: Date(),
+                            outputUrl: result.outputUrl
+                        )
+                        importState = .completed(processedPhoto)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    importState = .failed(error)
+                }
+            }
+        }
     }
     
     private func cancelImport() {
         importState = .idle
         importProgress = nil
         selectedPhotos.removeAll()
+        imageProcessingService.resetState()
+    }
+    
+    private func handleProcessingStateChange(_ newState: ImageProcessingState) {
+        switch newState {
+        case .idle:
+            importState = .idle
+        case .uploading:
+            importState = .uploading
+        case .processing:
+            importState = .processing
+        case .completed(let result):
+            // Handle completion in startImport method
+            break
+        case .failed(let error):
+            importState = .failed(error)
+        }
+        
+        // Update progress from service
+        if let serviceProgress = imageProcessingService.processingProgress {
+            importProgress = ImportProgress(
+                current: serviceProgress.currentStepIndex,
+                total: serviceProgress.totalSteps,
+                fileName: serviceProgress.currentStep
+            )
+        } else {
+            importProgress = nil
+        }
     }
 }
 
@@ -495,7 +616,7 @@ struct FilesContentView: View {
         .fileImporter(
             isPresented: $showFilesPicker,
             allowedContentTypes: [.image],
-            allowsMultipleSelection: mode == .compose
+            allowsMultipleSelection: mode == .together
         ) { _ in
             // Handle file selection
         }
@@ -579,11 +700,11 @@ struct ImportProgressView: View {
         VStack(spacing: ModernDesignSystem.Spacing.sm) {
             HStack {
                 if let fileName = progress.fileName {
-                    Text("Importing: \(fileName)")
+                    Text(fileName)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.charcoal)
                 } else {
-                    Text("Importing...")
+                    Text("Processing...")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.charcoal)
                 }
@@ -622,13 +743,16 @@ struct ImportActionButtons: View {
     let selectedPhotos: [ImportedPhoto]
     let importState: ImportState
     let onImport: () -> Void
+    let onSettings: () -> Void
     let onCancel: () -> Void
     
-    private var isImporting: Bool {
-        if case .importing = importState {
+    private var isProcessing: Bool {
+        switch importState {
+        case .uploading, .processing:
             return true
+        default:
+            return false
         }
-        return false
     }
     
     var body: some View {
@@ -654,7 +778,29 @@ struct ImportActionButtons: View {
                     y: 4
                 )
             }
-            .disabled(selectedPhotos.isEmpty || isImporting)
+            .disabled(selectedPhotos.isEmpty || isProcessing)
+            
+            // Settings Button
+            if !selectedPhotos.isEmpty && !isProcessing {
+                Button(action: onSettings) {
+                    HStack {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("Settings")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.charcoal.opacity(0.7))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(ModernDesignSystem.CornerRadius.md)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ModernDesignSystem.CornerRadius.md)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                }
+            }
             
             // Cancel Button
             Button(action: onCancel) {

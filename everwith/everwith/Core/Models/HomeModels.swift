@@ -109,8 +109,8 @@ struct HeroAction: Identifiable {
 // MARK: - Processed Image
 struct ProcessedImage: Identifiable, Codable {
     let id: String
-    let userId: String
-    let imageType: String  // "restore" or "together"
+    let userId: String?
+    let imageType: String?
     let originalImageUrl: String?
     let processedImageUrl: String
     let thumbnailUrl: String?
@@ -151,6 +151,27 @@ struct ProcessedImage: Identifiable, Codable {
         case createdAt = "created_at"
     }
     
+    // Custom initializer to handle missing fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        userId = try? container.decode(String.self, forKey: .userId)
+        imageType = try container.decode(String.self, forKey: .imageType)
+        originalImageUrl = try? container.decode(String.self, forKey: .originalImageUrl)
+        processedImageUrl = try container.decode(String.self, forKey: .processedImageUrl)
+        thumbnailUrl = try? container.decode(String.self, forKey: .thumbnailUrl)
+        qualityTarget = try? container.decode(String.self, forKey: .qualityTarget)
+        outputFormat = try? container.decode(String.self, forKey: .outputFormat)
+        aspectRatio = try? container.decode(String.self, forKey: .aspectRatio)
+        subjectAUrl = try? container.decode(String.self, forKey: .subjectAUrl)
+        subjectBUrl = try? container.decode(String.self, forKey: .subjectBUrl)
+        backgroundPrompt = try? container.decode(String.self, forKey: .backgroundPrompt)
+        width = try? container.decode(Int.self, forKey: .width)
+        height = try? container.decode(Int.self, forKey: .height)
+        fileSize = try? container.decode(Int.self, forKey: .fileSize)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+    }
+    
     var displayType: String {
         imageType == "restore" ? "Restored Photo" : "Together Scene"
     }
@@ -176,6 +197,16 @@ struct ImageHistoryResponse: Codable {
         case total
         case page
         case pageSize = "page_size"
+    }
+    
+    // Custom initializer to handle missing fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        images = try container.decode([ProcessedImage].self, forKey: .images)
+        total = try container.decode(Int.self, forKey: .total)
+        page = try container.decode(Int.self, forKey: .page)
+        // Default to 20 if page_size is missing
+        pageSize = (try? container.decode(Int.self, forKey: .pageSize)) ?? 20
     }
 }
 

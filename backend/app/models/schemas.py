@@ -169,3 +169,5 @@ class ImageHistoryResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    
+    model_config = {"from_attributes": True}

@@ -26,12 +26,26 @@ struct RestoreView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // Common Header
-                CommonHeader(
-                    title: "Restore Photo",
-                    onBack: { dismiss() },
-                    geometry: geometry
-                )
+                // Header
+                HStack {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                                .foregroundColor(.charcoal)
+                            
+                            Text("Restore Photo")
+                                .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
+                                .foregroundColor(.charcoal)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, adaptivePadding(for: geometry))
+                .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
+                .padding(.bottom, adaptiveSpacing(16, for: geometry))
                 
                 // Main Content
                 if selectedImage == nil {
@@ -78,7 +92,7 @@ struct RestoreView: View {
                         
                         Spacer()
                     }
-                    .padding(.top, adaptiveSpacing(20, for: geometry))
+                    .padding(.top, adaptiveSpacing(8, for: geometry))
                 } else if processedImage == nil && !isProcessing {
                     // Step 2: Preview & Restore
                     ScrollView {
@@ -125,7 +139,7 @@ struct RestoreView: View {
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
                         }
-                        .padding(.top, adaptiveSpacing(4, for: geometry))
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 } else if isProcessing {
                     // Step 3: Processing
@@ -306,7 +320,7 @@ struct RestoreView: View {
                             .padding(.horizontal, adaptivePadding(for: geometry))
                             .padding(.bottom, max(geometry.safeAreaInsets.bottom, adaptiveSpacing(20, for: geometry)))
                         }
-                        .padding(.top, 0)
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 }
             }

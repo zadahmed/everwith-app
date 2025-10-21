@@ -35,12 +35,26 @@ struct TogetherSceneView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // Common Header
-                CommonHeader(
-                    title: "Together Scene",
-                    onBack: { dismiss() },
-                    geometry: geometry
-                )
+                // Header
+                HStack {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                                .foregroundColor(.charcoal)
+                            
+                            Text("Together Scene")
+                                .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
+                                .foregroundColor(.charcoal)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, adaptivePadding(for: geometry))
+                .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
+                .padding(.bottom, adaptiveSpacing(16, for: geometry))
                 
                 // Main Content
                 if selectedImages.count < 2 {
@@ -100,7 +114,7 @@ struct TogetherSceneView: View {
                         
                         Spacer()
                     }
-                    .padding(.top, adaptiveSpacing(20, for: geometry))
+                    .padding(.top, adaptiveSpacing(8, for: geometry))
                 } else if processedImage == nil && !isProcessing {
                     // Step 2: Preview & Create
                     ScrollView {
@@ -127,75 +141,11 @@ struct TogetherSceneView: View {
                             .padding(.top, adaptiveSpacing(4, for: geometry))
                             
                             // Background Options Section
-                            VStack(alignment: .leading, spacing: adaptiveSpacing(12, for: geometry)) {
-                                Text("Background")
-                                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
-                                    .foregroundColor(.charcoal)
-                                
-                                // Background Selection Buttons
-                                VStack(spacing: adaptiveSpacing(10, for: geometry)) {
-                                    ForEach(BackgroundOption.allCases, id: \.self) { option in
-                                        Button(action: {
-                                            withAnimation {
-                                                backgroundMode = option
-                                            }
-                                        }) {
-                                            HStack {
-                                                Image(systemName: backgroundMode == option ? "checkmark.circle.fill" : "circle")
-                                                    .font(.system(size: adaptiveFontSize(18, for: geometry)))
-                                                    .foregroundColor(backgroundMode == option ? .sky : .charcoal.opacity(0.3))
-                                                
-                                                Text(option.rawValue)
-                                                    .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
-                                                    .foregroundColor(.charcoal)
-                                                
-                                                Spacer()
-                                            }
-                                            .padding(.horizontal, adaptiveSpacing(16, for: geometry))
-                                            .padding(.vertical, adaptiveSpacing(12, for: geometry))
-                                            .background(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                                                    .fill(backgroundMode == option ? Color.sky.opacity(0.1) : Color.white.opacity(0.5))
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                                                    .stroke(backgroundMode == option ? Color.sky : Color.charcoal.opacity(0.2), lineWidth: 1.5)
-                                            )
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                                
-                                // Custom Prompt Field (shown when custom mode is selected)
-                                if backgroundMode == .custom {
-                                    VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
-                                        Text("Describe your background")
-                                            .font(.system(size: adaptiveFontSize(13, for: geometry), weight: .medium))
-                                            .foregroundColor(.charcoal.opacity(0.7))
-                                        
-                                        TextField("e.g., sunset beach, garden party, starry night...", text: $customPrompt)
-                                            .font(.system(size: adaptiveFontSize(15, for: geometry)))
-                                            .padding(.horizontal, adaptiveSpacing(12, for: geometry))
-                                            .padding(.vertical, adaptiveSpacing(10, for: geometry))
-                                            .background(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
-                                                    .fill(Color.white.opacity(0.7))
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
-                                                    .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
-                                            )
-                                    }
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
-                                }
-                            }
-                            .padding(.horizontal, adaptivePadding(for: geometry))
-                            .padding(.vertical, adaptiveSpacing(12, for: geometry))
-                            .background(
-                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
-                                    .fill(Color.white.opacity(0.3))
+                            BackgroundOptionsView(
+                                backgroundMode: $backgroundMode,
+                                customPrompt: $customPrompt,
+                                geometry: geometry
                             )
-                            .padding(.horizontal, adaptivePadding(for: geometry))
                             
                             VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                                 Button(action: createTogetherScene) {
@@ -234,7 +184,7 @@ struct TogetherSceneView: View {
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
                         }
-                        .padding(.top, 0)
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 } else if isProcessing {
                     // Step 3: Processing
@@ -442,7 +392,7 @@ struct TogetherSceneView: View {
                             .padding(.horizontal, adaptivePadding(for: geometry))
                             .padding(.bottom, max(geometry.safeAreaInsets.bottom, adaptiveSpacing(20, for: geometry)))
                         }
-                        .padding(.top, 0)
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 }
             }
@@ -639,6 +589,177 @@ struct TogetherSceneView: View {
         let screenWidth = geometry.size.width
         let scaleFactor = screenWidth / 375.0
         return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+}
+
+// MARK: - Background Options View
+struct BackgroundOptionsView: View {
+    @Binding var backgroundMode: TogetherSceneView.BackgroundOption
+    @Binding var customPrompt: String
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: adaptiveSpacing(12, for: geometry)) {
+            Text("Background")
+                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                .foregroundColor(.charcoal)
+            
+            // Background Selection Buttons
+            VStack(spacing: adaptiveSpacing(10, for: geometry)) {
+                ForEach(TogetherSceneView.BackgroundOption.allCases, id: \.self) { option in
+                    BackgroundOptionButton(
+                        option: option,
+                        isSelected: backgroundMode == option,
+                        onTap: {
+                            withAnimation {
+                                backgroundMode = option
+                            }
+                        },
+                        geometry: geometry
+                    )
+                }
+            }
+            
+            // Custom Prompt Field (shown when custom mode is selected)
+            if backgroundMode == .custom {
+                CustomPromptField(
+                    customPrompt: $customPrompt,
+                    geometry: geometry
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(.horizontal, adaptivePadding(for: geometry))
+        .padding(.vertical, adaptiveSpacing(12, for: geometry))
+        .background(
+            RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                .fill(Color.white.opacity(0.3))
+        )
+        .padding(.horizontal, adaptivePadding(for: geometry))
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
+    }
+    
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+}
+
+// MARK: - Background Option Button
+struct BackgroundOptionButton: View {
+    let option: TogetherSceneView.BackgroundOption
+    let isSelected: Bool
+    let onTap: () -> Void
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: adaptiveFontSize(18, for: geometry)))
+                    .foregroundColor(isSelected ? .sky : .charcoal.opacity(0.3))
+                
+                Text(option.rawValue)
+                    .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
+                    .foregroundColor(.charcoal)
+                
+                Spacer()
+            }
+            .padding(.horizontal, adaptiveSpacing(16, for: geometry))
+            .padding(.vertical, adaptiveSpacing(12, for: geometry))
+            .background(
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                    .fill(isSelected ? Color.sky.opacity(0.1) : Color.white.opacity(0.5))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                    .stroke(isSelected ? Color.sky : Color.charcoal.opacity(0.2), lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+}
+
+// MARK: - Custom Prompt Field
+struct CustomPromptField: View {
+    @Binding var customPrompt: String
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+            Text("Describe your background")
+                .font(.system(size: adaptiveFontSize(13, for: geometry), weight: .medium))
+                .foregroundColor(.charcoal.opacity(0.7))
+            
+            TextField("e.g., sunset beach, garden party, starry night...", text: $customPrompt)
+                .font(.system(size: adaptiveFontSize(15, for: geometry)))
+                .padding(.horizontal, adaptiveSpacing(12, for: geometry))
+                .padding(.vertical, adaptiveSpacing(10, for: geometry))
+                .background(
+                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
+                        .fill(Color.white.opacity(0.7))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
+                        .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
+                )
+        }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
     }
     
     private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {

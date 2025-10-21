@@ -327,7 +327,7 @@ class ImageProcessingService: ObservableObject {
             fileSize: nil
         )
         
-        guard let url = URL(string: "\(AppConfiguration.baseURL)/images/save") else {
+        guard let url = URL(string: "\(AppConfiguration.API.baseURL)/images/save") else {
             throw ImageProcessingError.invalidURL
         }
         
@@ -347,13 +347,41 @@ class ImageProcessingService: ObservableObject {
             throw ImageProcessingError.invalidResponse
         }
         
+        // Debug: Print the raw response
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("💾 Raw save response: \(responseString)")
+        }
+        
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .iso8601
-        let savedImage = try decoder.decode(ProcessedImage.self, from: data)
         
-        print("✅ Image saved to history: \(savedImage.id)")
-        return savedImage
+        do {
+            let savedImage = try decoder.decode(ProcessedImage.self, from: data)
+            print("✅ Image saved to history: \(savedImage.id)")
+            return savedImage
+        } catch {
+            print("❌ Failed to decode save response: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("❌ Missing key '\(key.stringValue)' in response")
+                    print("❌ Context: \(context)")
+                case .typeMismatch(let type, let context):
+                    print("❌ Type mismatch for type \(type)")
+                    print("❌ Context: \(context)")
+                case .valueNotFound(let type, let context):
+                    print("❌ Value not found for type \(type)")
+                    print("❌ Context: \(context)")
+                case .dataCorrupted(let context):
+                    print("❌ Data corrupted")
+                    print("❌ Context: \(context)")
+                @unknown default:
+                    print("❌ Unknown decoding error: \(error)")
+                }
+            }
+            throw error
+        }
     }
     
     func fetchImageHistory(page: Int = 1, pageSize: Int = 20, imageType: String? = nil) async throws -> ImageHistoryResponse {
@@ -363,7 +391,7 @@ class ImageProcessingService: ObservableObject {
             throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not authenticated"]))
         }
         
-        var urlString = "\(AppConfiguration.baseURL)/images/history?page=\(page)&page_size=\(pageSize)"
+        var urlString = "\(AppConfiguration.API.baseURL)/images/history?page=\(page)&page_size=\(pageSize)"
         if let type = imageType {
             urlString += "&image_type=\(type)"
         }
@@ -383,13 +411,41 @@ class ImageProcessingService: ObservableObject {
             throw ImageProcessingError.invalidResponse
         }
         
+        // Debug: Print the raw response
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📥 Raw API response: \(responseString)")
+        }
+        
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .iso8601
-        let history = try decoder.decode(ImageHistoryResponse.self, from: data)
         
-        print("✅ Fetched \(history.images.count) images from history")
-        return history
+        do {
+            let history = try decoder.decode(ImageHistoryResponse.self, from: data)
+            print("✅ Fetched \(history.images.count) images from history (page \(history.page) of total \(history.total))")
+            return history
+        } catch {
+            print("❌ Failed to decode history response: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("❌ Missing key '\(key.stringValue)' in response")
+                    print("❌ Context: \(context)")
+                case .typeMismatch(let type, let context):
+                    print("❌ Type mismatch for type \(type)")
+                    print("❌ Context: \(context)")
+                case .valueNotFound(let type, let context):
+                    print("❌ Value not found for type \(type)")
+                    print("❌ Context: \(context)")
+                case .dataCorrupted(let context):
+                    print("❌ Data corrupted")
+                    print("❌ Context: \(context)")
+                @unknown default:
+                    print("❌ Unknown decoding error: \(error)")
+                }
+            }
+            throw error
+        }
     }
     
     func fetchImageStats() async throws -> ImageStats {
@@ -399,7 +455,7 @@ class ImageProcessingService: ObservableObject {
             throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not authenticated"]))
         }
         
-        guard let url = URL(string: "\(AppConfiguration.baseURL)/images/stats") else {
+        guard let url = URL(string: "\(AppConfiguration.API.baseURL)/images/stats") else {
             throw ImageProcessingError.invalidURL
         }
         

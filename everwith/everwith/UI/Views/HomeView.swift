@@ -20,7 +20,8 @@ struct HomeView: View {
             ZStack {
                 // Vibrant Modern Background
                 ModernVibrantBackground()
-                    .ignoresSafeArea(.all)
+                    .ignoresSafeArea()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                 
                 VStack(spacing: 0) {
                     // Enhanced Header
@@ -62,11 +63,14 @@ struct HomeView: View {
                                             Text("Restore a Photo")
                                                 .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
                                                 .foregroundColor(.charcoal)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8)
                                             
                                             Text("Bring memories back to life")
                                                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
                                                 .foregroundColor(.charcoal.opacity(0.8))
                                                 .lineLimit(1)
+                                                .minimumScaleFactor(0.9)
                                         }
                                         
                                         Spacer(minLength: adaptiveSpacing(6, for: geometry))
@@ -142,11 +146,14 @@ struct HomeView: View {
                                             Text("Together Scene")
                                                 .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
                                                 .foregroundColor(.charcoal)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8)
                                             
                                             Text("Create beautiful tributes")
                                                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
                                                 .foregroundColor(.charcoal.opacity(0.8))
                                                 .lineLimit(1)
+                                                .minimumScaleFactor(0.9)
                                         }
                                         
                                         Spacer(minLength: adaptiveSpacing(6, for: geometry))
@@ -204,10 +211,14 @@ struct HomeView: View {
                             Spacer()
                                 .frame(height: adaptiveSpacing(24, for: geometry))
                         }
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20))
                     }
                     .scrollIndicators(.hidden)
+                    .frame(width: geometry.size.width)
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
         }
         .onAppear {
             // Staggered entrance animations
@@ -384,6 +395,8 @@ struct ModernHomeHeader: View {
                     Text("Welcome back")
                         .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
                         .foregroundColor(.charcoal.opacity(0.8))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     
                     Image(systemName: "sparkles")
                         .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
@@ -393,6 +406,8 @@ struct ModernHomeHeader: View {
                 Text(user.name)
                     .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.charcoal)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             
             Spacer()
@@ -439,6 +454,7 @@ struct ModernHomeHeader: View {
             .animation(.easeInOut(duration: 0.1), value: showSettings)
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
+        .padding(.top, max(geometry.safeAreaInsets.top, 16))
         .padding(.bottom, adaptiveSpacing(16, for: geometry))
     }
     
@@ -498,10 +514,14 @@ struct WelcomeMessageCard: View {
                 Text("Ready to create?")
                     .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold, design: .rounded))
                     .foregroundColor(.charcoal)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 
                 Text("Choose how you'd like to honor your memories")
                     .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
                     .foregroundColor(.charcoal.opacity(0.7))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
             }
             
             Spacer()

@@ -38,15 +38,15 @@ struct ModernAuthenticationView: View {
                         
                         // App Logo and Branding - Modern & Vibrant
                         VStack(spacing: geometry.isSmallScreen ? 12 : 16) {
-                            // App Logo with vibrant gradient
+                            // App Logo with brand gradient (matching HomeView)
                             ZStack {
                                 // Glow effect
                                 Circle()
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(red: 0.45, green: 0.35, blue: 0.95).opacity(0.6),
-                                                Color(red: 0.95, green: 0.35, blue: 0.65).opacity(0.4)
+                                                Color.honeyGold.opacity(0.6),
+                                                Color.sky.opacity(0.4)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -63,9 +63,9 @@ struct ModernAuthenticationView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(red: 0.5, green: 0.4, blue: 1.0),    // Vibrant Purple
-                                                Color(red: 1.0, green: 0.4, blue: 0.7),    // Vibrant Pink
-                                                Color(red: 1.0, green: 0.6, blue: 0.3)     // Warm Orange
+                                                Color.honeyGold.opacity(0.9),
+                                                Color.sky.opacity(0.7),
+                                                Color.fern.opacity(0.6)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -99,7 +99,7 @@ struct ModernAuthenticationView: View {
                             }
                             .scaleEffect(logoScale)
                             .shadow(
-                                color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.4),
+                                color: Color.honeyGold.opacity(0.4),
                                 radius: geometry.isSmallScreen ? 10 : adaptiveSpacing(15, for: geometry),
                                 x: 0,
                                 y: geometry.isSmallScreen ? 4 : adaptiveSpacing(6, for: geometry)
@@ -169,15 +169,15 @@ struct ModernAuthenticationView: View {
                                                         .fill(
                                                             LinearGradient(
                                                                 gradient: Gradient(colors: [
-                                                                    Color(red: 0.5, green: 0.4, blue: 1.0),
-                                                                    Color(red: 0.6, green: 0.45, blue: 0.95)
+                                                                    Color.honeyGold.opacity(0.9),
+                                                                    Color.sky.opacity(0.8)
                                                                 ]),
                                                                 startPoint: .leading,
                                                                 endPoint: .trailing
                                                             )
                                                         )
                                                         .shadow(
-                                                            color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.4),
+                                                            color: Color.honeyGold.opacity(0.4),
                                                             radius: 8,
                                                             x: 0,
                                                             y: 4
@@ -209,15 +209,15 @@ struct ModernAuthenticationView: View {
                                                         .fill(
                                                             LinearGradient(
                                                                 gradient: Gradient(colors: [
-                                                                    Color(red: 0.5, green: 0.4, blue: 1.0),
-                                                                    Color(red: 0.6, green: 0.45, blue: 0.95)
+                                                                    Color.honeyGold.opacity(0.9),
+                                                                    Color.sky.opacity(0.8)
                                                                 ]),
                                                                 startPoint: .leading,
                                                                 endPoint: .trailing
                                                             )
                                                         )
                                                         .shadow(
-                                                            color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.4),
+                                                            color: Color.honeyGold.opacity(0.4),
                                                             radius: 8,
                                                             x: 0,
                                                             y: 4
@@ -324,14 +324,14 @@ struct ModernAuthenticationView: View {
                                 .frame(maxWidth: .infinity)
                                 .background(
                                     ZStack {
-                                        // Gradient background
+                                        // Gradient background (matching HomeView)
                                         RoundedRectangle(cornerRadius: 16)
                                             .fill(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
-                                                        Color(red: 0.5, green: 0.4, blue: 1.0),    // Purple
-                                                        Color(red: 0.7, green: 0.35, blue: 0.9),   // Purple-Pink
-                                                        Color(red: 1.0, green: 0.4, blue: 0.7)     // Pink
+                                                        Color.honeyGold.opacity(0.9),
+                                                        Color.sky.opacity(0.8),
+                                                        Color.fern.opacity(0.7)
                                                     ]),
                                                     startPoint: .leading,
                                                     endPoint: .trailing
@@ -354,7 +354,7 @@ struct ModernAuthenticationView: View {
                                     }
                                 )
                                 .shadow(
-                                    color: Color(red: 0.6, green: 0.4, blue: 0.95).opacity(0.5),
+                                    color: Color.honeyGold.opacity(0.4),
                                     radius: 12,
                                     x: 0,
                                     y: 6
@@ -412,8 +412,8 @@ struct ModernAuthenticationView: View {
                                             .foregroundStyle(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
-                                                        Color(red: 0.26, green: 0.52, blue: 0.96),
-                                                        Color(red: 0.22, green: 0.68, blue: 0.33)
+                                                        Color.sky,
+                                                        Color.fern
                                                     ]),
                                                     startPoint: .topLeading,
                                                     endPoint: .bottomTrailing
@@ -440,8 +440,8 @@ struct ModernAuthenticationView: View {
                                                 .stroke(
                                                     LinearGradient(
                                                         gradient: Gradient(colors: [
-                                                            Color(red: 0.26, green: 0.52, blue: 0.96).opacity(0.3),
-                                                            Color(red: 0.22, green: 0.68, blue: 0.33).opacity(0.3)
+                                                            Color.sky.opacity(0.4),
+                                                            Color.fern.opacity(0.3)
                                                         ]),
                                                         startPoint: .topLeading,
                                                         endPoint: .bottomTrailing
@@ -549,27 +549,27 @@ struct ModernAuthenticationView: View {
                                 RoundedRectangle(cornerRadius: 24)
                                     .fill(Color.white)
                                 
-                                // Subtle gradient overlay
+                                // Subtle gradient overlay (matching HomeView)
                                 RoundedRectangle(cornerRadius: 24)
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.03),
-                                                Color(red: 1.0, green: 0.4, blue: 0.7).opacity(0.02),
-                                                Color.white.opacity(0)
+                                                Color.honeyGold.opacity(0.12),
+                                                Color.sky.opacity(0.08),
+                                                Color.softBlush.opacity(0.06)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
                                 
-                                // Border with gradient
+                                // Border with gradient (matching HomeView)
                                 RoundedRectangle(cornerRadius: 24)
                                     .stroke(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.2),
-                                                Color(red: 1.0, green: 0.4, blue: 0.7).opacity(0.15)
+                                                Color.honeyGold.opacity(0.25),
+                                                Color.sky.opacity(0.15)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -579,7 +579,7 @@ struct ModernAuthenticationView: View {
                             }
                         )
                         .shadow(
-                            color: Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.1),
+                            color: Color.honeyGold.opacity(0.15),
                             radius: 12,
                             x: 0,
                             y: 4
@@ -833,16 +833,16 @@ struct ModernTextField: View {
                         size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
                         weight: .semibold
                     ))
-                    .foregroundStyle(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 0.5, green: 0.4, blue: 1.0),
-                                Color(red: 0.7, green: 0.35, blue: 0.9)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.honeyGold,
+                                                Color.sky
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
                     .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                     .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 
@@ -865,7 +865,7 @@ struct ModernTextField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.15), lineWidth: 1.5)
+                                            .stroke(Color.honeyGold.opacity(0.2), lineWidth: 1.5)
                     )
             )
         }
@@ -922,16 +922,16 @@ struct ModernPasswordField: View {
                         size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
                         weight: .semibold
                     ))
-                    .foregroundStyle(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 0.5, green: 0.4, blue: 1.0),
-                                Color(red: 0.7, green: 0.35, blue: 0.9)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.honeyGold,
+                                                Color.sky
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
                     .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                     .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 
@@ -967,7 +967,7 @@ struct ModernPasswordField: View {
                             size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
                             weight: .medium
                         ))
-                        .foregroundColor(Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.6))
+                                        .foregroundColor(Color.honeyGold.opacity(0.7))
                         .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                         .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 }
@@ -979,7 +979,7 @@ struct ModernPasswordField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color(red: 0.5, green: 0.4, blue: 1.0).opacity(0.15), lineWidth: 1.5)
+                                            .stroke(Color.honeyGold.opacity(0.2), lineWidth: 1.5)
                     )
             )
         }

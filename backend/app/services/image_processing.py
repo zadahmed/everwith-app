@@ -6,14 +6,38 @@ from typing import Optional
 from fastapi import HTTPException
 from PIL import Image, ImageFilter, ImageOps, ImageEnhance
 import numpy as np
+import boto3
+from botocore.exceptions import ClientError
 from app.models.schemas import RestoreRequest, TogetherRequest, JobResult, LookControls
 
 # Configuration
-BFL_API_KEY = os.getenv("BFL_API_KEY", "YOUR_BFL_KEY")
+BFL_API_KEY = os.getenv("BFL_API_KEY")
 BFL_API_BASE = os.getenv("BFL_API_BASE", "https://api.bfl.ai/v1")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./outputs")
 
-# Ensure output directory exists
+# DigitalOcean Spaces Configuration
+DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
+DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
+DO_SPACES_REGION = os.getenv("DO_SPACES_REGION", "nyc3")
+DO_SPACES_BUCKET = os.getenv("DO_SPACES_BUCKET")
+DO_SPACES_ENDPOINT = os.getenv("DO_SPACES_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
+DO_SPACES_CDN_ENDPOINT = os.getenv("DO_SPACES_CDN_ENDPOINT")
+
+# Initialize DigitalOcean Spaces client (S3-compatible)
+s3_client = None
+if DO_SPACES_KEY and DO_SPACES_SECRET:
+    s3_client = boto3.client(
+        's3',
+        region_name="ams3",
+        endpoint_url=DO_SPACES_ENDPOINT,
+        aws_access_key_id=DO_SPACES_KEY,
+        aws_secret_access_key=DO_SPACES_SECRET
+    )
+    print(f"✅ DigitalOcean Spaces configured: {DO_SPACES_BUCKET}")
+else:
+    print("⚠️ DigitalOcean Spaces not configured - using local storage fallback")
+
+# Ensure output directory exists (fallback)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 class ImageProcessingService:
@@ -38,15 +62,52 @@ class ImageProcessingService:
 
     @staticmethod
     def _save_image(img: Image.Image, ext: str = "png") -> str:
-        """Save image to local storage and return file path"""
+        """Save image to DigitalOcean Spaces and return CDN URL"""
         fname = f"{uuid.uuid4().hex}.{ext}"
-        fpath = os.path.join(OUTPUT_DIR, fname)
+        buffer = io.BytesIO()
+        
+        # Prepare image for saving
         save_params = {}
-        if ext.lower() == "jpg":
+        if ext.lower() in ["jpg", "jpeg"]:
             img = img.convert("RGB")
-            save_params["quality"] = 92
-        img.save(fpath, **save_params)
-        # In production, upload to S3 or GCS and return a signed URL
+            img.save(buffer, format='JPEG', quality=92)
+            content_type = 'image/jpeg'
+        else:
+            img.save(buffer, format='PNG')
+            content_type = 'image/png'
+        
+        buffer.seek(0)
+        
+        # Upload to DigitalOcean Spaces if configured
+        if s3_client and DO_SPACES_BUCKET:
+            try:
+                s3_client.upload_fileobj(
+                    buffer,
+                    DO_SPACES_BUCKET,
+                    fname,
+                    ExtraArgs={
+                        'ContentType': content_type,
+                        'ACL': 'public-read',  # Make publicly accessible
+                        'CacheControl': 'max-age=31536000'  # Cache for 1 year
+                    }
+                )
+                
+                # Return CDN URL if available, otherwise direct Spaces URL
+                if DO_SPACES_CDN_ENDPOINT:
+                    return f"{DO_SPACES_CDN_ENDPOINT}/{fname}"
+                else:
+                    return f"https://{DO_SPACES_BUCKET}.{DO_SPACES_REGION}.digitaloceanspaces.com/{fname}"
+                    
+            except ClientError as e:
+                print(f"❌ Failed to upload to Spaces: {e}")
+                # Fall back to local storage
+        
+        # Fallback: Save locally (for development)
+        print("⚠️ Using local storage fallback")
+        fpath = os.path.join(OUTPUT_DIR, fname)
+        buffer.seek(0)
+        with open(fpath, 'wb') as f:
+            f.write(buffer.read())
         return f"file://{os.path.abspath(fpath)}"
 
     @staticmethod
@@ -141,8 +202,8 @@ class ImageProcessingService:
         try:
             pil = ImageProcessingService._download_image(str(req.image_url))
             pil = pil.filter(ImageFilter.MedianFilter(size=3))
-            temp_path = ImageProcessingService._save_image(pil, "png")
-            temp_url = temp_path  # in prod, upload to S3 and use https url
+            # Upload to cloud storage - now returns HTTPS URL
+            temp_url = ImageProcessingService._save_image(pil, "png")
         except Exception:
             # If preclean fails, still try original
             temp_url = str(req.image_url)
@@ -184,70 +245,138 @@ class ImageProcessingService:
 
     @staticmethod
     def together_pipeline(req: TogetherRequest) -> JobResult:
-        """Process together photo creation request"""
-        # 1) Background choice
+        """Process together photo creation request - FIXED VERSION"""
+        
+        # Step 1: Download and process subject images
+        print("📸 Step 1: Downloading subject images...")
+        subject_a = ImageProcessingService._download_image(str(req.subject_a_url))
+        subject_b = ImageProcessingService._download_image(str(req.subject_b_url))
+        
+        # Step 2: Remove backgrounds from subjects using rembg
+        print("🎭 Step 2: Removing backgrounds from subjects...")
+        try:
+            import rembg
+            subject_a_nobg = rembg.remove(subject_a)
+            subject_b_nobg = rembg.remove(subject_b)
+        except Exception as e:
+            print(f"⚠️ Background removal failed: {e}")
+            # Fallback: use original images
+            subject_a_nobg = subject_a
+            subject_b_nobg = subject_b
+        
+        # Save subjects without background
+        subject_a_url = ImageProcessingService._save_image(subject_a_nobg, "png")
+        subject_b_url = ImageProcessingService._save_image(subject_b_nobg, "png")
+        
+        # Create masks from alpha channel
+        def create_mask(img_with_alpha):
+            """Extract alpha channel as mask"""
+            if img_with_alpha.mode == 'RGBA':
+                mask = img_with_alpha.split()[-1]  # Get alpha channel
+            else:
+                # No alpha channel, create white mask
+                mask = Image.new('L', img_with_alpha.size, 255)
+            return mask
+        
+        mask_a = create_mask(subject_a_nobg)
+        mask_b = create_mask(subject_b_nobg)
+        
+        # Save masks
+        mask_a_url = ImageProcessingService._save_image(mask_a, "png")
+        mask_b_url = ImageProcessingService._save_image(mask_b, "png")
+        
+        # Step 3: Generate or select background
+        print("🌄 Step 3: Generating/selecting background...")
         if req.background.mode == "gallery":
             if not req.background.scene_id:
                 raise HTTPException(status_code=400, detail="scene_id required for gallery mode")
-            # In production, resolve scene_id to a hosted background URL
-            # For now, treat scene_id as a direct URL if you store gallery online
-            background_url = req.background.scene_id
+            background_url = req.background.scene_id  # Pre-made background
         else:
             prompt = req.background.prompt or "soft warm tribute background with gentle bokeh"
-            background_url = ImageProcessingService.flux_ultra_background(prompt, seed=req.seed, aspect_ratio=req.aspect_ratio) if req.background.use_ultra else ImageProcessingService.flux_kontext_edit(
-                image_url="https://picsum.photos/1024/1280",  # seed plate you control
+            background_url = ImageProcessingService.flux_ultra_background(
                 prompt=prompt,
-                strength=0.9,
+                seed=req.seed,
+                aspect_ratio=req.aspect_ratio
+            )
+        
+        if not background_url:
+            raise HTTPException(status_code=502, detail="Failed to generate background")
+        
+        # Step 4: Composite subjects onto background
+        print("🖼️ Step 4: Compositing subjects onto background...")
+        background = ImageProcessingService._download_image(background_url)
+        
+        # Resize subjects to fit nicely
+        bg_w, bg_h = background.size
+        max_subject_height = int(bg_h * 0.65)  # Subjects take up 65% of height
+        
+        # Resize subject A
+        a_ratio = subject_a_nobg.size[0] / subject_a_nobg.size[1]
+        a_new_h = max_subject_height
+        a_new_w = int(a_new_h * a_ratio)
+        subject_a_resized = subject_a_nobg.resize((a_new_w, a_new_h), Image.Resampling.LANCZOS)
+        
+        # Resize subject B
+        b_ratio = subject_b_nobg.size[0] / subject_b_nobg.size[1]
+        b_new_h = max_subject_height
+        b_new_w = int(b_new_h * b_ratio)
+        subject_b_resized = subject_b_nobg.resize((b_new_w, b_new_h), Image.Resampling.LANCZOS)
+        
+        # Position subjects (side by side, centered)
+        gap = 50  # 50px gap between subjects
+        total_width = a_new_w + b_new_w + gap
+        start_x = (bg_w - total_width) // 2
+        start_y = (bg_h - max_subject_height) // 2
+        
+        # Composite
+        composite = background.copy().convert('RGBA')
+        composite.paste(subject_a_resized, (start_x, start_y), subject_a_resized)
+        composite.paste(subject_b_resized, (start_x + a_new_w + gap, start_y), subject_b_resized)
+        
+        # Save composited image
+        composite_url = ImageProcessingService._save_image(composite, "png")
+        
+        # Step 5: Use Flux Kontext to blend edges and harmonize lighting
+        print("✨ Step 5: Blending and harmonizing...")
+        blend_prompt = (
+            "Seamlessly blend the subjects into the background. "
+            "Match lighting and perspective. Add subtle shadows and reflections. "
+            "Make it look natural like they were always there together. "
+            "Preserve facial features and clothing details."
+        )
+        
+        try:
+            final_url = ImageProcessingService.flux_kontext_edit(
+                image_url=composite_url,
+                prompt=blend_prompt,
+                strength=0.35,  # Light touch to preserve subjects
                 seed=req.seed,
                 out_format="png"
             )
-
-        if not background_url:
-            raise HTTPException(status_code=502, detail="Failed to prepare background")
-
-        # 2) Place subjects with Fill. Strategy: two quick passes so Fill can harmonize each subject.
-        # First pass: place A
-        place_a_prompt = (
-            "Place and blend subject A naturally into the scene. "
-            "Match lighting and perspective. Add soft contact shadows. Keep clothing and identity."
-        )
-        out1_url = ImageProcessingService.flux_fill(
-            image_url=background_url,
-            prompt=place_a_prompt,
-            mask_url=str(req.subject_a_mask_url) if req.subject_a_mask_url else None,
-            seed=req.seed,
-            out_format="png"
-        )
-        if not out1_url:
-            raise HTTPException(status_code=502, detail="Fill failed for subject A")
-
-        # Second pass: place B
-        place_b_prompt = (
-            "Place and blend subject B next to subject A naturally. "
-            "Match lighting and perspective. Subtle film grain. Preserve identity."
-        )
-        out2_url = ImageProcessingService.flux_fill(
-            image_url=out1_url,
-            prompt=place_b_prompt,
-            mask_url=str(req.subject_b_mask_url) if req.subject_b_mask_url else None,
-            seed=req.seed,
-            out_format="png"
-        )
-        if not out2_url:
-            raise HTTPException(status_code=502, detail="Fill failed for subject B")
-
-        # 3) Aspect and finishing
+        except Exception as e:
+            print(f"⚠️ Blending failed: {e}, using composite")
+            final_url = composite_url  # Fallback to composite without blending
+        
+        if not final_url:
+            final_url = composite_url
+        
+        # Step 6: Apply aspect ratio and finishing touches
+        print("🎨 Step 6: Applying finishing touches...")
         try:
-            img = ImageProcessingService._download_image(out2_url)
+            img = ImageProcessingService._download_image(final_url)
             img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
             img = ImageProcessingService._finish_look(img, req.look_controls or LookControls())
             final_url = ImageProcessingService._save_image(img, "png")
-        except Exception:
-            final_url = out2_url
-
+        except Exception as e:
+            print(f"⚠️ Finishing failed: {e}")
+            # Return without finishing
+        
         meta = {
             "background_src": background_url,
+            "subject_a_processed": subject_a_url,
+            "subject_b_processed": subject_b_url,
+            "composite_url": composite_url,
             "aspect_ratio": req.aspect_ratio,
-            "steps": ["background", "fill_A", "fill_B", "finish"]
+            "steps": ["remove_bg", "composite", "blend", "finish"]
         }
         return JobResult(output_url=final_url, meta=meta)

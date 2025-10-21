@@ -64,6 +64,10 @@ struct AppCoordinator: View {
                 switch authService.authenticationState {
                 case .loading:
                     LoadingView()
+                        .onAppear {
+                            // Ensure session is being validated
+                            print("🔄 App loaded - checking for existing session...")
+                        }
                         .transition(.opacity)
                 case .authenticated(let user):
                     HomeView(user: user)

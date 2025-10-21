@@ -17,7 +17,7 @@ struct TogetherSceneView: View {
     @State private var isProcessing = false
     @State private var processingProgress: Double = 0.0
     @State private var showPhotoPicker = false
-    @State private var sliderPosition: CGFloat = 0.5
+    @State private var showingOriginals = false
     @State private var showSaveSuccess = false
     @State private var errorMessage: String?
     @State private var showError = false
@@ -28,34 +28,16 @@ struct TogetherSceneView: View {
             ZStack {
                 // Background
                 Color.warmLinen
-                    .ignoresSafeArea()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .ignoresSafeArea(.all, edges: .all)
                 
                 VStack(spacing: 0) {
-                    // Simple Header
-                    HStack {
-                        Button(action: { dismiss() }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 18, weight: .semibold))
-                                Text("Back")
-                                    .font(.system(size: 17, weight: .regular))
-                            }
-                            .foregroundColor(.charcoal)
-                        }
-                        
-                        Spacer()
-                        
-                        Text("Together Scene")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.charcoal)
-                        
-                        Spacer()
-                        
-                        Color.clear.frame(width: 80)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 12)
+                    // Common Header
+                    CommonHeader(
+                        title: "Together Scene",
+                        onBack: { dismiss() },
+                        geometry: geometry
+                    )
                     
                     // Main Content
                     if selectedImages.count < 2 {
@@ -177,166 +159,142 @@ struct TogetherSceneView: View {
                             Spacer()
                         }
                     } else if let processed = processedImage {
-                        // Step 4: Result with Before/After
-                        VStack(spacing: 0) {
-                            // Before/After Comparison
-                            GeometryReader { imageGeometry in
-                                ZStack(alignment: .leading) {
-                                    // After image (full)
-                                    Image(uiImage: processed)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(maxWidth: .infinity)
-                                    
-                                    // Before image (masked) - show first image
-                                    if !selectedImages.isEmpty {
+                        // Step 4: Result - Simple and Clean
+                        ScrollView {
+                            VStack(spacing: 20) {
+                                // Main Image Display
+                                VStack(spacing: 12) {
+                                    // Image
+                                    if showingOriginals && selectedImages.count >= 2 {
+                                        // Show side-by-side originals
                                         HStack(spacing: 8) {
                                             Image(uiImage: selectedImages[0])
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
-                                                .frame(width: imageGeometry.size.width * 0.45 * sliderPosition)
+                                                .frame(maxWidth: .infinity)
+                                                .frame(height: geometry.size.height * 0.4)
+                                                .cornerRadius(12)
                                                 .clipped()
                                             
-                                            if selectedImages.count > 1 {
-                                                Image(uiImage: selectedImages[1])
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fill)
-                                                    .frame(width: imageGeometry.size.width * 0.45 * sliderPosition)
-                                                    .clipped()
-                                            }
+                                            Image(uiImage: selectedImages[1])
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(maxWidth: .infinity)
+                                                .frame(height: geometry.size.height * 0.4)
+                                                .cornerRadius(12)
+                                                .clipped()
                                         }
-                                        .mask(
-                                            Rectangle()
-                                                .frame(width: imageGeometry.size.width * sliderPosition)
-                                        )
+                                    } else {
+                                        // Show together scene result
+                                        Image(uiImage: processed)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(maxHeight: geometry.size.height * 0.5)
+                                            .cornerRadius(16)
+                                            .shadow(color: .black.opacity(0.1), radius: 10)
                                     }
                                     
-                                    // Labels
-                                    HStack {
-                                        if sliderPosition > 0.1 {
-                                            Text("Original")
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 6)
-                                                .background(Color.black.opacity(0.6))
-                                                .cornerRadius(8)
-                                                .padding(.leading, 12)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        if sliderPosition < 0.9 {
-                                            Text("Together")
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 6)
-                                                .background(Color.black.opacity(0.6))
-                                                .cornerRadius(8)
-                                                .padding(.trailing, 12)
-                                        }
-                                    }
-                                    .padding(.top, 12)
-                                    
-                                    // Slider
-                                    VStack {
-                                        Rectangle()
-                                            .fill(Color.white)
-                                            .frame(width: 3)
-                                            .shadow(color: .black.opacity(0.3), radius: 2)
-                                            .overlay(
-                                                Circle()
-                                                    .fill(Color.white)
-                                                    .frame(width: 44, height: 44)
-                                                    .shadow(color: .black.opacity(0.3), radius: 8)
-                                                    .overlay(
-                                                        HStack(spacing: 4) {
-                                                            Image(systemName: "chevron.left")
-                                                                .font(.system(size: 10, weight: .bold))
-                                                            Image(systemName: "chevron.right")
-                                                                .font(.system(size: 10, weight: .bold))
-                                                        }
-                                                        .foregroundColor(.charcoal.opacity(0.6))
-                                                    )
-                                            )
-                                    }
-                                    .offset(x: imageGeometry.size.width * sliderPosition - 22)
-                                    .gesture(
-                                        DragGesture()
-                                            .onChanged { value in
-                                                sliderPosition = min(max(value.location.x / imageGeometry.size.width, 0), 1)
-                                            }
-                                    )
-                                }
-                            }
-                            .frame(height: geometry.size.height * 0.55)
-                            
-                            Spacer()
-                            
-                            // Instructions
-                            Text("← Swipe to compare →")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.charcoal.opacity(0.5))
-                                .padding(.bottom, 16)
-                            
-                            // Action Buttons
-                            VStack(spacing: 12) {
-                                Button(action: savePhoto) {
-                                    HStack {
-                                        Image(systemName: showSaveSuccess ? "checkmark.circle.fill" : "arrow.down.circle.fill")
-                                            .font(.system(size: 18, weight: .semibold))
-                                        Text(showSaveSuccess ? "Saved!" : "Save to Photos")
-                                            .font(.system(size: 17, weight: .semibold))
+                                    // Status Badge
+                                    HStack(spacing: 8) {
+                                        Image(systemName: showingOriginals ? "photo.stack" : "heart.circle.fill")
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(showingOriginals ? "Original Photos" : "Together Scene")
+                                            .font(.system(size: 15, weight: .semibold))
                                     }
                                     .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 54)
-                                    .background(showSaveSuccess ? Color.green : Color.sky)
-                                    .cornerRadius(16)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        Capsule()
+                                            .fill(showingOriginals ? Color.gray.opacity(0.7) : Color.sky)
+                                    )
+                                    .shadow(color: .black.opacity(0.15), radius: 4)
+                                    .animation(.easeInOut(duration: 0.3), value: showingOriginals)
                                 }
-                                .disabled(showSaveSuccess)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 20)
+                                .animation(.easeInOut(duration: 0.3), value: showingOriginals)
                                 
-                                HStack(spacing: 12) {
-                                    Button(action: sharePhoto) {
-                                        HStack {
-                                            Image(systemName: "square.and.arrow.up")
-                                            Text("Share")
-                                        }
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.charcoal)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 50)
-                                        .background(Color.white.opacity(0.5))
-                                        .cornerRadius(14)
+                                // Compare Toggle Button
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showingOriginals.toggle()
                                     }
-                                    
-                                    Button(action: {
-                                        selectedImages = []
-                                        processedImage = nil
-                                        pickedItems.removeAll()
-                                        showPhotoPicker = true
-                                    }) {
+                                }) {
+                                    HStack {
+                                        Image(systemName: "arrow.left.arrow.right")
+                                            .font(.system(size: 16, weight: .semibold))
+                                        Text(showingOriginals ? "Show Together Scene" : "Show Original Photos")
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
+                                    .foregroundColor(.charcoal)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.white.opacity(0.7))
+                                    .cornerRadius(14)
+                                }
+                                .padding(.horizontal, 20)
+                            
+                                // Action Buttons
+                                VStack(spacing: 12) {
+                                    Button(action: savePhoto) {
                                         HStack {
-                                            Image(systemName: "photo.badge.plus")
-                                            Text("New Scene")
+                                            Image(systemName: showSaveSuccess ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                                                .font(.system(size: 18, weight: .semibold))
+                                            Text(showSaveSuccess ? "Saved!" : "Save to Photos")
+                                                .font(.system(size: 17, weight: .semibold))
                                         }
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.charcoal)
+                                        .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
-                                        .frame(height: 50)
-                                        .background(Color.white.opacity(0.5))
-                                        .cornerRadius(14)
+                                        .frame(height: 54)
+                                        .background(showSaveSuccess ? Color.green : Color.sky)
+                                        .cornerRadius(16)
+                                    }
+                                    .disabled(showSaveSuccess)
+                                    
+                                    HStack(spacing: 12) {
+                                        Button(action: sharePhoto) {
+                                            HStack {
+                                                Image(systemName: "square.and.arrow.up")
+                                                Text("Share")
+                                            }
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.charcoal)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 50)
+                                            .background(Color.white.opacity(0.7))
+                                            .cornerRadius(14)
+                                        }
+                                        
+                                        Button(action: {
+                                            selectedImages = []
+                                            processedImage = nil
+                                            showingOriginals = false
+                                            pickedItems.removeAll()
+                                            showPhotoPicker = true
+                                        }) {
+                                            HStack {
+                                                Image(systemName: "photo.badge.plus")
+                                                Text("New Scene")
+                                            }
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.charcoal)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 50)
+                                            .background(Color.white.opacity(0.7))
+                                            .cornerRadius(14)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20))
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20))
                         }
                     }
                 }
             }
         }
+        .ignoresSafeArea(.all, edges: .all)
         .photosPicker(isPresented: $showPhotoPicker, selection: $pickedItems, maxSelectionCount: 2 - selectedImages.count, matching: .images)
         .onChange(of: pickedItems) { oldValue, newValue in
             Task {
@@ -409,7 +367,6 @@ struct TogetherSceneView: View {
                 await MainActor.run {
                     processedImage = together
                     isProcessing = false
-                    sliderPosition = 0.5
                 }
             } catch {
                 await MainActor.run {
@@ -457,6 +414,36 @@ struct TogetherSceneView: View {
            let rootVC = windowScene.windows.first?.rootViewController {
             rootVC.present(activityVC, animated: true)
         }
+    }
+    
+    // MARK: - Adaptive Sizing Functions (matching HomeView)
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
+    }
+    
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
     }
 }
 

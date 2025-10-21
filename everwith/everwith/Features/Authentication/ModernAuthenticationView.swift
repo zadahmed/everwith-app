@@ -30,8 +30,8 @@ struct ModernAuthenticationView: View {
             ZStack {
                 // Modern Vibrant Background (matching HomeView)
                 ModernVibrantBackground()
-                    .ignoresSafeArea()
                     .frame(width: geometry.size.width, height: geometry.size.height)
+                    .ignoresSafeArea(.all, edges: .all)
                 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -594,8 +594,8 @@ struct ModernAuthenticationView: View {
                 .frame(width: geometry.size.width)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
         }
+        .ignoresSafeArea(.all, edges: .all)
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             // Staggered entrance animations

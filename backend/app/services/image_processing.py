@@ -124,15 +124,23 @@ class ImageProcessingService:
                     
             except ClientError as e:
                 print(f"❌ Failed to upload to Spaces: {e}")
-                # Fall back to local storage
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to upload to DigitalOcean Spaces: {str(e)}. Cloud storage is required for image processing."
+                )
         
-        # Fallback: Save locally (for development)
-        print("⚠️ Using local storage fallback")
-        fpath = os.path.join(OUTPUT_DIR, fname)
-        buffer.seek(0)
-        with open(fpath, 'wb') as f:
-            f.write(buffer.read())
-        return f"file://{os.path.abspath(fpath)}"
+        # Fallback: Spaces not configured at all
+        print("⚠️⚠️⚠️ CRITICAL ERROR: DigitalOcean Spaces not configured!")
+        print("⚠️ Local file:// URLs cannot be used with BFL API")
+        print("⚠️ Please configure in .env:")
+        print("⚠️   DO_SPACES_KEY=your-key")
+        print("⚠️   DO_SPACES_SECRET=your-secret")
+        print("⚠️   DO_SPACES_BUCKET=your-bucket-name")
+        
+        raise HTTPException(
+            status_code=500,
+            detail="DigitalOcean Spaces not configured. Cloud storage is required for image processing. Please configure DO_SPACES_KEY, DO_SPACES_SECRET, and DO_SPACES_BUCKET in your .env file."
+        )
 
     @staticmethod
     def _apply_aspect(img: Image.Image, target: str) -> Image.Image:
@@ -185,17 +193,31 @@ class ImageProcessingService:
     @staticmethod
     def flux_kontext_edit(image_url: str, prompt: str, strength: float = 0.8, seed: Optional[int] = None, out_format: str = "png") -> str:
         """Call BFL Flux Kontext API for image editing/restoration (async with polling)"""
+        
+        # CRITICAL: BFL requires HTTPS URLs - file:// will NOT work!
+        if image_url.startswith("file://"):
+            raise HTTPException(
+                status_code=500, 
+                detail="Cannot use local file:// URLs with BFL API. Please configure DigitalOcean Spaces (DO_SPACES_KEY, DO_SPACES_SECRET, DO_SPACES_BUCKET in .env)"
+            )
+        
         # Step 1: Create the job
         url = f"{BFL_API_BASE}/flux-kontext-pro"
         body = {
             "prompt": prompt,
-            "image": image_url,
-            "strength": strength
+            "input_image": image_url,  # FIXED: BFL uses "input_image" not "image"
+            "strength": strength,
+            "output_format": out_format
         }
         if seed:
             body["seed"] = seed
         
-        print(f"📤 Creating BFL job...")
+        print(f"\n📤 Creating BFL job...")
+        print(f"🌐 API Endpoint: {url}")
+        print(f"🔗 YOUR Image URL being sent: {image_url}")
+        print(f"📝 Prompt: {prompt[:100]}...")
+        print(f"💪 Strength: {strength}")
+        
         response = ImageProcessingService._http_json(url, body)
         
         # Step 2: Get job ID and polling URL
@@ -269,7 +291,7 @@ class ImageProcessingService:
         url = f"{BFL_API_BASE}/flux-pro-1.0-fill-finetuned"
         body = {
             "prompt": prompt,
-            "image": image_url,
+            "input_image": image_url,  # FIXED: BFL uses "input_image"
             "mask": mask_url,
             "seed": seed,
             "output_format": out_format
@@ -302,24 +324,53 @@ class ImageProcessingService:
     @staticmethod
     def restore_pipeline(req: RestoreRequest) -> JobResult:
         """Process image restoration request"""
-        # 1) Optional light preclean to help the model on very noisy scans
+        print(f"\n{'='*60}")
+        print(f"🎯 RESTORE PIPELINE STARTED")
+        print(f"📥 Input image URL from upload: {req.image_url}")
+        print(f"{'='*60}\n")
+        
+        # Use the uploaded HTTPS URL directly - no need to download and re-upload!
+        image_url = str(req.image_url)
+        
+        # Verify it's an HTTPS URL that BFL can access
+        if not image_url.startswith("https://"):
+            print(f"❌ ERROR: Image URL must be HTTPS, got: {image_url}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Image URL must be HTTPS (from DigitalOcean Spaces). Got: {image_url[:50]}..."
+            )
+        
+        print(f"✅ Using uploaded HTTPS URL directly: {image_url}")
+        
+        # CRITICAL: Verify the URL is actually accessible before sending to BFL
+        print(f"\n🔍 TESTING: Can we access this URL?")
         try:
-            pil = ImageProcessingService._download_image(str(req.image_url))
-            pil = pil.filter(ImageFilter.MedianFilter(size=3))
-            # Upload to cloud storage - now returns HTTPS URL
-            temp_url = ImageProcessingService._save_image(pil, "png")
-        except Exception:
-            # If preclean fails, still try original
-            temp_url = str(req.image_url)
-
-        # 2) Single Flux Kontext call to recreate same look but nicer
+            test_response = requests.head(image_url, timeout=5)
+            print(f"✅ URL is accessible! Status: {test_response.status_code}")
+            print(f"📦 Content-Type: {test_response.headers.get('Content-Type')}")
+            print(f"📏 Content-Length: {test_response.headers.get('Content-Length')} bytes")
+        except Exception as e:
+            print(f"❌ ERROR: Cannot access URL! BFL won't be able to access it either!")
+            print(f"❌ Error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Uploaded image URL is not publicly accessible: {str(e)}. Please check DigitalOcean Spaces ACL settings."
+            )
+        
+        print(f"\n📤 Sending YOUR image to BFL API...")
+        print(f"🔗 Image URL being sent to BFL: {image_url}")
+        print(f"💪 Strength: {0.8 if req.quality_target == 'standard' else 0.9}")
+        
+        # Send directly to BFL Kontext for restoration
         prompt = (
             "Restore and recreate this photo in the same composition and style. "
             "Preserve identity, clothing and lighting. Remove noise, banding and stains. "
             "Keep natural skin texture. Avoid plastic skin and avoid AI artifacts."
         )
+        print(f"📝 Prompt: {prompt}")
+        
         out_url = ImageProcessingService.flux_kontext_edit(
-            image_url=temp_url,
+            image_url=image_url,
             prompt=prompt,
             strength=0.8 if req.quality_target == "standard" else 0.9,
             seed=req.seed,
@@ -327,6 +378,8 @@ class ImageProcessingService:
         )
         if not out_url:
             raise HTTPException(status_code=502, detail="No output from Kontext")
+        
+        print(f"✅ BFL returned restored image URL: {out_url}")
 
         # 3) Optional local finishing and aspect
         try:

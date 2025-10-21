@@ -77,6 +77,21 @@ async def upload_image(
                     file_url = f"https://{DO_SPACES_BUCKET}.{DO_SPACES_REGION}.digitaloceanspaces.com/{filename}"
                 
                 print(f"✅ Uploaded to Spaces: {file_url}")
+                
+                # CRITICAL: Verify the uploaded file is publicly accessible
+                print(f"🔍 Verifying public access...")
+                try:
+                    import requests
+                    test_response = requests.head(file_url, timeout=5)
+                    if test_response.status_code == 200:
+                        print(f"✅ File is publicly accessible! BFL can access it.")
+                    else:
+                        print(f"⚠️ WARNING: File returned status {test_response.status_code}")
+                        print(f"⚠️ BFL may not be able to access this URL!")
+                except Exception as e:
+                    print(f"⚠️ WARNING: Could not verify public access: {e}")
+                    print(f"⚠️ This may cause issues with BFL API!")
+                
                 return {"url": file_url, "filename": filename}
                 
             except ClientError as e:
@@ -87,16 +102,17 @@ async def upload_image(
                 )
         
         # Fallback: Save locally (for development)
-        print("⚠️ DigitalOcean Spaces not configured - using local storage")
-        output_dir = os.getenv("OUTPUT_DIR", "./outputs")
-        os.makedirs(output_dir, exist_ok=True)
-        file_path = os.path.join(output_dir, filename)
+        print("⚠️⚠️⚠️ DigitalOcean Spaces not configured - using local storage")
+        print("⚠️ WARNING: file:// URLs will NOT work with BFL API!")
+        print("⚠️ Please configure in .env:")
+        print("⚠️   DO_SPACES_KEY=your-key")
+        print("⚠️   DO_SPACES_SECRET=your-secret")
+        print("⚠️   DO_SPACES_BUCKET=your-bucket-name")
         
-        with open(file_path, "wb") as buffer:
-            buffer.write(content)
-        
-        file_url = f"file://{os.path.abspath(file_path)}"
-        return {"url": file_url, "filename": filename}
+        raise HTTPException(
+            status_code=500,
+            detail="DigitalOcean Spaces not configured. Local file storage cannot be used with external APIs. Please configure DO_SPACES_KEY, DO_SPACES_SECRET, and DO_SPACES_BUCKET in your .env file."
+        )
         
     except HTTPException:
         raise

@@ -24,8 +24,8 @@ struct HomeView: View {
                 ZStack {
                     // Vibrant Modern Background
                     ModernVibrantBackground()
-                        .ignoresSafeArea()
                         .frame(width: geometry.size.width, height: geometry.size.height)
+                        .ignoresSafeArea(.all, edges: .all)
                 
                 VStack(spacing: 0) {
                     // Enhanced Header
@@ -222,8 +222,8 @@ struct HomeView: View {
                 }
             }
                 .frame(width: geometry.size.width, height: geometry.size.height)
-                .clipped()
             }
+            .ignoresSafeArea(.all, edges: .all)
             .navigationDestination(for: NavigationDestination.self) { destination in
                 switch destination {
                 case .restore:

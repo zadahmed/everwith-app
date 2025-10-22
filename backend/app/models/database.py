@@ -111,3 +111,150 @@ class ProcessedImage(Document):
     
     def __str__(self):
         return f"ProcessedImage(id={self.id}, user_id={self.user_id}, type={self.image_type})"
+
+
+class Subscription(Document):
+    """Subscription document model for MongoDB"""
+    
+    user_id: Link[User]
+    tier: str  # "free", "monthly", "yearly", "lifetime"
+    status: str  # "active", "cancelled", "expired", "trial"
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    trial_end_date: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    transaction_id: str
+    receipt_data: str
+    auto_renew: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "subscriptions"
+        indexes = [
+            "user_id",
+            "status",
+            "tier",
+            "end_date"
+        ]
+    
+    def is_active(self) -> bool:
+        """Check if subscription is currently active"""
+        if self.status not in ["active", "trial"]:
+            return False
+        if self.end_date and self.end_date < datetime.utcnow():
+            return False
+        return True
+    
+    def __str__(self):
+        return f"Subscription(id={self.id}, user_id={self.user_id}, tier={self.tier})"
+
+
+class CreditTransaction(Document):
+    """Credit transaction document model for MongoDB"""
+    
+    user_id: Link[User]
+    credits: int  # Positive for purchase, negative for usage
+    transaction_type: str  # "purchase", "usage", "reward", "refund"
+    amount: Optional[float] = None  # Amount paid (for purchases)
+    currency: Optional[str] = "GBP"
+    transaction_id: Optional[str] = None
+    receipt_data: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "credit_transactions"
+        indexes = [
+            "user_id",
+            "transaction_type",
+            "created_at"
+        ]
+    
+    def __str__(self):
+        return f"CreditTransaction(id={self.id}, user_id={self.user_id}, credits={self.credits})"
+
+
+class UserFeedback(Document):
+    """User feedback document model for MongoDB"""
+    
+    user_id: Link[User]
+    feedback_type: str  # "general", "bug", "feature", "help"
+    subject: str
+    message: str
+    device_info: Optional[dict] = None
+    app_version: Optional[str] = None
+    status: str = "pending"  # "pending", "reviewed", "resolved"
+    admin_notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "user_feedback"
+        indexes = [
+            "user_id",
+            "feedback_type",
+            "status",
+            "created_at"
+        ]
+    
+    def __str__(self):
+        return f"UserFeedback(id={self.id}, type={self.feedback_type}, status={self.status})"
+
+
+class ShareEvent(Document):
+    """Share event tracking for rewards"""
+    
+    user_id: Link[User]
+    share_type: str  # "social", "direct", "link"
+    platform: Optional[str] = None  # "instagram", "facebook", "twitter", etc.
+    image_id: Optional[Link[ProcessedImage]] = None
+    reward_credits: int = 1
+    verified: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "share_events"
+        indexes = [
+            "user_id",
+            "verified",
+            "created_at"
+        ]
+    
+    def __str__(self):
+        return f"ShareEvent(id={self.id}, user_id={self.user_id}, verified={self.verified})"
+
+
+class UserStats(Document):
+    """User statistics and analytics"""
+    
+    user_id: Link[User]
+    total_images_processed: int = 0
+    total_restores: int = 0
+    total_merges: int = 0
+    total_shares: int = 0
+    credits_earned_from_shares: int = 0
+    favorite_filter: Optional[str] = None
+    last_active: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "user_stats"
+        indexes = [
+            "user_id",
+            "last_active"
+        ]
+    
+    def __str__(self):
+        return f"UserStats(id={self.id}, user_id={self.user_id}, total_processed={self.total_images_processed})"

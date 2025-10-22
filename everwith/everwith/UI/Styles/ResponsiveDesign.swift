@@ -193,6 +193,39 @@ extension View {
     }
 }
 
+// MARK: - Shared Adaptive Functions Extension
+extension GeometryProxy {
+    func adaptivePadding() -> CGFloat {
+        let screenWidth = self.size.width
+        // iPhone SE (375pt) = 12pt, iPhone 15 Pro (393pt) = 14pt, iPhone 15 Pro Max (430pt) = 16pt
+        return max(12, min(16, screenWidth * 0.04))
+    }
+    
+    func adaptiveSpacing(_ base: CGFloat) -> CGFloat {
+        let screenWidth = self.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return base * scaleFactor
+    }
+    
+    func adaptiveFontSize(_ base: CGFloat) -> CGFloat {
+        let screenWidth = self.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    func adaptiveSize(_ base: CGFloat) -> CGFloat {
+        let screenWidth = self.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return base * scaleFactor
+    }
+    
+    func adaptiveCornerRadius(_ base: CGFloat) -> CGFloat {
+        let screenWidth = self.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return base * scaleFactor
+    }
+}
+
 // MARK: - Screen Size Detection
 extension GeometryProxy {
     var isSmallScreen: Bool {

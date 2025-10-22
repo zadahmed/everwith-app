@@ -9,12 +9,15 @@ enum NavigationDestination: Hashable {
     case restore
     case together
     case settings
+    case myCreations
+    case premium
+    case credits
+    case feedback
 }
 
 struct HomeView: View {
     let user: User
     @State private var navigationPath = NavigationPath()
-    @State private var showSettings = false
     @State private var animateElements = false
     @State private var headerScale: CGFloat = 0.9
     @State private var welcomeCardOpacity: Double = 0
@@ -37,7 +40,7 @@ struct HomeView: View {
                 
                 VStack(spacing: 0) {
                     // Enhanced Header
-                    ModernHomeHeader(user: user, showSettings: $showSettings, geometry: geometry)
+                    ModernHomeHeader(user: user, geometry: geometry)
                         .scaleEffect(headerScale)
                         .opacity(animateElements ? 1 : 0)
                     
@@ -230,7 +233,15 @@ struct HomeView: View {
                     MemoryMergeFlow()
                         .navigationBarBackButtonHidden(true)
                 case .settings:
-                    Text("Settings Coming Soon")
+                    SettingsView()
+                case .myCreations:
+                    MyCreationsView()
+                case .premium:
+                    PaywallView()
+                case .credits:
+                    CreditStoreView()
+                case .feedback:
+                    FeedbackView()
                 }
             }
             .navigationBarHidden(true)
@@ -253,11 +264,6 @@ struct HomeView: View {
             
             // Load recent images
             loadRecentImages()
-        }
-        .sheet(isPresented: $showSettings) {
-            Text("Settings Coming Soon")
-                .font(.title)
-                .padding()
         }
     }
     
@@ -419,7 +425,6 @@ struct ModernVibrantBackground: View {
 // MARK: - Modern Home Header
 struct ModernHomeHeader: View {
     let user: User
-    @Binding var showSettings: Bool
     let geometry: GeometryProxy
     
     var body: some View {

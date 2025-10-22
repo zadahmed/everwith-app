@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct MyCreationsView: View {
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var imageProcessingService = ImageProcessingService.shared
     @State private var creations: [ProcessedImage] = []
     @State private var isLoading = true
@@ -23,10 +22,9 @@ struct MyCreationsView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            NavigationStack {
-                ZStack {
-                    CleanWhiteBackground()
-                        .ignoresSafeArea()
+            ZStack {
+                CleanWhiteBackground()
+                    .ignoresSafeArea()
                     
                     if isLoading {
                         VStack(spacing: geometry.adaptiveSpacing(16)) {
@@ -115,35 +113,25 @@ struct MyCreationsView: View {
                 }
                 .navigationTitle("My Memories")
                 .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: geometry.adaptiveFontSize(24)))
-                                .foregroundColor(.softPlum)
-                        }
+                .sheet(item: $selectedImage) { image in
+                    CreationDetailView(creation: image, geometry: geometry)
+                }
+                .alert("Clear Cache", isPresented: $showClearCacheAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Clear", role: .destructive) {
+                        clearCache()
+                    }
+                } message: {
+                    Text("This will remove all cached images. Your original photos will not be affected.")
+                }
+                .onAppear {
+                    loadCreations()
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
+                        animateElements = true
                     }
                 }
             }
-            .sheet(item: $selectedImage) { image in
-                CreationDetailView(creation: image, geometry: geometry)
-            }
-            .alert("Clear Cache", isPresented: $showClearCacheAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear", role: .destructive) {
-                    clearCache()
-                }
-            } message: {
-                Text("This will remove all cached images. Your original photos will not be affected.")
-            }
-            .onAppear {
-                loadCreations()
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
-                    animateElements = true
-                }
-            }
         }
-    }
     
     private func loadCreations() {
         Task {

@@ -85,6 +85,29 @@ class ImageProcessingService:
         return Image.open(io.BytesIO(r.content)).convert("RGBA")
 
     @staticmethod
+    def migrate_bfl_url_to_spaces(bfl_url: str, ext: str = "png") -> str:
+        """
+        Download image from BFL URL and upload to Digital Ocean Spaces.
+        Returns the permanent Spaces URL.
+        """
+        try:
+            print(f"🔄 Migrating BFL URL to Spaces: {bfl_url}")
+            
+            # Download image from BFL
+            img = ImageProcessingService._download_image(bfl_url)
+            
+            # Upload to Digital Ocean Spaces
+            permanent_url = ImageProcessingService._save_image(img, ext)
+            
+            print(f"✅ Successfully migrated BFL URL to Spaces: {permanent_url}")
+            return permanent_url
+            
+        except Exception as e:
+            print(f"❌ Failed to migrate BFL URL {bfl_url}: {e}")
+            # Return original URL as fallback
+            return bfl_url
+
+    @staticmethod
     def _save_image(img: Image.Image, ext: str = "png") -> str:
         """Save image to DigitalOcean Spaces and return CDN URL"""
         fname = f"everwith/{uuid.uuid4().hex}.{ext}"  # Add everwith/ prefix
@@ -111,12 +134,12 @@ class ImageProcessingService:
                     fname,
                     ExtraArgs={
                         'ContentType': content_type,
-                        'ACL': 'public-read',  # Make publicly accessible
+                        'ACL': 'public-read',  # Public for fast CDN access
                         'CacheControl': 'max-age=31536000'  # Cache for 1 year
                     }
                 )
                 
-                # Return CDN URL if available, otherwise direct Spaces URL
+                # Return CDN URL for authenticated access
                 if DO_SPACES_CDN_ENDPOINT:
                     return f"{DO_SPACES_CDN_ENDPOINT}/{fname}"
                 else:
@@ -394,8 +417,9 @@ class ImageProcessingService:
             img = ImageProcessingService._finish_look(img, controls)
             final_url = ImageProcessingService._save_image(img, req.output_format)
         except Exception:
-            # If finishing fails, at least return model output url
-            final_url = out_url
+            # If finishing fails, migrate BFL URL to Spaces
+            print(f"⚠️ Finishing failed, migrating BFL URL to Spaces...")
+            final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
 
         meta = {
             "steps": ["preclean", "flux_kontext", "finish"],
@@ -530,7 +554,10 @@ class ImageProcessingService:
             final_url = ImageProcessingService._save_image(img, "png")
         except Exception as e:
             print(f"⚠️ Finishing failed: {e}")
-            # Return without finishing
+            # If final_url is a BFL URL, migrate it to Spaces
+            if final_url and "bfl.ai" in final_url:
+                print(f"🔄 Migrating BFL URL to Spaces...")
+                final_url = ImageProcessingService.migrate_bfl_url_to_spaces(final_url, "png")
         
         meta = {
             "background_src": background_url,

@@ -477,6 +477,37 @@ class ImageProcessingService: ObservableObject {
         return stats
     }
     
+    // MARK: - BFL URL Migration
+    
+    func migrateBFLUrls() async throws -> MigrationResponse {
+        print("🔄 ImageProcessingService.migrateBFLUrls called")
+        
+        guard let token = UserDefaults.standard.string(forKey: "access_token") else {
+            throw ImageProcessingError.networkError(NSError(domain: "Authentication", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not authenticated"]))
+        }
+        
+        guard let url = URL(string: "\(AppConfiguration.API.baseURL)/images/migrate-bfl-urls") else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw ImageProcessingError.invalidResponse
+        }
+        
+        let decoder = JSONDecoder()
+        let migrationResult = try decoder.decode(MigrationResponse.self, from: data)
+        
+        print("✅ Migration complete: \(migrationResult.migratedCount) migrated, \(migrationResult.failedCount) failed")
+        return migrationResult
+    }
+    
     // MARK: - Reset State
     
     func resetState() {
@@ -488,6 +519,14 @@ class ImageProcessingService: ObservableObject {
 // MARK: - Upload Response
 struct UploadResponse: Codable {
     let url: String
+}
+
+// MARK: - Migration Response
+struct MigrationResponse: Codable {
+    let message: String
+    let migratedCount: Int
+    let failedCount: Int
+    let totalFound: Int
 }
 
 // MARK: - Image Processing Error

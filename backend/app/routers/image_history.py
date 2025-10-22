@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models import database as db_models
 from app.models import schemas
 from app.core.security import get_current_user
+from app.services.image_processing import ImageProcessingService
 from typing import List
 import logging
 
@@ -304,5 +305,69 @@ async def get_image_stats(
         
     except Exception as e:
         logger.error(f"❌ Error getting image stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/migrate-bfl-urls")
+async def migrate_bfl_urls(
+    current_user: db_models.User = Depends(get_current_user)
+):
+    """
+    Migrate all BFL URLs in user's image history to Digital Ocean Spaces.
+    This ensures all images have permanent, consistent URLs.
+    """
+    try:
+        logger.info(f"🔄 Starting BFL URL migration for user: {current_user.email}")
+        
+        # Find all images with BFL URLs
+        bfl_images = await db_models.ProcessedImage.find(
+            {
+                "user_id": current_user.id,
+                "processed_image_url": {"$regex": "bfl\\.ai"}
+            }
+        ).to_list()
+        
+        migrated_count = 0
+        failed_count = 0
+        
+        for image in bfl_images:
+            try:
+                logger.info(f"🔄 Migrating image {image.id}: {image.processed_image_url}")
+                
+                # Determine file extension from URL or default to png
+                ext = "png"
+                if image.output_format:
+                    ext = image.output_format
+                elif ".jpg" in image.processed_image_url or ".jpeg" in image.processed_image_url:
+                    ext = "jpg"
+                
+                # Migrate URL to Spaces
+                new_url = ImageProcessingService.migrate_bfl_url_to_spaces(
+                    image.processed_image_url, 
+                    ext
+                )
+                
+                # Update database with new URL
+                image.processed_image_url = new_url
+                await image.save()
+                
+                migrated_count += 1
+                logger.info(f"✅ Migrated image {image.id} to: {new_url}")
+                
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"❌ Failed to migrate image {image.id}: {e}")
+        
+        logger.info(f"🎉 Migration complete: {migrated_count} migrated, {failed_count} failed")
+        
+        return {
+            "message": f"Migration complete: {migrated_count} images migrated, {failed_count} failed",
+            "migrated_count": migrated_count,
+            "failed_count": failed_count,
+            "total_found": len(bfl_images)
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error during BFL URL migration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

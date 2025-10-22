@@ -48,7 +48,7 @@ struct HomeView: View {
                         VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                             // Top spacing
                             Spacer()
-                                .frame(height: adaptiveSpacing(8, for: geometry))
+                                .frame(height: adaptiveSpacing(16, for: geometry))
                             
                             // Welcome Message
                             WelcomeMessageCard(geometry: geometry)
@@ -456,7 +456,7 @@ struct ModernHomeHeader: View {
             Spacer()
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 16 : 24)
+        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 32 : 42)
         .padding(.bottom, adaptiveSpacing(12, for: geometry))
     }
     
@@ -615,14 +615,24 @@ struct RecentImageCard: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
                         .clipped()
-                case .failure:
+                case .failure(let error):
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.red.opacity(0.1))
                         .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
                         .overlay(
-                            Image(systemName: "photo")
-                                .foregroundColor(.gray)
+                            VStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.red)
+                                Text("Failed to load")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.red)
+                            }
                         )
+                        .onAppear {
+                            print("❌ Image load failed: \(error)")
+                            print("❌ URL was: \(image.processedImageUrl ?? "nil")")
+                        }
                 @unknown default:
                     EmptyView()
                 }

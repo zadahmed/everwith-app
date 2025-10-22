@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct PaywallView: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var selectedPlan: SubscriptionPlan = .yearly
     @State private var animateElements = false
     @State private var showPurchaseSuccess = false
@@ -252,15 +251,7 @@ struct PaywallView: View {
                 .opacity(animateElements ? 1.0 : 0.0)
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: geometry.adaptiveFontSize(24)))
-                            .foregroundColor(.softPlum)
-                    }
-                }
-            }
+            .navigationTitle("Premium")
             .sheet(isPresented: $showPurchaseSuccess) {
                 PurchaseSuccessView()
             }

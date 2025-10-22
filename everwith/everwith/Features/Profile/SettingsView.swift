@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var authService = AuthenticationService()
     @StateObject private var subscriptionService = SubscriptionService.shared
     @State private var showSignOutAlert = false
@@ -205,15 +204,6 @@ struct SettingsView: View {
                 }
                 .navigationTitle("Settings")
                 .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: geometry.adaptiveFontSize(24)))
-                                .foregroundColor(.softPlum)
-                        }
-                    }
-                }
             }
             .alert("Sign Out", isPresented: $showSignOutAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -221,7 +211,6 @@ struct SettingsView: View {
                     Task {
                         await authService.signOut()
                     }
-                    dismiss()
                 }
             } message: {
                 Text("Are you sure you want to sign out?")

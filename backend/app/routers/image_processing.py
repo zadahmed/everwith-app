@@ -65,12 +65,12 @@ async def upload_image(
                     filename,
                     ExtraArgs={
                         'ContentType': content_type,
-                        'ACL': 'public-read',
+                        'ACL': 'public-read',  # Public for fast CDN access
                         'CacheControl': 'max-age=31536000'
                     }
                 )
                 
-                # Return CDN URL if available, otherwise direct Spaces URL
+                # Return CDN URL for authenticated access
                 if DO_SPACES_CDN_ENDPOINT:
                     file_url = f"{DO_SPACES_CDN_ENDPOINT}/{filename}"
                 else:

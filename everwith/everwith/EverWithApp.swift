@@ -46,7 +46,6 @@ struct AppCoordinator: View {
     @State private var hasCompletedOnboarding = false
     @State private var showRestoreView = false
     @State private var showTogetherView = false
-    @State private var showExportView = false
     @State private var showSessionExpiredAlert = false
     
     var body: some View {
@@ -77,17 +76,11 @@ struct AppCoordinator: View {
                         .onReceive(NotificationCenter.default.publisher(for: .navigateToTogether)) { _ in
                             showTogetherView = true
                         }
-                        .onReceive(NotificationCenter.default.publisher(for: .navigateToExport)) { _ in
-                            showExportView = true
-                        }
                         .sheet(isPresented: $showRestoreView) {
                             RestoreView()
                         }
                         .sheet(isPresented: $showTogetherView) {
                             TogetherSceneView()
-                        }
-                        .sheet(isPresented: $showExportView) {
-                            ExportView()
                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),

@@ -30,8 +30,8 @@ struct HomeView: View {
         NavigationStack(path: $navigationPath) {
             GeometryReader { geometry in
                 ZStack {
-                    // Vibrant Modern Background
-                    ModernVibrantBackground()
+                    // Clean White Background with Subtle Gradient Band
+                    CleanWhiteBackground()
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .ignoresSafeArea(.all, edges: .all)
                 
@@ -61,69 +61,53 @@ struct HomeView: View {
                                         buttonPressedRestore = false
                                     }
                                 }) {
-                                    HStack(spacing: adaptiveSpacing(10, for: geometry)) {
+                                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                                        // Gradient Icon
                                         Image(systemName: "photo.badge.plus")
-                                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                                            .foregroundColor(.white)
-                                            .frame(width: adaptiveSize(32, for: geometry), height: adaptiveSize(32, for: geometry))
+                                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                                            .foregroundStyle(LinearGradient.primaryBrand)
+                                            .frame(width: adaptiveSize(40, for: geometry), height: adaptiveSize(40, for: geometry))
                                             .background(
                                                 Circle()
-                                                    .fill(Color.everBlush.opacity(0.8))
+                                                    .fill(Color.pureWhite)
+                                                    .overlay(
+                                                        Circle()
+                                                            .stroke(LinearGradient.primaryBrand, lineWidth: 2)
+                                                    )
                                             )
                                         
-                                        VStack(alignment: .leading, spacing: adaptiveSpacing(3, for: geometry)) {
+                                        VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
                                             Text("Photo Restore")
-                                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
-                                                .foregroundColor(.shadowPlum)
+                                                .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                                                .foregroundStyle(LinearGradient.primaryBrand)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.8)
                                             
                                             Text("Make old photos HD again")
-                                                .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                                                .foregroundColor(.shadowPlum.opacity(0.8))
+                                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                                .foregroundColor(.softPlum)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.9)
                                         }
                                         
-                                        Spacer(minLength: adaptiveSpacing(6, for: geometry))
+                                        Spacer(minLength: adaptiveSpacing(8, for: geometry))
                                         
                                         Image(systemName: "arrow.right")
-                                            .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .semibold))
-                                            .foregroundColor(.everBlush)
-                                            .frame(width: adaptiveSize(18, for: geometry), height: adaptiveSize(18, for: geometry))
+                                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                            .foregroundStyle(LinearGradient.primaryBrand)
                                     }
                                     .padding(.horizontal, adaptivePadding(for: geometry))
-                                    .padding(.vertical, adaptiveSpacing(12, for: geometry))
+                                    .padding(.vertical, adaptiveSpacing(16, for: geometry))
                                     .background(
-                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                                            .fill(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [
-                                                        Color.everBlush.opacity(0.15),
-                                                        Color.eternalRose.opacity(0.1)
-                                                    ]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
-                                            .background(.ultraThinMaterial)
+                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
+                                            .fill(Color.pureWhite)
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                                                    .stroke(
-                                                        LinearGradient(
-                                                            gradient: Gradient(colors: [
-                                                                Color.everBlush.opacity(0.3),
-                                                                Color.eternalRose.opacity(0.2)
-                                                            ]),
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        ),
-                                                        lineWidth: 1
-                                                    )
+                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
+                                                    .stroke(LinearGradient.cardGlow, lineWidth: 1)
                                             )
                                             .shadow(
-                                                color: Color.everBlush.opacity(buttonPressedRestore ? 0.1 : 0.2),
-                                                radius: buttonPressedRestore ? 4 : 8,
+                                                color: Color.cardShadow,
+                                                radius: buttonPressedRestore ? 8 : 12,
                                                 x: 0,
                                                 y: buttonPressedRestore ? 2 : 4
                                             )
@@ -134,7 +118,7 @@ struct HomeView: View {
                                 .opacity(animateElements ? 1 : 0)
                                 .offset(x: animateElements ? 0 : -20)
                                 
-                                // Together Scene Button
+                                // Memory Merge Button
                                 Button(action: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                         buttonPressedTogether = true
@@ -144,69 +128,53 @@ struct HomeView: View {
                                         buttonPressedTogether = false
                                     }
                                 }) {
-                                    HStack(spacing: adaptiveSpacing(10, for: geometry)) {
+                                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                                        // Gradient Icon
                                         Image(systemName: "heart.circle.fill")
-                                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                                            .foregroundColor(.white)
-                                            .frame(width: adaptiveSize(32, for: geometry), height: adaptiveSize(32, for: geometry))
+                                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                                            .foregroundStyle(LinearGradient.primaryBrand)
+                                            .frame(width: adaptiveSize(40, for: geometry), height: adaptiveSize(40, for: geometry))
                                             .background(
                                                 Circle()
-                                                    .fill(Color.eternalRose.opacity(0.8))
+                                                    .fill(Color.pureWhite)
+                                                    .overlay(
+                                                        Circle()
+                                                            .stroke(LinearGradient.primaryBrand, lineWidth: 2)
+                                                    )
                                             )
                                         
-                                        VStack(alignment: .leading, spacing: adaptiveSpacing(3, for: geometry)) {
+                                        VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
                                             Text("Memory Merge")
-                                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
-                                                .foregroundColor(.shadowPlum)
+                                                .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                                                .foregroundStyle(LinearGradient.primaryBrand)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.8)
                                             
                                             Text("Bring old memories together")
-                                                .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                                                .foregroundColor(.shadowPlum.opacity(0.8))
+                                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                                .foregroundColor(.softPlum)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.9)
                                         }
                                         
-                                        Spacer(minLength: adaptiveSpacing(6, for: geometry))
+                                        Spacer(minLength: adaptiveSpacing(8, for: geometry))
                                         
                                         Image(systemName: "arrow.right")
-                                            .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .semibold))
-                                            .foregroundColor(.eternalRose)
-                                            .frame(width: adaptiveSize(18, for: geometry), height: adaptiveSize(18, for: geometry))
+                                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                            .foregroundStyle(LinearGradient.primaryBrand)
                                     }
                                     .padding(.horizontal, adaptivePadding(for: geometry))
-                                    .padding(.vertical, adaptiveSpacing(12, for: geometry))
+                                    .padding(.vertical, adaptiveSpacing(16, for: geometry))
                                     .background(
-                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                                            .fill(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [
-                                                        Color.eternalRose.opacity(0.15),
-                                                        Color.memoryViolet.opacity(0.1)
-                                                    ]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
-                                            .background(.ultraThinMaterial)
+                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
+                                            .fill(Color.pureWhite)
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
-                                                    .stroke(
-                                                        LinearGradient(
-                                                            gradient: Gradient(colors: [
-                                                                Color.eternalRose.opacity(0.3),
-                                                                Color.memoryViolet.opacity(0.2)
-                                                            ]),
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        ),
-                                                        lineWidth: 1
-                                                    )
+                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
+                                                    .stroke(LinearGradient.cardGlow, lineWidth: 1)
                                             )
                                             .shadow(
-                                                color: Color.eternalRose.opacity(buttonPressedTogether ? 0.1 : 0.2),
-                                                radius: buttonPressedTogether ? 4 : 8,
+                                                color: Color.cardShadow,
+                                                radius: buttonPressedTogether ? 8 : 12,
                                                 x: 0,
                                                 y: buttonPressedTogether ? 2 : 4
                                             )
@@ -460,18 +428,18 @@ struct ModernHomeHeader: View {
                 HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                     Text("Welcome back")
                         .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                        .foregroundColor(.shadowPlum.opacity(0.8))
+                        .foregroundColor(.softPlum)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     
                     Image(systemName: "sparkles")
                         .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                        .foregroundColor(.everBlush)
+                        .foregroundStyle(LinearGradient.primaryBrand)
                 }
                 
                 Text(user.name)
                     .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
-                    .foregroundColor(.shadowPlum)
+                    .foregroundColor(.deepPlum)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -484,36 +452,17 @@ struct ModernHomeHeader: View {
             }) {
                 ZStack {
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.white.opacity(0.2),
-                                    Color.white.opacity(0.1)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .fill(Color.pureWhite)
                         .frame(width: adaptiveSize(44, for: geometry), height: adaptiveSize(44, for: geometry))
-                        .background(.ultraThinMaterial)
                         .overlay(
                             Circle()
-                                .stroke(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color.everBlush.opacity(0.3),
-                                            Color.eternalRose.opacity(0.2)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
+                                .stroke(Color.subtleBorder, lineWidth: 1)
                         )
+                        .shadow(color: Color.cardShadow, radius: 4, x: 0, y: 2)
                     
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .medium))
-                        .foregroundColor(.shadowPlum.opacity(0.8))
+                        .foregroundColor(.softPlum)
                 }
             }
             .scaleEffect(1.0)

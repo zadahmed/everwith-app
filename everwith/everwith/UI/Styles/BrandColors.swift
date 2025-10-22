@@ -7,46 +7,62 @@
 
 import SwiftUI
 
-// MARK: - EverWith Brand Color System
+// MARK: - EverWith White-Base Brand Colors
 extension Color {
-    // Primary Gradient Colors
-    static let everBlush = Color(red: 1.0, green: 0.541, blue: 0.502)      // #FF8A80
-    static let eternalRose = Color(red: 1.0, green: 0.4, blue: 0.702)        // #FF66B3
-    static let memoryViolet = Color(red: 0.69, green: 0.416, blue: 0.941)   // #B06AF0
-    static let sunsetPeach = Color(red: 1.0, green: 0.796, blue: 0.643)     // #FFCBA4
-    static let softCream = Color(red: 1.0, green: 0.976, blue: 0.957)       // #FFF9F4
+    // MARK: - Core White-Base Colors
+    static let pureWhite = Color(red: 1.0, green: 1.0, blue: 1.0) // #FFFFFF
+    static let softCream = Color(red: 1.0, green: 0.98, blue: 0.96) // #FFF9F4
     
-    // Neutrals
-    static let pureWhite = Color(red: 1.0, green: 1.0, blue: 1.0)           // #FFFFFF
-    static let softSand = Color(red: 0.973, green: 0.961, blue: 0.945)      // #F8F5F1
-    static let shadowPlum = Color(red: 0.29, green: 0.247, blue: 0.369)      // #4A3F5E
-    static let warmGray = Color(red: 0.612, green: 0.557, blue: 0.639)      // #9C8EA3
+    // MARK: - Primary Gradient Colors (Used Sparingly)
+    static let blushPink = Color(red: 1.0, green: 0.54, blue: 0.5) // #FF8A80
+    static let roseMagenta = Color(red: 1.0, green: 0.4, blue: 0.7) // #FF66B3
+    static let memoryViolet = Color(red: 0.69, green: 0.42, blue: 0.94) // #B06AF0
     
-    // Note: Legacy colors (honeyGold, sky, fern, etc.) are defined in Assets.xcassets
-    // We'll gradually migrate to the new EverWith color system
+    // MARK: - Secondary Highlight Colors
+    static let lightBlush = Color(red: 1.0, green: 0.85, blue: 0.88) // #FFD9E1
+    static let softLavender = Color(red: 0.95, green: 0.9, blue: 0.98) // #F2E6FA
     
-    // Brand Gradients
-    static let brandGradient = LinearGradient(
-        gradient: Gradient(colors: [everBlush, eternalRose, memoryViolet]),
+    // MARK: - Text Colors
+    static let deepPlum = Color(red: 0.24, green: 0.16, blue: 0.3) // #3C2A4D
+    static let softPlum = Color(red: 0.54, green: 0.48, blue: 0.59) // #8A7A96
+    static let lightGray = Color(red: 0.6, green: 0.6, blue: 0.65) // #9999A5
+    
+    // MARK: - Subtle Borders & Dividers
+    static let subtleBorder = Color(red: 0.0, green: 0.0, blue: 0.0).opacity(0.06)
+    static let cardShadow = Color(red: 0.0, green: 0.0, blue: 0.0).opacity(0.05)
+    static let gentleShadow = Color(red: 0.0, green: 0.0, blue: 0.0).opacity(0.08)
+    
+    // MARK: - Legacy Colors (for compatibility)
+    // These are defined in Assets.xcassets to avoid redeclaration errors
+    // everBlush, eternalRose, sunsetPeach, softSand, shadowPlum, warmGray
+}
+
+// MARK: - Brand Gradients
+extension LinearGradient {
+    static let primaryBrand = LinearGradient(
+        gradient: Gradient(colors: [
+            Color.blushPink,
+            Color.roseMagenta,
+            Color.memoryViolet
+        ]),
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
     
-    static let brandRadialGradient = RadialGradient(
-        gradient: Gradient(colors: [everBlush, eternalRose, memoryViolet]),
-        center: .center,
-        startRadius: 0,
-        endRadius: 100
-    )
-    
-    static let warmGradient = LinearGradient(
-        gradient: Gradient(colors: [everBlush, sunsetPeach]),
+    static let subtleHighlight = LinearGradient(
+        gradient: Gradient(colors: [
+            Color.lightBlush.opacity(0.3),
+            Color.softLavender.opacity(0.2)
+        ]),
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
     
-    static let magicalGradient = LinearGradient(
-        gradient: Gradient(colors: [eternalRose, memoryViolet]),
+    static let cardGlow = LinearGradient(
+        gradient: Gradient(colors: [
+            Color.blushPink.opacity(0.1),
+            Color.roseMagenta.opacity(0.05)
+        ]),
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
@@ -60,9 +76,9 @@ struct DesignTokens {
     static let radiusLarge: CGFloat = 28
     
     // Shadows
-    static let shadowSoft = Color.black.opacity(0.08)
-    static let shadowOffset = CGSize(width: 0, height: 8)
-    static let shadowRadius: CGFloat = 24
+    static let shadowSoft = Color.black.opacity(0.05)
+    static let shadowOffset = CGSize(width: 0, height: 4)
+    static let shadowRadius: CGFloat = 12
     
     // Spacing
     static let spacingSmall: CGFloat = 8
@@ -79,7 +95,30 @@ struct DesignTokens {
     static let animationDurationSlow: Double = 0.3 // 300ms
 }
 
-// MARK: - Brand Button Styles
+// MARK: - Background Components
+struct CleanWhiteBackground: View {
+    var body: some View {
+        ZStack {
+            // Pure white base
+            Color.pureWhite
+                .ignoresSafeArea(.all)
+            
+            // Subtle gradient band at top
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.lightBlush.opacity(0.3),
+                    Color.pureWhite
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 200)
+            .ignoresSafeArea(.all, edges: .top)
+        }
+    }
+}
+
+// MARK: - Button Styles
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -88,9 +127,10 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, DesignTokens.buttonPaddingVertical)
             .padding(.horizontal, DesignTokens.buttonPaddingHorizontal)
-            .background(Color.brandGradient)
+            .background(LinearGradient.primaryBrand)
             .cornerRadius(DesignTokens.radiusMedium)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .animation(.easeInOut(duration: DesignTokens.animationDuration), value: configuration.isPressed)
     }
 }
@@ -99,16 +139,17 @@ struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.shadowPlum)
+            .foregroundColor(.deepPlum)
             .frame(maxWidth: .infinity)
             .padding(.vertical, DesignTokens.buttonPaddingVertical)
             .padding(.horizontal, DesignTokens.buttonPaddingHorizontal)
-            .background(Color.softSand)
+            .background(Color.pureWhite)
             .overlay(
                 RoundedRectangle(cornerRadius: DesignTokens.radiusMedium)
-                    .stroke(Color.everBlush, lineWidth: 1)
+                    .stroke(Color.subtleBorder, lineWidth: 1)
             )
             .cornerRadius(DesignTokens.radiusMedium)
+            .shadow(color: Color.cardShadow, radius: 4, x: 0, y: 2)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.easeInOut(duration: DesignTokens.animationDuration), value: configuration.isPressed)
     }

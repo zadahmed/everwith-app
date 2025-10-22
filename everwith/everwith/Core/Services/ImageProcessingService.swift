@@ -95,7 +95,7 @@ class ImageProcessingService: ObservableObject {
         outputFormat: ImageProcessingFormat = .png,
         aspectRatio: AspectRatio = .original,
         seed: Int? = nil
-    ) async throws -> JobResult {
+    ) async throws -> (result: JobResult, originalImageUrl: String) {
         
         print("🔄 ImageProcessingService.restorePhoto called")
         
@@ -153,7 +153,7 @@ class ImageProcessingService: ObservableObject {
             )
         }
         
-        return result
+        return (result: result, originalImageUrl: imageUrl)
     }
     
     // MARK: - Together Photo
@@ -165,7 +165,7 @@ class ImageProcessingService: ObservableObject {
         aspectRatio: AspectRatio = .fourFive,
         seed: Int? = nil,
         lookControls: LookControls? = nil
-    ) async throws -> JobResult {
+    ) async throws -> (result: JobResult, subjectAUrl: String, subjectBUrl: String) {
         
         await MainActor.run {
             processingState = .uploading
@@ -228,7 +228,7 @@ class ImageProcessingService: ObservableObject {
             )
         }
         
-        return result
+        return (result: result, subjectAUrl: subjectAUrl, subjectBUrl: subjectBUrl)
     }
     
     // MARK: - API Calls

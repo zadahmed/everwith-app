@@ -34,18 +34,24 @@ struct TogetherSceneView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
+            ZStack {
+                // Clean White Background with Subtle Gradient Band
+                CleanWhiteBackground()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .ignoresSafeArea(.all, edges: .all)
+                
+                VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button(action: { dismiss() }) {
                         HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                .foregroundColor(.shadowPlum)
+                                .foregroundColor(.deepPlum)
                             
                             Text("Memory Merge")
                                 .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
-                                .foregroundColor(.shadowPlum)
+                                .foregroundColor(.deepPlum)
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -87,15 +93,16 @@ struct TogetherSceneView: View {
                         
                         // Show selected photos if any
                         if !selectedImages.isEmpty {
-                            HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                                 ForEach(selectedImages.indices, id: \.self) { index in
                                     Image(uiImage: selectedImages[index])
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(width: adaptiveSize(100, for: geometry), height: adaptiveSize(120, for: geometry))
+                                        .frame(width: min(adaptiveSize(80, for: geometry), geometry.size.width * 0.35), height: min(adaptiveSize(100, for: geometry), geometry.size.width * 0.4))
                                         .clipShape(RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry)))
                                 }
                             }
+                            .padding(.horizontal, adaptivePadding(for: geometry))
                         }
                         
                         Button(action: { showPhotoPicker = true }) {
@@ -119,17 +126,17 @@ struct TogetherSceneView: View {
                     .padding(.top, adaptiveSpacing(8, for: geometry))
                 } else if processedImage == nil && !isProcessing {
                     // Step 2: Preview & Create
-                    ScrollView {
+                    ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: adaptiveSpacing(24, for: geometry)) {
                             // Show selected images
-                            HStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                            HStack(spacing: adaptiveSpacing(12, for: geometry)) {
                                 ForEach(selectedImages.indices, id: \.self) { index in
                                     VStack(spacing: adaptiveSpacing(8, for: geometry)) {
                                         Image(uiImage: selectedImages[index])
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
                                             .frame(maxWidth: .infinity)
-                                            .frame(height: geometry.size.height * 0.3)
+                                            .frame(height: min(geometry.size.height * 0.25, 200))
                                             .clipShape(RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry)))
                                             .shadow(color: .black.opacity(0.1), radius: 10)
                                         
@@ -241,7 +248,7 @@ struct TogetherSceneView: View {
                     }
                 } else if let processed = processedImage {
                     // Step 4: Result - Simple and Clean
-                    ScrollView {
+                    ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: adaptiveSpacing(20, for: geometry)) {
                             // Main Image Display
                             VStack(spacing: adaptiveSpacing(12, for: geometry)) {
@@ -253,7 +260,7 @@ struct TogetherSceneView: View {
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
                                             .frame(maxWidth: .infinity)
-                                            .frame(height: geometry.size.height * 0.4)
+                                            .frame(height: min(geometry.size.height * 0.3, 250))
                                             .cornerRadius(adaptiveCornerRadius(12, for: geometry))
                                             .clipped()
                                         
@@ -261,7 +268,7 @@ struct TogetherSceneView: View {
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
                                             .frame(maxWidth: .infinity)
-                                            .frame(height: geometry.size.height * 0.4)
+                                            .frame(height: min(geometry.size.height * 0.3, 250))
                                             .cornerRadius(adaptiveCornerRadius(12, for: geometry))
                                             .clipped()
                                     }
@@ -271,7 +278,7 @@ struct TogetherSceneView: View {
                                     Image(uiImage: processed)
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
-                                        .frame(maxHeight: geometry.size.height * 0.5)
+                                        .frame(maxHeight: min(geometry.size.height * 0.4, 300))
                                         .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                                         .shadow(color: .black.opacity(0.1), radius: 10)
                                         .padding(.top, adaptiveSpacing(4, for: geometry))
@@ -449,6 +456,7 @@ struct TogetherSceneView: View {
         }
     }
     
+    // MARK: - Private Methods
     private func createTogetherScene() {
         guard selectedImages.count >= 2 else { return }
         
@@ -495,7 +503,7 @@ struct TogetherSceneView: View {
                     grain: 0.3
                 )
                 
-                let result = try await imageProcessingService.togetherPhoto(
+                let (result, subjectAUrl, subjectBUrl) = try await imageProcessingService.togetherPhoto(
                     subjectA: selectedImages[0],
                     subjectB: selectedImages[1],
                     background: background,
@@ -510,13 +518,13 @@ struct TogetherSceneView: View {
                 do {
                     _ = try await imageProcessingService.saveToHistory(
                         imageType: "together",
-                        originalImageUrl: nil,
+                        originalImageUrl: nil, // For together, we don't have a single "original" image
                         processedImageUrl: result.outputUrl,
                         qualityTarget: nil,
                         outputFormat: nil,
                         aspectRatio: "4:5",
-                        subjectAUrl: nil,
-                        subjectBUrl: nil,
+                        subjectAUrl: subjectAUrl,
+                        subjectBUrl: subjectBUrl,
                         backgroundPrompt: backgroundPromptForHistory
                     )
                     print("✅ Together scene saved to history")

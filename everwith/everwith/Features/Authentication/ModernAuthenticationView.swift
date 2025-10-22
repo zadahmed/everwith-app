@@ -28,8 +28,8 @@ struct ModernAuthenticationView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Modern Vibrant Background (matching HomeView)
-                ModernVibrantBackground()
+                // Clean White Background with Subtle Gradient Band
+                CleanWhiteBackground()
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .ignoresSafeArea(.all, edges: .all)
                 
@@ -45,8 +45,8 @@ struct ModernAuthenticationView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.everBlush.opacity(0.6),
-                                                Color.eternalRose.opacity(0.4)
+                                                Color.blushPink.opacity(0.3),
+                                                Color.roseMagenta.opacity(0.2)
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -63,8 +63,8 @@ struct ModernAuthenticationView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color.everBlush.opacity(0.9),
-                                                Color.eternalRose.opacity(0.7),
+                                                Color.blushPink.opacity(0.9),
+                                                Color.roseMagenta.opacity(0.7),
                                                 Color.memoryViolet.opacity(0.6)
                                             ]),
                                             startPoint: .topLeading,
@@ -99,7 +99,7 @@ struct ModernAuthenticationView: View {
                             }
                             .scaleEffect(logoScale)
                             .shadow(
-                                color: Color.everBlush.opacity(0.4),
+                                color: Color.blushPink.opacity(0.4),
                                 radius: geometry.isSmallScreen ? 10 : adaptiveSpacing(15, for: geometry),
                                 x: 0,
                                 y: geometry.isSmallScreen ? 4 : adaptiveSpacing(6, for: geometry)
@@ -113,16 +113,7 @@ struct ModernAuthenticationView: View {
                                         weight: .black,
                                         design: .rounded
                                     ))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color(red: 0.15, green: 0.15, blue: 0.25),
-                                                Color(red: 0.25, green: 0.2, blue: 0.35)
-                                            ]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
+                                    .foregroundColor(.deepPlum)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
                                 
@@ -131,7 +122,7 @@ struct ModernAuthenticationView: View {
                                         size: geometry.isSmallScreen ? 14 : adaptiveFontSize(16, for: geometry),
                                         weight: .medium
                                     ))
-                                    .foregroundColor(.shadowPlum.opacity(0.65))
+                                    .foregroundColor(.softPlum)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
                                     .minimumScaleFactor(0.9)
@@ -159,7 +150,7 @@ struct ModernAuthenticationView: View {
                                             size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
                                             weight: .bold
                                         ))
-                                        .foregroundColor(isSignUp ? .shadowPlum.opacity(0.5) : .white)
+                                        .foregroundColor(isSignUp ? .softPlum : .white)
                                         .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
                                         .frame(maxWidth: .infinity)
                                         .background(
@@ -167,17 +158,10 @@ struct ModernAuthenticationView: View {
                                                 if !isSignUp {
                                                     RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
                                                         .fill(
-                                                            LinearGradient(
-                                                                gradient: Gradient(colors: [
-                                                                    Color.everBlush.opacity(0.9),
-                                                                    Color.eternalRose.opacity(0.8)
-                                                                ]),
-                                                                startPoint: .leading,
-                                                                endPoint: .trailing
-                                                            )
+                                                            LinearGradient.primaryBrand
                                                         )
                                                         .shadow(
-                                                            color: Color.everBlush.opacity(0.4),
+                                                            color: Color.blushPink.opacity(0.4),
                                                             radius: 8,
                                                             x: 0,
                                                             y: 4
@@ -199,7 +183,7 @@ struct ModernAuthenticationView: View {
                                             size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
                                             weight: .bold
                                         ))
-                                        .foregroundColor(isSignUp ? .white : .shadowPlum.opacity(0.5))
+                                        .foregroundColor(isSignUp ? .white : .softPlum)
                                         .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
                                         .frame(maxWidth: .infinity)
                                         .background(
@@ -207,17 +191,10 @@ struct ModernAuthenticationView: View {
                                                 if isSignUp {
                                                     RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
                                                         .fill(
-                                                            LinearGradient(
-                                                                gradient: Gradient(colors: [
-                                                                    Color.everBlush.opacity(0.9),
-                                                                    Color.eternalRose.opacity(0.8)
-                                                                ]),
-                                                                startPoint: .leading,
-                                                                endPoint: .trailing
-                                                            )
+                                                            LinearGradient.primaryBrand
                                                         )
                                                         .shadow(
-                                                            color: Color.everBlush.opacity(0.4),
+                                                            color: Color.blushPink.opacity(0.4),
                                                             radius: 8,
                                                             x: 0,
                                                             y: 4
@@ -327,15 +304,7 @@ struct ModernAuthenticationView: View {
                                         // Gradient background (matching HomeView)
                                         RoundedRectangle(cornerRadius: 16)
                                             .fill(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [
-                                                        Color.everBlush.opacity(0.9),
-                                                        Color.eternalRose.opacity(0.8),
-                                                        Color.memoryViolet.opacity(0.7)
-                                                    ]),
-                                                    startPoint: .leading,
-                                                    endPoint: .trailing
-                                                )
+                                                LinearGradient.primaryBrand
                                             )
                                         
                                         // Shimmer overlay effect
@@ -354,7 +323,7 @@ struct ModernAuthenticationView: View {
                                     }
                                 )
                                 .shadow(
-                                    color: Color.everBlush.opacity(0.4),
+                                    color: Color.blushPink.opacity(0.4),
                                     radius: 12,
                                     x: 0,
                                     y: 6
@@ -369,7 +338,7 @@ struct ModernAuthenticationView: View {
                             // Divider
                             HStack(spacing: 12) {
                                 Rectangle()
-                                    .fill(Color.shadowPlum.opacity(0.2))
+                                    .fill(Color.subtleBorder)
                                     .frame(height: 1)
                                 
                                 Text("or")
@@ -377,12 +346,12 @@ struct ModernAuthenticationView: View {
                                         size: geometry.isSmallScreen ? 12 : 13,
                                         weight: .medium
                                     ))
-                                    .foregroundColor(.shadowPlum.opacity(0.6))
+                                    .foregroundColor(.softPlum)
                                     .padding(.horizontal, 8)
                                     .fixedSize()
                                 
                                 Rectangle()
-                                    .fill(Color.shadowPlum.opacity(0.2))
+                                    .fill(Color.subtleBorder)
                                     .frame(height: 1)
                             }
                             .opacity(animateElements ? 1 : 0)
@@ -410,14 +379,7 @@ struct ModernAuthenticationView: View {
                                                 weight: .semibold
                                             ))
                                             .foregroundStyle(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [
-                                                        Color.eternalRose,
-                                                        Color.memoryViolet
-                                                    ]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
+                                                LinearGradient.primaryBrand
                                             )
                                     }
                                     
@@ -438,14 +400,7 @@ struct ModernAuthenticationView: View {
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 16)
                                                 .stroke(
-                                                    LinearGradient(
-                                                        gradient: Gradient(colors: [
-                                                            Color.eternalRose.opacity(0.4),
-                                                            Color.memoryViolet.opacity(0.3)
-                                                        ]),
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    ),
+                                                    LinearGradient.cardGlow,
                                                     lineWidth: 2
                                                 )
                                         )
@@ -522,7 +477,7 @@ struct ModernAuthenticationView: View {
                                             size: geometry.isSmallScreen ? 11 : 12,
                                             weight: .regular
                                         ))
-                                        .foregroundColor(.shadowPlum.opacity(0.5))
+                                        .foregroundColor(.lightGray)
                                         .lineLimit(1)
                                 }
                                 .disabled(isLoading)
@@ -552,34 +507,19 @@ struct ModernAuthenticationView: View {
                                 // Subtle gradient overlay (matching HomeView)
                                 RoundedRectangle(cornerRadius: 24)
                                     .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.everBlush.opacity(0.12),
-                                                Color.eternalRose.opacity(0.08),
-                                                Color.sunsetPeach.opacity(0.06)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
+                                        LinearGradient.subtleHighlight
                                     )
                                 
                                 // Border with gradient (matching HomeView)
                                 RoundedRectangle(cornerRadius: 24)
                                     .stroke(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.everBlush.opacity(0.25),
-                                                Color.eternalRose.opacity(0.15)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
+                                        LinearGradient.cardGlow,
                                         lineWidth: 1.5
                                     )
                             }
                         )
                         .shadow(
-                            color: Color.everBlush.opacity(0.15),
+                            color: Color.cardShadow,
                             radius: 12,
                             x: 0,
                             y: 4
@@ -823,7 +763,7 @@ struct ModernTextField: View {
                     size: geometry.isSmallScreen ? 11 : 12,
                     weight: .medium
                 ))
-                .foregroundColor(.shadowPlum.opacity(0.8))
+                .foregroundColor(.softPlum)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
             
@@ -834,14 +774,7 @@ struct ModernTextField: View {
                         weight: .semibold
                     ))
                                     .foregroundStyle(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.everBlush,
-                                                Color.eternalRose
-                                            ]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
+                                        LinearGradient.primaryBrand
                                     )
                     .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                     .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
@@ -865,7 +798,7 @@ struct ModernTextField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.everBlush.opacity(0.2), lineWidth: 1.5)
+                                            .stroke(Color.subtleBorder, lineWidth: 1.5)
                     )
             )
         }
@@ -912,7 +845,7 @@ struct ModernPasswordField: View {
                     size: geometry.isSmallScreen ? 11 : 12,
                     weight: .medium
                 ))
-                .foregroundColor(.shadowPlum.opacity(0.8))
+                .foregroundColor(.softPlum)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
             
@@ -923,14 +856,7 @@ struct ModernPasswordField: View {
                         weight: .semibold
                     ))
                                     .foregroundStyle(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.everBlush,
-                                                Color.eternalRose
-                                            ]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
+                                        LinearGradient.primaryBrand
                                     )
                     .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                     .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
@@ -967,7 +893,7 @@ struct ModernPasswordField: View {
                             size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
                             weight: .medium
                         ))
-                                        .foregroundColor(Color.everBlush.opacity(0.7))
+                                        .foregroundColor(.softPlum)
                         .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                         .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
                 }
@@ -979,7 +905,7 @@ struct ModernPasswordField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.everBlush.opacity(0.2), lineWidth: 1.5)
+                                            .stroke(Color.subtleBorder, lineWidth: 1.5)
                     )
             )
         }

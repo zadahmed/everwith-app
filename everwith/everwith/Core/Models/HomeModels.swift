@@ -24,17 +24,17 @@ enum ProjectStatus: String, CaseIterable {
     
     var color: Color {
         switch self {
-        case .draft: return .charcoal.opacity(0.6)
-        case .ready: return .honeyGold
-        case .shared: return .fern
+        case .draft: return .softPlum
+        case .ready: return .blushPink
+        case .shared: return .roseMagenta
         }
     }
     
     var backgroundColor: Color {
         switch self {
-        case .draft: return .charcoal.opacity(0.1)
-        case .ready: return .honeyGold.opacity(0.15)
-        case .shared: return .fern.opacity(0.15)
+        case .draft: return .softPlum.opacity(0.1)
+        case .ready: return .blushPink.opacity(0.15)
+        case .shared: return .roseMagenta.opacity(0.15)
         }
     }
 }
@@ -86,10 +86,10 @@ struct HeroAction: Identifiable {
             subtitle: "Make old photos HD again",
             description: "Upload old photos and watch them transform into HD quality",
             icon: "photo.badge.plus",
-            gradient: [Color.everBlush.opacity(0.8), Color.softCream.opacity(0.6)],
+            gradient: [Color.blushPink.opacity(0.8), Color.softCream.opacity(0.6)],
             action: {
-                // Navigate to Import with restore mode
-                NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.restore)
+                // Navigate to Restore view
+                NotificationCenter.default.post(name: .navigateToRestore, object: nil)
             }
         ),
         HeroAction(
@@ -97,10 +97,10 @@ struct HeroAction: Identifiable {
             subtitle: "Bring old memories together",
             description: "Combine photos to create moments that never existed before",
             icon: "heart.circle",
-            gradient: [Color.eternalRose.opacity(0.8), Color.memoryViolet.opacity(0.6)],
+            gradient: [Color.roseMagenta.opacity(0.8), Color.memoryViolet.opacity(0.6)],
             action: {
-                // Navigate to Import with together mode
-                NotificationCenter.default.post(name: .navigateToImport, object: ImportMode.together)
+                // Navigate to Together view
+                NotificationCenter.default.post(name: .navigateToTogether, object: nil)
             }
         )
     ]
@@ -186,7 +186,7 @@ struct ProcessedImage: Identifiable, Codable {
     
     var color: Color {
         guard let imageType = imageType else { return .gray }
-        return imageType == "restore" ? .everBlush : .eternalRose
+        return imageType == "restore" ? .blushPink : .roseMagenta
     }
 }
 

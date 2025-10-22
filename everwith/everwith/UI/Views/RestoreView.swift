@@ -33,7 +33,13 @@ struct RestoreView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
+            ZStack {
+                // Clean White Background with Subtle Gradient Band
+                CleanWhiteBackground()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .ignoresSafeArea(.all, edges: .all)
+                
+                VStack(spacing: 0) {
                 // Enhanced Header with Animation
                 HStack {
                     Button(action: { 
@@ -44,12 +50,12 @@ struct RestoreView: View {
                         HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                .foregroundColor(.shadowPlum)
+                                .foregroundColor(.deepPlum)
                                 .scaleEffect(buttonPressed ? 0.9 : 1.0)
                             
                             Text("Photo Restore")
                                 .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
-                                .foregroundColor(.shadowPlum)
+                                .foregroundColor(.deepPlum)
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -96,7 +102,7 @@ struct RestoreView: View {
                                     size: adaptiveFontSize(16, for: geometry),
                                     weight: .regular
                                 ))
-                                .foregroundColor(.shadowPlum.opacity(0.7))
+                                .foregroundColor(.softPlum)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.9)
                                 .opacity(contentOpacity)
@@ -125,19 +131,10 @@ struct RestoreView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: adaptiveSize(280, for: geometry))
                             .frame(height: adaptiveSize(54, for: geometry))
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.honeyGold,
-                                        Color.honeyGold.opacity(0.8)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .background(LinearGradient.primaryBrand)
                             .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                             .shadow(
-                                color: Color.honeyGold.opacity(buttonPressed ? 0.3 : 0.2),
+                                color: Color.blushPink.opacity(buttonPressed ? 0.3 : 0.2),
                                 radius: buttonPressed ? 8 : 12,
                                 x: 0,
                                 y: buttonPressed ? 4 : 6
@@ -207,19 +204,10 @@ struct RestoreView: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: adaptiveSize(54, for: geometry))
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.honeyGold,
-                                                Color.honeyGold.opacity(0.8)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
+                                    .background(LinearGradient.primaryBrand)
                                     .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                                     .shadow(
-                                        color: Color.honeyGold.opacity(buttonPressed ? 0.4 : 0.2),
+                                        color: Color.blushPink.opacity(buttonPressed ? 0.4 : 0.2),
                                         radius: buttonPressed ? 12 : 16,
                                         x: 0,
                                         y: buttonPressed ? 6 : 8
@@ -235,7 +223,7 @@ struct RestoreView: View {
                                             size: adaptiveFontSize(16, for: geometry),
                                             weight: .medium
                                         ))
-                                        .foregroundColor(.shadowPlum.opacity(0.7))
+                                        .foregroundColor(.softPlum)
                                 }
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
@@ -504,6 +492,7 @@ struct RestoreView: View {
         }
     }
     
+    // MARK: - Private Methods
     private func loadPhoto(from item: PhotosPickerItem) {
         Task {
             if let data = try? await item.loadTransferable(type: Data.self),
@@ -522,7 +511,7 @@ struct RestoreView: View {
             do {
                 isProcessing = true
                 
-                let result = try await imageProcessingService.restorePhoto(
+                let (result, originalImageUrl) = try await imageProcessingService.restorePhoto(
                     image: image,
                     qualityTarget: .standard,
                     outputFormat: .png,
@@ -536,7 +525,7 @@ struct RestoreView: View {
                 do {
                     _ = try await imageProcessingService.saveToHistory(
                         imageType: "restore",
-                        originalImageUrl: nil,  // We don't have the uploaded original URL here
+                        originalImageUrl: originalImageUrl,
                         processedImageUrl: result.outputUrl,
                         qualityTarget: "standard",
                         outputFormat: "png",

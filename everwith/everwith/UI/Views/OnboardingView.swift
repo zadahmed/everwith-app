@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import Foundation
 
 // MARK: - Onboarding Card Data
 struct OnboardingCardData {
@@ -319,62 +320,56 @@ struct SingleOnboardingCard: View {
     @State private var textOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry)) {
-            // Hero Icon with Animation
+        let cardSpacing = ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry)
+        let glowRadius = ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry)
+        let glowSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 350, for: geometry)
+        let secondaryGlowRadius = ResponsiveDesign.adaptiveSpacing(baseSpacing: 100, for: geometry)
+        let secondaryGlowSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 300, for: geometry)
+        let mainCircleSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 200, for: geometry)
+        let imageSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 280, for: geometry)
+        
+        VStack(spacing: cardSpacing) {
+            // Hero Icon with Magical Overflow Animation
             ZStack {
-                // Background glow
+                // Magical background glow effect with HomeView colors
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                Color.honeyGold.opacity(0.3),
-                                Color.honeyGold.opacity(0.1),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 80, for: geometry)
-                        )
-                    )
-                    .frame(
-                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 300, for: geometry),
-                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 300, for: geometry)
-                    )
-                    .blur(radius: 20)
+                    .fill(primaryGlowGradient(endRadius: glowRadius))
+                    .frame(width: glowSize, height: glowSize)
+                    .blur(radius: 25)
                 
-                // Main icon container
+                // Secondary magical glow layer
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.honeyGold,
-                                Color.honeyGold.opacity(0.8)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(
-                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 250, for: geometry),
-                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 250, for: geometry)
-                    )
-                    .overlay(
-                        Image(cardData.imageName)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(
-                                width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 180, for: geometry),
-                                height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 180, for: geometry)
-                            )
-                    )
+                    .fill(secondaryGlowGradient(endRadius: secondaryGlowRadius))
+                    .frame(width: secondaryGlowSize, height: secondaryGlowSize)
+                    .blur(radius: 20)
+                    .opacity(0.7)
+                
+                // Main circle container (subtle)
+                Circle()
+                    .fill(mainCircleGradient)
+                    .background(.ultraThinMaterial)
+                    .frame(width: mainCircleSize, height: mainCircleSize)
+                
+                // Image that overflows outside the circle
+                Image(cardData.imageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: imageSize, height: imageSize)
+                    .clipShape(Circle())
+                    .overlay(imageBorderOverlay)
                     .scaleEffect(iconScale)
                     .rotationEffect(.degrees(iconRotation))
                     .shadow(
-                        color: Color.honeyGold.opacity(0.4),
-                        radius: 20,
+                        color: Color.blushPink.opacity(0.3),
+                        radius: 25,
                         x: 0,
-                        y: 10
+                        y: 12
                     )
+                
+                // Magical floating particles
+                ForEach(0..<6, id: \.self) { index in
+                    floatingParticle(index: index)
+                }
             }
             
             // Content
@@ -435,6 +430,88 @@ struct SingleOnboardingCard: View {
                 iconRotation = 5
             }
         }
+    }
+    
+    // MARK: - Helper Methods and Computed Properties
+    private func primaryGlowGradient(endRadius: CGFloat) -> RadialGradient {
+        RadialGradient(
+            gradient: Gradient(colors: [
+                Color.blushPink.opacity(0.4),
+                Color.roseMagenta.opacity(0.3),
+                Color.memoryViolet.opacity(0.25),
+                Color.lightBlush.opacity(0.2),
+                Color.clear
+            ]),
+            center: .center,
+            startRadius: 0,
+            endRadius: endRadius
+        )
+    }
+    
+    private func secondaryGlowGradient(endRadius: CGFloat) -> RadialGradient {
+        RadialGradient(
+            gradient: Gradient(colors: [
+                Color.roseMagenta.opacity(0.2),
+                Color.blushPink.opacity(0.15),
+                Color.memoryViolet.opacity(0.1),
+                Color.lightBlush.opacity(0.15),
+                Color.clear
+            ]),
+            center: .center,
+            startRadius: 0,
+            endRadius: endRadius
+        )
+    }
+    
+    private var mainCircleGradient: LinearGradient {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color.blushPink.opacity(0.12),
+                Color.roseMagenta.opacity(0.08),
+                Color.lightBlush.opacity(0.06)
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    
+    private var imageBorderOverlay: some View {
+        Circle()
+            .stroke(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.blushPink.opacity(0.25),
+                        Color.roseMagenta.opacity(0.15)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 2
+            )
+    }
+    
+    private func floatingParticle(index: Int) -> some View {
+        let particleColors = [Color.blushPink, Color.roseMagenta, Color.memoryViolet, Color.lightBlush, Color.blushPink, Color.roseMagenta]
+        
+        return Circle()
+            .fill(
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        particleColors[index].opacity(0.6),
+                        Color.clear
+                    ]),
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: 8
+                )
+            )
+            .frame(width: CGFloat(4 + index * 2), height: CGFloat(4 + index * 2))
+            .offset(
+                x: iconScale * CGFloat(cos(Double(index) * .pi / 3) * 120),
+                y: iconScale * CGFloat(sin(Double(index) * .pi / 3) * 120)
+            )
+            .opacity(iconScale * 0.8)
+            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(Double(index) * 0.2), value: iconScale)
     }
 }
 

@@ -274,8 +274,8 @@ struct MergeUploadView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 16 : 24)
+            .padding(.horizontal, adaptivePadding(for: geometry))
+            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
             .padding(.bottom, adaptiveSpacing(16, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
@@ -423,6 +423,12 @@ struct MergeUploadView: View {
     private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
         let screenWidth = geometry.size.width
         return base * (screenWidth / 375.0)
+    }
+    
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        // iPhone SE (375pt) = 12pt, iPhone 15 Pro (393pt) = 14pt, iPhone 15 Pro Max (430pt) = 16pt
+        return max(12, min(16, screenWidth * 0.04))
     }
 }
 

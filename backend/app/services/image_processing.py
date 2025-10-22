@@ -273,6 +273,10 @@ class ImageProcessingService:
                     print(f"❌ Generation failed: {result}")
                     raise HTTPException(status_code=500, detail=f"BFL job failed: {error_msg}")
                 
+                elif status == "Content Moderated":
+                    print(f"🚫 Content moderation triggered: {result}")
+                    raise HTTPException(status_code=400, detail="Image content was flagged by moderation system. Please try a different image.")
+                
                 # Status is Pending/Processing - continue polling
                 
             except requests.exceptions.RequestException as e:

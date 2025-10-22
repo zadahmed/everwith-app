@@ -31,7 +31,7 @@ struct UploadCard: View {
                 if let image = image {
                     Image(uiImage: image)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry)))
                 } else {
@@ -145,6 +145,7 @@ struct ProgressAnimation: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(CleanWhiteBackground())
     }
     
     private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {

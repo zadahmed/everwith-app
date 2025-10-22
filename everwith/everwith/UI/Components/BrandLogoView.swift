@@ -58,10 +58,11 @@ struct BrandMonogramView: View {
                 .fill(Color.brandGradient)
                 .frame(width: size, height: size)
             
-            // EW Monogram
-            Text("EW")
-                .font(.system(size: size * 0.42, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
+            // App Logo
+            Image("AppLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size * 0.6, height: size * 0.6)
         }
     }
 }

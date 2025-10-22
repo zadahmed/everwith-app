@@ -83,18 +83,12 @@ struct ModernAuthenticationView: View {
                                             )
                                     )
                                 
-                                Text("EW")
-                                    .font(.system(
-                                        size: geometry.isSmallScreen ? 26 : adaptiveFontSize(30, for: geometry),
-                                        weight: .black,
-                                        design: .rounded
-                                    ))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [.white, .white.opacity(0.95)]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
+                                Image("AppLogo")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(
+                                        width: geometry.isSmallScreen ? 40 : adaptiveSize(48, for: geometry),
+                                        height: geometry.isSmallScreen ? 40 : adaptiveSize(48, for: geometry)
                                     )
                             }
                             .scaleEffect(logoScale)

@@ -17,9 +17,10 @@ struct LoadingView: View {
                     .fill(Color.brandGradient)
                     .frame(width: 100, height: 100)
                     .overlay(
-                        Text("EW")
-                            .font(.system(size: 40, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
+                        Image("AppLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 50, height: 50)
                     )
                     .cleanGlassmorphism(
                         style: ModernDesignSystem.GlassEffect.subtle,

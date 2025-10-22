@@ -192,7 +192,7 @@ struct HomeView: View {
                                 VStack(alignment: .leading, spacing: adaptiveSpacing(16, for: geometry)) {
                                     Text("Recent Creations")
                                         .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
-                                        .foregroundColor(.shadowPlum)
+                                        .foregroundColor(.deepPlum)
                                         .padding(.horizontal, adaptivePadding(for: geometry))
                                     
                                     ScrollView(.horizontal, showsIndicators: false) {
@@ -224,10 +224,10 @@ struct HomeView: View {
             .navigationDestination(for: NavigationDestination.self) { destination in
                 switch destination {
                 case .restore:
-                    RestoreView()
+                    PhotoRestoreFlow()
                         .navigationBarBackButtonHidden(true)
                 case .together:
-                    TogetherSceneView()
+                    MemoryMergeFlow()
                         .navigationBarBackButtonHidden(true)
                 case .settings:
                     Text("Settings Coming Soon")
@@ -327,10 +327,10 @@ struct ModernVibrantBackground: View {
             // Base vibrant gradient
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.everBlush.opacity(0.4),
-                    Color.eternalRose.opacity(0.3),
+                    Color.blushPink.opacity(0.4),
+                    Color.roseMagenta.opacity(0.3),
                     Color.memoryViolet.opacity(0.25),
-                    Color.sunsetPeach.opacity(0.2)
+                    Color.lightBlush.opacity(0.2)
                 ]),
                 startPoint: animateGradient ? .topLeading : .bottomTrailing,
                 endPoint: animateGradient ? .bottomTrailing : .topLeading
@@ -341,10 +341,10 @@ struct ModernVibrantBackground: View {
             // Secondary animated gradient layer
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.eternalRose.opacity(0.2),
-                    Color.everBlush.opacity(0.15),
+                    Color.roseMagenta.opacity(0.2),
+                    Color.blushPink.opacity(0.15),
                     Color.memoryViolet.opacity(0.1),
-                    Color.sunsetPeach.opacity(0.15)
+                    Color.lightBlush.opacity(0.15)
                 ]),
                 startPoint: animateGradient ? .bottomLeading : .topTrailing,
                 endPoint: animateGradient ? .topTrailing : .bottomLeading
@@ -359,7 +359,7 @@ struct ModernVibrantBackground: View {
                     .fill(
                         RadialGradient(
                             gradient: Gradient(colors: [
-                                [Color.everBlush, Color.eternalRose, Color.memoryViolet, Color.sunsetPeach, Color.everBlush, Color.eternalRose][index].opacity(animateColors ? 0.6 : 0.3),
+                                [Color.blushPink, Color.roseMagenta, Color.memoryViolet, Color.lightBlush, Color.blushPink, Color.roseMagenta][index].opacity(animateColors ? 0.6 : 0.3),
                                 Color.clear
                             ]),
                             center: .center,
@@ -382,7 +382,7 @@ struct ModernVibrantBackground: View {
                     .fill(
                         RadialGradient(
                             gradient: Gradient(colors: [
-                                [Color.eternalRose, Color.everBlush, Color.memoryViolet, Color.sunsetPeach][index % 4].opacity(0.4),
+                                [Color.roseMagenta, Color.blushPink, Color.memoryViolet, Color.lightBlush][index % 4].opacity(0.4),
                                 Color.clear
                             ]),
                             center: .center,
@@ -510,8 +510,8 @@ struct WelcomeMessageCard: View {
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color.everBlush.opacity(0.2),
-                                Color.eternalRose.opacity(0.15)
+                                Color.blushPink.opacity(0.2),
+                                Color.roseMagenta.opacity(0.15)
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -522,19 +522,19 @@ struct WelcomeMessageCard: View {
                 
                 Image(systemName: "heart.fill")
                     .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .medium))
-                    .foregroundColor(.everBlush)
+                    .foregroundColor(.blushPink)
             }
             
             VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
                 Text("Ready to create?")
                     .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold, design: .rounded))
-                    .foregroundColor(.shadowPlum)
+                    .foregroundColor(.deepPlum)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 
                 Text("Choose how you'd like to relive your memories")
                     .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                    .foregroundColor(.shadowPlum.opacity(0.7))
+                    .foregroundColor(.deepPlum.opacity(0.7))
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
             }
@@ -547,9 +547,9 @@ struct WelcomeMessageCard: View {
                 .fill(
                     LinearGradient(
                         gradient: Gradient(colors: [
-                            Color.everBlush.opacity(0.12),
-                            Color.eternalRose.opacity(0.08),
-                            Color.sunsetPeach.opacity(0.06)
+                            Color.blushPink.opacity(0.12),
+                            Color.roseMagenta.opacity(0.08),
+                            Color.lightBlush.opacity(0.06)
                         ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -561,8 +561,8 @@ struct WelcomeMessageCard: View {
                         .stroke(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color.everBlush.opacity(0.25),
-                                    Color.eternalRose.opacity(0.15)
+                                    Color.blushPink.opacity(0.25),
+                                    Color.roseMagenta.opacity(0.15)
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -660,7 +660,7 @@ struct RecentImageCard: View {
             // Date
             Text(formatDate(image.createdAt ?? Date()))
                 .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .regular))
-                .foregroundColor(.shadowPlum.opacity(0.6))
+                .foregroundColor(.deepPlum.opacity(0.6))
         }
     }
     

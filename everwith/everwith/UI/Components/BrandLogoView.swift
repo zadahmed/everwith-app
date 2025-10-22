@@ -53,9 +53,9 @@ struct BrandMonogramView: View {
     
     var body: some View {
         ZStack {
-            // Background circle
+            // Background circle with gradient
             Circle()
-                .fill(Color.brandGradient)
+                .fill(LinearGradient.primaryBrand)
                 .frame(width: size, height: size)
             
             // App Logo

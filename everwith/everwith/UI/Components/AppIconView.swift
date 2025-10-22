@@ -18,7 +18,18 @@ struct AppIconView: View {
         ZStack {
             // Background circle with gradient
             Circle()
-                .fill(Color.brandRadialGradient)
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            Color.blushPink,
+                            Color.roseMagenta,
+                            Color.memoryViolet
+                        ]),
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: size * 0.5
+                    )
+                )
                 .frame(width: size, height: size)
             
             // Inner glow effect

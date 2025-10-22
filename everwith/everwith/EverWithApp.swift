@@ -44,8 +44,6 @@ struct AppCoordinator: View {
     @StateObject private var authService = AuthenticationService()
     @StateObject private var sessionManager = SessionManager.shared
     @State private var hasCompletedOnboarding = false
-    @State private var showRestoreView = false
-    @State private var showTogetherView = false
     @State private var showSessionExpiredAlert = false
     
     var body: some View {
@@ -70,18 +68,6 @@ struct AppCoordinator: View {
                         .transition(.opacity)
                 case .authenticated(let user):
                     HomeView(user: user)
-                        .onReceive(NotificationCenter.default.publisher(for: .navigateToRestore)) { _ in
-                            showRestoreView = true
-                        }
-                        .onReceive(NotificationCenter.default.publisher(for: .navigateToTogether)) { _ in
-                            showTogetherView = true
-                        }
-                        .sheet(isPresented: $showRestoreView) {
-                            RestoreView()
-                        }
-                        .sheet(isPresented: $showTogetherView) {
-                            TogetherSceneView()
-                        }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)

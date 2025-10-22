@@ -14,7 +14,7 @@ struct LoadingView: View {
                 Spacer()
                 
                 Circle()
-                    .fill(Color.brandGradient)
+                    .fill(LinearGradient.primaryBrand)
                     .frame(width: 100, height: 100)
                     .overlay(
                         Image("AppLogo")

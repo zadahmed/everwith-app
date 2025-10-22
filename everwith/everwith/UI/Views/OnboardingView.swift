@@ -23,27 +23,29 @@ struct OnboardingView: View {
     @State private var isAnimating = false
     @State private var showContent = false
     @State private var currentCardIndex = 0
+    @State private var showPrivacyPolicy = false
+    @State private var showTermsOfService = false
     
     private let onboardingCards = [
         OnboardingCardData(
             imageName: "OnboardingWelcome",
-            title: "Welcome to EverWith",
-            subtitle: "Transform your photos with AI magic"
+            title: "Welcome to Everwith",
+            subtitle: "AI photo magic"
         ),
         OnboardingCardData(
             imageName: "OnboardingRestore",
-            title: "Restore precious photos",
-            subtitle: "Bring old memories back to life"
+            title: "Restore photos",
+            subtitle: "Bring memories back"
         ),
         OnboardingCardData(
             imageName: "OnboardingTogether",
-            title: "Create together photos",
-            subtitle: "Merge loved ones into one perfect moment"
+            title: "Create together",
+            subtitle: "Merge loved ones"
         ),
         OnboardingCardData(
             imageName: "OnboardingPremium",
-            title: "Unlock premium features",
-            subtitle: "Get unlimited access to all tools"
+            title: "Premium features",
+            subtitle: "Unlimited access"
         )
     ]
     
@@ -135,7 +137,7 @@ struct OnboardingView: View {
                             // Footer Links
                             HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
                                 Button("Privacy") {
-                                    // Handle privacy action
+                                    showPrivacyPolicy = true
                                 }
                                 .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
                                 .foregroundColor(.charcoal.opacity(0.6))
@@ -145,7 +147,7 @@ struct OnboardingView: View {
                                     .foregroundColor(.charcoal.opacity(0.4))
                                 
                                 Button("Terms") {
-                                    // Handle terms action
+                                    showTermsOfService = true
                                 }
                                 .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
                                 .foregroundColor(.charcoal.opacity(0.6))
@@ -180,6 +182,16 @@ struct OnboardingView: View {
         }
         .sheet(isPresented: $showFilesPicker) {
             FilesPickerView()
+        }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            NavigationStack {
+                LegalView(type: .privacy)
+            }
+        }
+        .sheet(isPresented: $showTermsOfService) {
+            NavigationStack {
+                LegalView(type: .terms)
+            }
         }
     }
     
@@ -307,7 +319,7 @@ struct SingleOnboardingCard: View {
     @State private var textOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry)) {
+        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry)) {
             // Hero Icon with Animation
             ZStack {
                 // Background glow
@@ -325,8 +337,8 @@ struct SingleOnboardingCard: View {
                         )
                     )
                     .frame(
-                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 160, for: geometry),
-                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 160, for: geometry)
+                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 300, for: geometry),
+                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 300, for: geometry)
                     )
                     .blur(radius: 20)
                 
@@ -343,16 +355,16 @@ struct SingleOnboardingCard: View {
                         )
                     )
                     .frame(
-                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry),
-                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry)
+                        width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 250, for: geometry),
+                        height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 250, for: geometry)
                     )
                     .overlay(
                         Image(cardData.imageName)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(
-                                width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 60, for: geometry),
-                                height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 60, for: geometry)
+                                width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 180, for: geometry),
+                                height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 180, for: geometry)
                             )
                     )
                     .scaleEffect(iconScale)
@@ -371,15 +383,15 @@ struct SingleOnboardingCard: View {
                     .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 32, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.charcoal)
                     .multilineTextAlignment(.center)
-                    .lineLimit(geometry.isSmallScreen ? 3 : 2)
                     .minimumScaleFactor(0.8)
+                    .lineLimit(nil)
                     .opacity(textOpacity)
                 
                 Text(cardData.subtitle)
                     .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .medium, design: .rounded))
                     .foregroundColor(.charcoal.opacity(0.8))
                     .multilineTextAlignment(.center)
-                    .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                    .lineLimit(nil)
                     .minimumScaleFactor(0.8)
                     .opacity(textOpacity)
             }

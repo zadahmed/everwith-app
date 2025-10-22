@@ -101,7 +101,7 @@ struct ModernAuthenticationView: View {
                             
                             // App Name and Tagline - Modern
                             VStack(spacing: geometry.isSmallScreen ? 6 : adaptiveSpacing(8, for: geometry)) {
-                                Text("EverWith")
+                                Text("Everwith")
                                     .font(.system(
                                         size: geometry.isSmallScreen ? 32 : adaptiveFontSize(36, for: geometry),
                                         weight: .black,

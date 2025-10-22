@@ -87,7 +87,7 @@ struct ShareSuccessView: View {
                             .font(.system(size: geometry.adaptiveFontSize(17), weight: .medium))
                             .foregroundColor(.softPlum)
                         
-                        Text("sharing EverWith!")
+                        Text("sharing Everwith!")
                             .font(.system(size: geometry.adaptiveFontSize(17), weight: .bold))
                             .foregroundStyle(LinearGradient.primaryBrand)
                     }

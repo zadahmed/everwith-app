@@ -340,6 +340,12 @@ class AuthenticationService: ObservableObject {
         DispatchQueue.main.async {
             self.currentUser = nil
             self.authenticationState = .unauthenticated
+            
+            // Reset onboarding state so user sees onboarding again
+            UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+            
+            // Post notification to reset onboarding in AppCoordinator
+            NotificationCenter.default.post(name: .onboardingReset, object: nil)
         }
     }
     

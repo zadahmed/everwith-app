@@ -39,6 +39,7 @@ struct EverWithApp: App {
 
 extension Notification.Name {
     static let onboardingCompleted = Notification.Name("onboardingCompleted")
+    static let onboardingReset = Notification.Name("onboardingReset")
 }
 
 struct AppCoordinator: View {
@@ -55,6 +56,9 @@ struct AppCoordinator: View {
             .environmentObject(sessionManager)
             .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
                 hasCompletedOnboarding = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .onboardingReset)) { _ in
+                hasCompletedOnboarding = false
             }
             .onReceive(sessionManager.$sessionExpired) { expired in
                 if expired {

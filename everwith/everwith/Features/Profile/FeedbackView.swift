@@ -46,7 +46,7 @@ struct FeedbackView: View {
                                 .multilineTextAlignment(.center)
                                 .opacity(animateElements ? 1.0 : 0.0)
                             
-                            Text("Your feedback helps us make EverWith better for everyone")
+                            Text("Your feedback helps us make Everwith better for everyone")
                                 .font(.system(size: geometry.adaptiveFontSize(16), weight: .medium))
                                 .foregroundColor(.softPlum)
                                 .multilineTextAlignment(.center)

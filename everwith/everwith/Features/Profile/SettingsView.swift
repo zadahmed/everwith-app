@@ -365,7 +365,7 @@ struct LegalView: View {
         
         Last updated: October 2025
         
-        At EverWith, we take your privacy seriously. This policy explains how we handle your data.
+        At Everwith, we take your privacy seriously. This policy explains how we handle your data.
         
         Data Collection:
         - We only access photos you explicitly select for processing
@@ -402,10 +402,10 @@ struct LegalView: View {
         
         Last updated: October 2025
         
-        By using EverWith, you agree to these terms.
+        By using Everwith, you agree to these terms.
         
         Service Description:
-        - EverWith provides AI-powered photo restoration and merging
+        - Everwith provides AI-powered photo restoration and merging
         - Results may vary based on input quality
         - Processing times depend on server load
         

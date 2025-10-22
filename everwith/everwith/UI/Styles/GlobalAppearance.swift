@@ -221,7 +221,7 @@ extension View {
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                             .foregroundColor(.charcoal)
                         
-                        Text("This card demonstrates the modern glassmorphism styling with your EverWith branding.")
+                        Text("This card demonstrates the modern glassmorphism styling with your Everwith branding.")
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(.charcoal.opacity(0.7))
                             .multilineTextAlignment(.center)
@@ -247,7 +247,7 @@ extension View {
             }
             .padding(ModernDesignSystem.Spacing.lg)
         }
-        .navigationTitle("EverWith")
+        .navigationTitle("Everwith")
         .navigationBarTitleDisplayMode(.large)
     }
 }

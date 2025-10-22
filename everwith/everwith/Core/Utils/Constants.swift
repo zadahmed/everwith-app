@@ -11,7 +11,7 @@ struct Constants {
     
     // MARK: - App Information
     struct App {
-        static let name = "EverWith"
+        static let name = "Everwith"
         static let tagline = "Together in every photo."
         static let bundleIdentifier = "com.everwith.app"
         static let version = "1.0.0"

@@ -8,6 +8,13 @@
 import SwiftUI
 import PhotosUI
 
+// MARK: - Onboarding Card Data
+struct OnboardingCardData {
+    let imageName: String
+    let title: String
+    let subtitle: String
+}
+
 struct OnboardingView: View {
     @State private var permissionState: PermissionState = .notRequested
     @State private var onboardingState: OnboardingState = .cards
@@ -15,6 +22,30 @@ struct OnboardingView: View {
     @State private var showFilesPicker = false
     @State private var isAnimating = false
     @State private var showContent = false
+    @State private var currentCardIndex = 0
+    
+    private let onboardingCards = [
+        OnboardingCardData(
+            imageName: "OnboardingWelcome",
+            title: "Welcome to EverWith",
+            subtitle: "Transform your photos with AI magic"
+        ),
+        OnboardingCardData(
+            imageName: "OnboardingRestore",
+            title: "Restore precious photos",
+            subtitle: "Bring old memories back to life"
+        ),
+        OnboardingCardData(
+            imageName: "OnboardingTogether",
+            title: "Create together photos",
+            subtitle: "Merge loved ones into one perfect moment"
+        ),
+        OnboardingCardData(
+            imageName: "OnboardingPremium",
+            title: "Unlock premium features",
+            subtitle: "Get unlimited access to all tools"
+        )
+    ]
     
     var body: some View {
         GeometryReader { geometry in
@@ -33,7 +64,10 @@ struct OnboardingView: View {
                         Spacer()
                         
                         // Single Card Content
-                        SingleOnboardingCard(geometry: geometry)
+                        SingleOnboardingCard(
+                            cardData: onboardingCards[currentCardIndex],
+                            geometry: geometry
+                        )
                             .scaleEffect(showContent ? 1.0 : 0.8)
                             .opacity(showContent ? 1.0 : 0.0)
                             .animation(.spring(response: 0.8, dampingFraction: 0.8), value: showContent)
@@ -42,6 +76,31 @@ struct OnboardingView: View {
                         
                         // Action Section
                         VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
+                            // Card Navigation
+                            if currentCardIndex < onboardingCards.count - 1 {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        currentCardIndex += 1
+                                    }
+                                }) {
+                                    HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
+                                        Text("Next")
+                                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold))
+                                        
+                                        Image(systemName: "arrow.right")
+                                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .semibold))
+                                    }
+                                    .foregroundColor(.charcoal)
+                                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
+                                    .padding(.vertical, ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 12, for: geometry))
+                                            .fill(Color.white.opacity(0.1))
+                                            .background(.ultraThinMaterial)
+                                    )
+                                }
+                            }
+                            
                             // Primary CTA Button
                             Button(action: {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -241,6 +300,7 @@ struct ElegantBackground: View {
 
 // MARK: - Single Onboarding Card
 struct SingleOnboardingCard: View {
+    let cardData: OnboardingCardData
     let geometry: GeometryProxy
     @State private var iconScale: CGFloat = 0.8
     @State private var iconRotation: Double = 0
@@ -287,9 +347,13 @@ struct SingleOnboardingCard: View {
                         height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry)
                     )
                     .overlay(
-                        Image(systemName: "photo.badge.plus")
-                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 48, for: geometry), weight: .medium))
-                            .foregroundColor(.white)
+                        Image(cardData.imageName)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(
+                                width: ResponsiveDesign.adaptiveSpacing(baseSpacing: 60, for: geometry),
+                                height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 60, for: geometry)
+                            )
                     )
                     .scaleEffect(iconScale)
                     .rotationEffect(.degrees(iconRotation))
@@ -303,7 +367,7 @@ struct SingleOnboardingCard: View {
             
             // Content
             VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry)) {
-                Text("Restore precious photos.")
+                Text(cardData.title)
                     .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 32, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.charcoal)
                     .multilineTextAlignment(.center)
@@ -311,7 +375,7 @@ struct SingleOnboardingCard: View {
                     .minimumScaleFactor(0.8)
                     .opacity(textOpacity)
                 
-                Text("Keep control of what you share.")
+                Text(cardData.subtitle)
                     .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .medium, design: .rounded))
                     .foregroundColor(.charcoal.opacity(0.8))
                     .multilineTextAlignment(.center)

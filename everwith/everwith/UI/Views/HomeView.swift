@@ -46,6 +46,10 @@ struct HomeView: View {
                     
                     ScrollView {
                         VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                            // Top spacing
+                            Spacer()
+                                .frame(height: adaptiveSpacing(8, for: geometry))
+                            
                             // Welcome Message
                             WelcomeMessageCard(geometry: geometry)
                                 .padding(.horizontal, adaptivePadding(for: geometry))
@@ -213,9 +217,9 @@ struct HomeView: View {
                             
                             // Bottom spacing
                             Spacer()
-                                .frame(height: adaptiveSpacing(24, for: geometry))
+                                .frame(height: adaptiveSpacing(12, for: geometry))
                         }
-                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 12 : 20)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
                     }
                     .scrollIndicators(.hidden)
                     .frame(width: geometry.size.width)
@@ -450,32 +454,10 @@ struct ModernHomeHeader: View {
             }
             
             Spacer()
-            
-            // Enhanced Settings Button
-            Button(action: {
-                showSettings = true
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.pureWhite)
-                        .frame(width: adaptiveSize(44, for: geometry), height: adaptiveSize(44, for: geometry))
-                        .overlay(
-                            Circle()
-                                .stroke(Color.subtleBorder, lineWidth: 1)
-                        )
-                        .shadow(color: Color.cardShadow, radius: 4, x: 0, y: 2)
-                    
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .medium))
-                        .foregroundColor(.softPlum)
-                }
-            }
-            .scaleEffect(1.0)
-            .animation(.easeInOut(duration: 0.1), value: showSettings)
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
-        .padding(.bottom, adaptiveSpacing(16, for: geometry))
+        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 16 : 24)
+        .padding(.bottom, adaptiveSpacing(12, for: geometry))
     }
     
     // MARK: - Adaptive Functions

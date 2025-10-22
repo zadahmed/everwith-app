@@ -6,7 +6,6 @@ Handles premium subscriptions, credit purchases, and payment tracking
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
 from datetime import datetime, timedelta
-from app.models.schemas import User
 from app.models.database import User as DBUser, Subscription, CreditTransaction
 from app.core.security import get_current_user
 from pydantic import BaseModel

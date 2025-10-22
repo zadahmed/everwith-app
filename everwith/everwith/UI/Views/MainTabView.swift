@@ -109,7 +109,7 @@ struct CustomTabBar: View {
         }
         .padding(.horizontal, geometry.adaptivePadding())
         .padding(.top, geometry.adaptiveSpacing(12))
-        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : geometry.adaptiveSpacing(12))
+        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : geometry.adaptiveSpacing(16))
         .background(
             // Glassmorphic background
             ZStack {

@@ -362,8 +362,6 @@ extension SubscriptionService {
             tier = "monthly"
         } else if productId.contains("yearly") {
             tier = "yearly"
-        } else if productId.contains("lifetime") {
-            tier = "lifetime"
         } else if productId.contains("credits") {
             // Handle credit purchase
             let credits = extractCreditsFromProductId(productId)

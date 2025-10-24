@@ -13,6 +13,14 @@ class User(Document):
     google_id: Optional[Indexed(str, unique=True)] = None
     is_google_user: bool = False
     is_active: bool = True
+    
+    # Monetization fields
+    subscription_tier: str = "free"  # free, premium_monthly, premium_yearly
+    subscription_expires_at: Optional[datetime] = None
+    credits: int = 0
+    free_uses_remaining: int = 1
+    last_free_use_date: Optional[datetime] = None
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -117,7 +125,7 @@ class Subscription(Document):
     """Subscription document model for MongoDB"""
     
     user_id: Link[User]
-    tier: str  # "free", "monthly", "yearly", "lifetime"
+    tier: str  # "free", "premium_monthly", "premium_yearly"
     status: str  # "active", "cancelled", "expired", "trial"
     start_date: datetime
     end_date: Optional[datetime] = None
@@ -231,6 +239,56 @@ class ShareEvent(Document):
     
     def __str__(self):
         return f"ShareEvent(id={self.id}, user_id={self.user_id}, verified={self.verified})"
+
+
+class UsageLog(Document):
+    """Usage log for tracking feature usage"""
+    
+    user_id: Link[User]
+    mode: str  # "restore", "merge"
+    used_credit: bool = False
+    used_free_use: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "usage_logs"
+        indexes = [
+            "user_id",
+            "mode",
+            "created_at"
+        ]
+    
+    def __str__(self):
+        return f"UsageLog(id={self.id}, user_id={self.user_id}, mode={self.mode})"
+
+
+class Transaction(Document):
+    """Transaction document for purchase tracking"""
+    
+    user_id: Link[User]
+    product_id: str
+    transaction_id: str
+    purchase_type: str  # "subscription", "credit_pack"
+    amount: Optional[float] = None
+    currency: str = "GBP"
+    revenue_cat_data: Optional[str] = None  # JSON string
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "transactions"
+        indexes = [
+            "user_id",
+            "transaction_id",
+            "purchase_type",
+            "created_at"
+        ]
+    
+    def __str__(self):
+        return f"Transaction(id={self.id}, user_id={self.user_id}, product_id={self.product_id})"
 
 
 class UserStats(Document):

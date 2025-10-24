@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 // MARK: - Brand Card Component
 struct BrandCard<Content: View>: View {

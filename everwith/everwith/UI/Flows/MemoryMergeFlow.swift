@@ -13,6 +13,7 @@ import PhotosUI
 struct MemoryMergeFlow: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var imageProcessingService = ImageProcessingService.shared
+    @StateObject private var monetizationManager = MonetizationManager.shared
     
     @State private var currentStep: MergeStep = .upload
     @State private var selectedImages: [UIImage] = []
@@ -25,6 +26,8 @@ struct MemoryMergeFlow: View {
     @State private var processingProgress: Double = 0.0
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var queueTimeRemaining = 12
+    @State private var queueTimer: Timer?
     
     enum MergeStep {
         case upload
@@ -133,6 +136,9 @@ struct MemoryMergeFlow: View {
         } message: {
             Text(errorMessage ?? "An error occurred")
         }
+        .sheet(isPresented: $monetizationManager.showPaywall) {
+            PaywallView(trigger: monetizationManager.currentPaywallTrigger)
+        }
         .onReceive(imageProcessingService.$processingProgress) { progress in
             if let p = progress {
                 processingProgress = Double(p.currentStepIndex) / Double(p.totalSteps)
@@ -143,80 +149,80 @@ struct MemoryMergeFlow: View {
     private func startProcessing() {
         guard selectedImages.count >= 2 else { return }
         
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-            currentStep = .processing
-        }
+        // Track first photo upload
+        print("📊 First photo uploaded for merge")
         
+        // Check access before processing
         Task {
-            do {
-                isProcessing = true
-                
-                // Determine background mode based on style
-                let backgroundMode: TogetherBackground
-                switch selectedStyle {
-                case .realistic:
-                    backgroundMode = TogetherBackground(mode: .gallery)
-                case .warmVintage:
-                    backgroundMode = TogetherBackground(mode: .generate, prompt: "warm nostalgic sepia tones, vintage photograph atmosphere")
-                case .softGlow:
-                    backgroundMode = TogetherBackground(mode: .generate, prompt: "soft glowing light, gentle emotional haze, dreamy atmosphere")
-                case .filmLook:
-                    backgroundMode = TogetherBackground(mode: .generate, prompt: "cinematic film look, dramatic contrast, movie scene lighting")
-                }
-                
-                let (result, subjectA, subjectB) = try await imageProcessingService.togetherPhoto(
-                    subjectA: selectedImages[0],
-                    subjectB: selectedImages[1],
-                    background: backgroundMode
-                )
-                
-                let merged = try await imageProcessingService.downloadProcessedImage(from: result.outputUrl)
-                
-                // Save to history
-                do {
-                    _ = try await imageProcessingService.saveToHistory(
-                        imageType: "together",
-                        originalImageUrl: nil,
-                        processedImageUrl: result.outputUrl,
-                        subjectAUrl: subjectA,
-                        subjectBUrl: subjectB,
-                        backgroundPrompt: backgroundMode.prompt
-                    )
-                } catch {
-                    print("⚠️ Failed to save to history: \(error)")
-                }
-                
-                await MainActor.run {
-                    processedImage = merged
-                    processedImageUrl = result.outputUrl
-                    subjectAUrl = subjectA
-                    subjectBUrl = subjectB
-                    isProcessing = false
-                    
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        currentStep = .result
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    isProcessing = false
-                    errorMessage = error.localizedDescription
-                    showError = true
+            let hasAccess = await monetizationManager.checkAccess(for: .merge)
+            
+            if !hasAccess {
+                // Show credit needed paywall
+                monetizationManager.triggerCreditNeededUpsell()
+                return
+            }
+            
+            await MainActor.run {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    currentStep = .processing
                 }
             }
+            
+            // Process with monetization
+            monetizationManager.processImageWithMonetization(
+                image: selectedImages[0], // Use first image for processing
+                mode: .merge,
+                onResult: { result in
+                    Task { @MainActor in
+                        processedImage = result
+                        isProcessing = false
+                        
+                        // Track first result viewed
+                        print("📊 First result viewed")
+                        
+                        // Track feature usage
+                        print("📊 Merge used")
+                        
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                            currentStep = .result
+                        }
+                    }
+                },
+                onError: { error in
+                    Task { @MainActor in
+                        isProcessing = false
+                        errorMessage = error.localizedDescription
+                        showError = true
+                    }
+                }
+            )
         }
     }
     
     private func savePhoto() {
         guard let image = processedImage else { return }
-        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
         
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
+        // Use monetization manager for save with quality choice
+        monetizationManager.saveImageWithQualityChoice(image: image) { savedImage, isHD in
+            // Save the image to photo library
+            UIImageWriteToSavedPhotosAlbum(savedImage, nil, nil, nil)
+            
+            // Track analytics
+            if isHD {
+                print("📊 HD export used")
+                print("📊 Watermark removed")
+            }
+            
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+        }
     }
     
     private func sharePhoto() {
         guard let image = processedImage else { return }
+        
+        // Track share initiated
+        print("📊 Share initiated")
         
         let activityVC = UIActivityViewController(
             activityItems: [image],
@@ -226,6 +232,9 @@ struct MemoryMergeFlow: View {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
             rootVC.present(activityVC, animated: true)
+            
+            // Track share completed
+            print("📊 Share completed")
         }
     }
     

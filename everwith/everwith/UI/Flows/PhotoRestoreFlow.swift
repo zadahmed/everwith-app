@@ -13,6 +13,7 @@ import PhotosUI
 struct PhotoRestoreFlow: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var imageProcessingService = ImageProcessingService.shared
+    @StateObject private var monetizationManager = MonetizationManager.shared
     
     @State private var currentStep: RestoreStep = .upload
     @State private var selectedImage: UIImage?
@@ -23,6 +24,8 @@ struct PhotoRestoreFlow: View {
     @State private var processingProgress: Double = 0.0
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var queueTimeRemaining = 12
+    @State private var queueTimer: Timer?
     
     enum RestoreStep {
         case upload
@@ -79,6 +82,9 @@ struct PhotoRestoreFlow: View {
         } message: {
             Text(errorMessage ?? "An error occurred")
         }
+        .sheet(isPresented: $monetizationManager.showPaywall) {
+            PaywallView(trigger: monetizationManager.currentPaywallTrigger)
+        }
         .onReceive(imageProcessingService.$processingProgress) { progress in
             if let p = progress {
                 processingProgress = Double(p.currentStepIndex) / Double(p.totalSteps)
@@ -89,68 +95,80 @@ struct PhotoRestoreFlow: View {
     private func startProcessing() {
         guard let image = selectedImage else { return }
         
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-            currentStep = .processing
-        }
+        // Track first photo upload
+        print("📊 First photo uploaded for restore")
         
+        // Check access before processing
         Task {
-            do {
-                isProcessing = true
-                
-                let (result, originalUrl) = try await imageProcessingService.restorePhoto(
-                    image: image,
-                    qualityTarget: .standard,
-                    outputFormat: .png,
-                    aspectRatio: .original,
-                    seed: nil
-                )
-                
-                let restored = try await imageProcessingService.downloadProcessedImage(from: result.outputUrl)
-                
-                // Save to history
-                do {
-                    _ = try await imageProcessingService.saveToHistory(
-                        imageType: "restore",
-                        originalImageUrl: originalUrl,
-                        processedImageUrl: result.outputUrl,
-                        qualityTarget: "standard",
-                        outputFormat: "png",
-                        aspectRatio: "original"
-                    )
-                } catch {
-                    print("⚠️ Failed to save to history: \(error)")
-                }
-                
-                await MainActor.run {
-                    processedImage = restored
-                    originalImageUrl = originalUrl
-                    processedImageUrl = result.outputUrl
-                    isProcessing = false
-                    
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        currentStep = .result
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    isProcessing = false
-                    errorMessage = error.localizedDescription
-                    showError = true
+            let hasAccess = await monetizationManager.checkAccess(for: .restore)
+            
+            if !hasAccess {
+                // Show credit needed paywall
+                monetizationManager.triggerCreditNeededUpsell()
+                return
+            }
+            
+            await MainActor.run {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    currentStep = .processing
                 }
             }
+            
+            // Process with monetization
+            monetizationManager.processImageWithMonetization(
+                image: image,
+                mode: .restore,
+                onResult: { result in
+                    Task { @MainActor in
+                        processedImage = result
+                        isProcessing = false
+                        
+                        // Track first result viewed
+                        print("📊 First result viewed")
+                        
+                        // Track feature usage
+                        print("📊 Restore used")
+                        
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                            currentStep = .result
+                        }
+                    }
+                },
+                onError: { error in
+                    Task { @MainActor in
+                        isProcessing = false
+                        errorMessage = error.localizedDescription
+                        showError = true
+                    }
+                }
+            )
         }
     }
     
     private func savePhoto() {
         guard let image = processedImage else { return }
-        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
         
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
+        // Use monetization manager for save with quality choice
+        monetizationManager.saveImageWithQualityChoice(image: image) { savedImage, isHD in
+            // Save the image to photo library
+            UIImageWriteToSavedPhotosAlbum(savedImage, nil, nil, nil)
+            
+            // Track analytics
+            if isHD {
+                print("📊 HD export used")
+                print("📊 Watermark removed")
+            }
+            
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+        }
     }
     
     private func sharePhoto() {
         guard let image = processedImage else { return }
+        
+        // Track share initiated
+        print("📊 Share initiated")
         
         let activityVC = UIActivityViewController(
             activityItems: [image],
@@ -160,6 +178,9 @@ struct PhotoRestoreFlow: View {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
             rootVC.present(activityVC, animated: true)
+            
+            // Track share completed
+            print("📊 Share completed")
         }
     }
     
@@ -309,14 +330,70 @@ struct RestoreUploadView: View {
 struct RestoreProcessingView: View {
     let progress: Double
     let geometry: GeometryProxy
+    @StateObject private var monetizationManager = MonetizationManager.shared
+    @State private var queueTimeRemaining = 12
+    @State private var queueTimer: Timer?
     
     var body: some View {
-        ProgressAnimation(
-            title: "Bringing your photo back to life…",
-            subtitle: "This might take a few seconds — we're restoring every detail.",
-            progress: progress,
-            geometry: geometry
-        )
+        VStack(spacing: 24) {
+            ProgressAnimation(
+                title: "Bringing your photo back to life…",
+                subtitle: "This might take a few seconds — we're restoring every detail.",
+                progress: progress,
+                geometry: geometry
+            )
+            
+            // Queue status for free users
+            if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
+                QueueStatusView(queueTimeRemaining: $queueTimeRemaining)
+                    .onAppear {
+                        startQueueTimer()
+                    }
+                    .onDisappear {
+                        queueTimer?.invalidate()
+                    }
+            }
+        }
+    }
+    
+    private func startQueueTimer() {
+        queueTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if queueTimeRemaining > 0 {
+                queueTimeRemaining -= 1
+            } else {
+                queueTimer?.invalidate()
+            }
+        }
+    }
+}
+
+// MARK: - Queue Status View
+struct QueueStatusView: View {
+    @Binding var queueTimeRemaining: Int
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: "clock")
+                    .foregroundColor(.orange)
+                Text("Processing in queue...")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.orange)
+            }
+            
+            Text("\(queueTimeRemaining) seconds remaining")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            
+            Button("Skip the wait with Premium") {
+                MonetizationManager.shared.triggerQueuePriorityUpsell()
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.blue)
+        }
+        .padding(12)
+        .background(Color.orange.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -332,6 +409,7 @@ struct RestoreResultView: View {
     
     @State private var animateElements = false
     @State private var isSaved = false
+    @StateObject private var monetizationManager = MonetizationManager.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -398,12 +476,54 @@ struct RestoreResultView: View {
             )
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : 40)
+            
+            // HD Upgrade Prompt for free users
+            if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
+                HDUpgradePrompt()
+                    .padding(.horizontal, geometry.adaptiveSpacing(20))
+                    .padding(.top, geometry.adaptiveSpacing(16))
+                    .opacity(animateElements ? 1 : 0)
+                    .offset(y: animateElements ? 0 : 20)
+            }
         }
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
                 animateElements = true
             }
         }
+    }
+}
+
+// MARK: - HD Upgrade Prompt
+struct HDUpgradePrompt: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "4k.tv")
+                    .foregroundColor(.yellow)
+                Text("Unlock HD Quality")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            
+            Text("Remove watermark and get crystal clear 4K quality")
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+            
+            Button("Upgrade Now") {
+                MonetizationManager.shared.triggerPostResultUpsell(resultImage: UIImage())
+            }
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(.black)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .background(Color.yellow)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(16)
+        .background(Color.black.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

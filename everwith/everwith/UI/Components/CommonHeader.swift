@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct CommonHeader: View {
     let title: String

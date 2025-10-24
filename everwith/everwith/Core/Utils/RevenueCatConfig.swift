@@ -38,11 +38,7 @@ class RevenueCatConfig {
     
     func configure() {
         // Configure RevenueCat
-        // Note: This will be implemented when RevenueCat SDK is installed
-        print("RevenueCat configuration will be implemented when SDK is installed")
-        
-        // TODO: Uncomment when RevenueCat SDK is installed
-        /*
+        print("🚀 Configuring RevenueCat with project ID: app660b5a6b08")
         Purchases.logLevel = .debug
         Purchases.configure(withAPIKey: apiKey)
         
@@ -51,15 +47,20 @@ class RevenueCatConfig {
         
         // Configure offerings
         configureOfferings()
-        */
+        
+        print("✅ RevenueCat configuration completed")
     }
     
     private func configureOfferings() {
-        // This would typically be done in the RevenueCat dashboard
-        // But you can also configure programmatically if needed
+        // Configure offerings from RevenueCat dashboard
+        // Offering ID: everwith_offering
+        // RevenueCat ID: ofrng133ec87e21
         
-        // TODO: Implement when RevenueCat SDK is installed
-        print("Offerings configuration will be implemented when SDK is installed")
+        print("📦 Configured offering: everwith_offering (ID: ofrng133ec87e21)")
+        
+        // RevenueCat automatically fetches offerings from the dashboard
+        // No manual configuration needed - the SDK handles this
+        // Your offering "everwith_offering" will be available as offerings.current
     }
 }
 

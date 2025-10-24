@@ -8,6 +8,7 @@
 
 import SwiftUI
 import PhotosUI
+import UIKit
 
 // MARK: - Photo Restore Flow Coordinator
 struct PhotoRestoreFlow: View {
@@ -37,7 +38,7 @@ struct PhotoRestoreFlow: View {
         GeometryReader { geometry in
             ZStack {
                 CleanWhiteBackground()
-                    .ignoresSafeArea(.all)
+                    .ignoresSafeArea()
                 
                 switch currentStep {
                 case .upload:
@@ -212,13 +213,13 @@ struct RestoreUploadView: View {
             // Header
             HStack {
                 Button(action: onDismiss) {
-                    HStack(spacing: geometry.adaptiveSpacing(8)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                             .foregroundColor(.deepPlum)
                         
                         Text("Restore Memories")
-                            .font(.system(size: geometry.adaptiveFontSize(20), weight: .bold, design: .rounded))
+                            .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                     }
                 }
@@ -226,22 +227,22 @@ struct RestoreUploadView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, geometry.adaptivePadding())
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
-            .padding(.bottom, geometry.adaptiveSpacing(16))
+            .padding(.horizontal, adaptivePadding(for: geometry))
+            .padding(.top, adaptiveSpacing(16, for: geometry))
+            .padding(.bottom, adaptiveSpacing(16, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
             ScrollView(showsIndicators: false) {
-                VStack(spacing: geometry.adaptiveSpacing(32)) {
+                VStack(spacing: adaptiveSpacing(32, for: geometry)) {
                     // Title and Subtitle
-                    VStack(spacing: geometry.adaptiveSpacing(12)) {
+                    VStack(spacing: adaptiveSpacing(12, for: geometry)) {
                         Text("Fix, colorize, and relive your favorite old photos")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .medium))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .medium))
                             .foregroundColor(.softPlum)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
-                            .padding(.horizontal, geometry.adaptiveSpacing(20))
+                            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
                     }
                     .opacity(animateElements ? 1 : 0)
                     .offset(y: animateElements ? 0 : 20)
@@ -254,7 +255,7 @@ struct RestoreUploadView: View {
                         geometry: geometry
                     )
                     .frame(height: geometry.size.height * 0.5)
-                    .padding(.horizontal, geometry.adaptiveSpacing(20))
+                    .padding(.horizontal, adaptiveSpacing(20, for: geometry))
                     .opacity(animateElements ? 1 : 0)
                     .offset(y: animateElements ? 0 : 30)
                     
@@ -262,14 +263,14 @@ struct RestoreUploadView: View {
                     if selectedImage != nil {
                         Button(action: { showPhotoPicker = true }) {
                             Text("Change Photo")
-                                .font(.system(size: geometry.adaptiveFontSize(16), weight: .medium))
+                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
                                 .foregroundColor(.softPlum)
                         }
                         .opacity(animateElements ? 1 : 0)
                     }
                 }
-                .padding(.top, geometry.adaptiveSpacing(20))
-                .padding(.bottom, geometry.adaptiveSpacing(100))
+                .padding(.top, adaptiveSpacing(20, for: geometry))
+                .padding(.bottom, adaptiveSpacing(100, for: geometry))
             }
             
             Spacer()
@@ -277,21 +278,21 @@ struct RestoreUploadView: View {
             // Continue Button
             if selectedImage != nil {
                 Button(action: onContinue) {
-                    HStack(spacing: geometry.adaptiveSpacing(12)) {
+                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
                         Text("Continue")
-                            .font(.system(size: geometry.adaptiveFontSize(17), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .semibold))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: geometry.adaptiveFontSize(16), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: geometry.adaptiveSize(56))
+                    .frame(height: adaptiveSize(56, for: geometry))
                     .background(LinearGradient.primaryBrand)
-                    .cornerRadius(geometry.adaptiveCornerRadius(16))
+                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                     .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
-                .padding(.horizontal, geometry.adaptiveSpacing(20))
-                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 16 : 24)
+                .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
                 .opacity(animateElements ? 1 : 0)
                 .offset(y: animateElements ? 0 : 40)
             }
@@ -416,13 +417,13 @@ struct RestoreResultView: View {
             // Header
             HStack {
                 Button(action: onDismiss) {
-                    HStack(spacing: geometry.adaptiveSpacing(8)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                             .foregroundColor(.deepPlum)
                         
                         Text("Your Restored Photo")
-                            .font(.system(size: geometry.adaptiveFontSize(20), weight: .bold, design: .rounded))
+                            .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                     }
                 }
@@ -430,9 +431,9 @@ struct RestoreResultView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, geometry.adaptiveSpacing(20))
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 16 : 24)
-            .padding(.bottom, geometry.adaptiveSpacing(16))
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+            .padding(.top, adaptiveSpacing(16, for: geometry))
+            .padding(.bottom, adaptiveSpacing(16, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
@@ -443,15 +444,15 @@ struct RestoreResultView: View {
                 geometry: geometry
             )
             .frame(height: geometry.size.height * 0.6)
-            .padding(.horizontal, geometry.adaptiveSpacing(20))
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .scaleEffect(animateElements ? 1.0 : 0.95)
             
             // Swipe hint
             Text("← Swipe to compare →")
-                .font(.system(size: geometry.adaptiveFontSize(15), weight: .medium))
+                .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
                 .foregroundColor(.softPlum)
-                .padding(.top, geometry.adaptiveSpacing(16))
+                .padding(.top, adaptiveSpacing(16, for: geometry))
                 .opacity(animateElements ? 1 : 0)
             
             Spacer()
@@ -480,8 +481,8 @@ struct RestoreResultView: View {
             // HD Upgrade Prompt for free users
             if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
                 HDUpgradePrompt()
-                    .padding(.horizontal, geometry.adaptiveSpacing(20))
-                    .padding(.top, geometry.adaptiveSpacing(16))
+                    .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                    .padding(.top, adaptiveSpacing(16, for: geometry))
                     .opacity(animateElements ? 1 : 0)
                     .offset(y: animateElements ? 0 : 20)
             }
@@ -530,5 +531,35 @@ struct HDUpgradePrompt: View {
 #Preview {
     PhotoRestoreFlow()
         .environmentObject(ImageProcessingService.shared)
+}
+
+// MARK: - Adaptive Functions
+private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    return max(12, min(16, screenWidth * 0.04))
+}
+
+private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+}
+
+private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
 }
 

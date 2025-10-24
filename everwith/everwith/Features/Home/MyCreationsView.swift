@@ -25,6 +25,19 @@ struct MyCreationsView: View {
             ZStack {
                 CleanWhiteBackground()
                     .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Custom Header
+                    HStack {
+                        Text("My Memories")
+                            .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
+                            .foregroundColor(.deepPlum)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, adaptivePadding(for: geometry))
+                    .padding(.top, adaptiveSpacing(16, for: geometry))
+                    .padding(.bottom, adaptiveSpacing(16, for: geometry))
                     
                     if isLoading {
                         VStack(spacing: geometry.adaptiveSpacing(16)) {
@@ -130,7 +143,9 @@ struct MyCreationsView: View {
                         animateElements = true
                     }
                 }
+                }
             }
+            .navigationBarHidden(true)
         }
     
     private func loadCreations() {
@@ -148,6 +163,24 @@ struct MyCreationsView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
+    }
+    
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
     }
     
     private func clearCache() {

@@ -45,7 +45,7 @@ struct MainTabView: View {
                 // Custom Tab Bar
                 CustomTabBar(selectedTab: $selectedTab, geometry: geometry)
             }
-            .ignoresSafeArea(.keyboard)
+            .ignoresSafeArea(.all, edges: .all)
         }
     }
 }
@@ -107,9 +107,9 @@ struct CustomTabBar: View {
                 }
             }
         }
-        .padding(.horizontal, geometry.adaptivePadding())
-        .padding(.top, geometry.adaptiveSpacing(12))
-        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 4 : geometry.adaptiveSpacing(8))
+        .padding(.horizontal, adaptivePadding(for: geometry))
+        .padding(.top, adaptiveSpacing(12, for: geometry))
+        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
         .background(
             // Glassmorphic background
             ZStack {
@@ -170,11 +170,11 @@ struct TabBarButton: View {
             generator.impactOccurred()
             action()
         }) {
-            VStack(spacing: geometry.adaptiveSpacing(4)) {
+            VStack(spacing: adaptiveSpacing(4, for: geometry)) {
                 ZStack {
                     // Selection indicator background
                     if isSelected {
-                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(12))
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
                             .fill(
                                 isPremium
                                 ? LinearGradient(
@@ -194,12 +194,12 @@ struct TabBarButton: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: geometry.adaptiveSize(56), height: geometry.adaptiveSize(40))
+                            .frame(width: adaptiveSize(56, for: geometry), height: adaptiveSize(40, for: geometry))
                     }
                     
                     // Icon
                     Image(systemName: icon)
-                        .font(.system(size: geometry.adaptiveFontSize(22), weight: isSelected ? .semibold : .regular))
+                        .font(.system(size: adaptiveFontSize(22, for: geometry), weight: isSelected ? .semibold : .regular))
                         .foregroundStyle(
                             isSelected
                             ? (isPremium
@@ -219,7 +219,7 @@ struct TabBarButton: View {
                 
                 // Label
                 Text(label)
-                    .font(.system(size: geometry.adaptiveFontSize(11), weight: isSelected ? .semibold : .medium))
+                    .font(.system(size: adaptiveFontSize(11, for: geometry), weight: isSelected ? .semibold : .medium))
                     .foregroundColor(
                         isSelected
                         ? (isPremium ? Color.honeyGold : Color.blushPink)
@@ -257,5 +257,35 @@ struct TabBarButton: View {
         provider: .guest,
         createdAt: Date()
     ))
+}
+
+// MARK: - Adaptive Functions
+private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    return max(12, min(16, screenWidth * 0.04))
+}
+
+private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+}
+
+private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
 }
 

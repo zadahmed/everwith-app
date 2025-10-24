@@ -242,6 +242,7 @@ struct HomeView: View {
                     MyCreationsView()
                 case .premium:
                     PaywallView(trigger: .general)
+                        .navigationBarHidden(true)
                 case .credits:
                     CreditStoreView()
                 case .feedback:

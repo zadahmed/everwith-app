@@ -94,18 +94,15 @@ class RevenueCatService: NSObject, ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let apiKey = "your_revenuecat_api_key" // Replace with actual API key
-    
     private override init() {
         super.init()
-        configureRevenueCat()
+        // RevenueCat is configured in RevenueCatConfig.shared.configure()
+        // Just set up user login if needed
+        setupUserLogin()
     }
     
     // MARK: - Configuration
-    private func configureRevenueCat() {
-        Purchases.logLevel = .debug
-        Purchases.configure(withAPIKey: apiKey)
-        
+    private func setupUserLogin() {
         // Set up user ID if available
         if let userId = UserDefaults.standard.string(forKey: "user_id") {
             Purchases.shared.logIn(userId) { customerInfo, created, error in
@@ -119,9 +116,6 @@ class RevenueCatService: NSObject, ObservableObject {
                 }
             }
         }
-        
-        // Listen for purchase updates
-        Purchases.shared.delegate = self
     }
     
     // MARK: - Subscription Management
@@ -131,6 +125,10 @@ class RevenueCatService: NSObject, ObservableObject {
         
         do {
             let offerings = try await Purchases.shared.offerings()
+            
+            print("📦 Available offerings: \(offerings.all.keys)")
+            print("📦 Current offering: \(offerings.current?.identifier ?? "none")")
+            print("📦 Available packages: \(offerings.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? [])")
             
             guard let offering = offerings.current else {
                 errorMessage = "No offerings available"
@@ -142,9 +140,17 @@ class RevenueCatService: NSObject, ObservableObject {
             
             switch tier {
             case .premiumMonthly:
-                package = offering.monthly
+                // Try to find monthly package by product ID
+                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.month" }
+                if package == nil {
+                    package = offering.monthly // Fallback to monthly package type
+                }
             case .premiumYearly:
-                package = offering.annual
+                // Try to find yearly package by product ID
+                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.yearly" }
+                if package == nil {
+                    package = offering.annual // Fallback to annual package type
+                }
             case .free:
                 return false // Can't purchase free tier
             }

@@ -8,6 +8,7 @@
 
 import SwiftUI
 import PhotosUI
+import UIKit
 
 // MARK: - Memory Merge Flow Coordinator
 struct MemoryMergeFlow: View {
@@ -74,7 +75,7 @@ struct MemoryMergeFlow: View {
         GeometryReader { geometry in
             ZStack {
                 CleanWhiteBackground()
-                    .ignoresSafeArea(.all)
+                    .ignoresSafeArea()
                 
                 switch currentStep {
                 case .upload:
@@ -269,13 +270,13 @@ struct MergeUploadView: View {
             // Header
             HStack {
                 Button(action: onDismiss) {
-                    HStack(spacing: geometry.adaptiveSpacing(8)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                             .foregroundColor(.deepPlum)
                         
                         Text("Merge Memories")
-                            .font(.system(size: geometry.adaptiveFontSize(20), weight: .bold, design: .rounded))
+                            .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                     }
                 }
@@ -283,30 +284,29 @@ struct MergeUploadView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, geometry.adaptivePadding())
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 28 : 38)
-            .padding(.bottom, geometry.adaptiveSpacing(16))
+            .padding(.horizontal, adaptivePadding(for: geometry))
+            .padding(.bottom, adaptiveSpacing(16, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
             ScrollView(showsIndicators: false) {
-                VStack(spacing: geometry.adaptiveSpacing(32)) {
+                VStack(spacing: adaptiveSpacing(32, for: geometry)) {
                     // Title and Subtitle
-                    VStack(spacing: geometry.adaptiveSpacing(12)) {
+                    VStack(spacing: adaptiveSpacing(12, for: geometry)) {
                         Text("Combine two photos into one beautiful moment")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .medium))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .medium))
                             .foregroundColor(.softPlum)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
-                            .padding(.horizontal, geometry.adaptiveSpacing(20))
+                            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
                     }
                     .opacity(animateElements ? 1 : 0)
                     .offset(y: animateElements ? 0 : 20)
                     
                     // Two Upload Slots
-                    HStack(spacing: geometry.adaptiveSpacing(16)) {
+                    HStack(spacing: adaptiveSpacing(16, for: geometry)) {
                         // Photo 1
-                        VStack(spacing: geometry.adaptiveSpacing(8)) {
+                        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             UploadCard(
                                 label: "Photo 1",
                                 image: selectedImages.count > 0 ? selectedImages[0] : nil,
@@ -320,7 +320,7 @@ struct MergeUploadView: View {
                         }
                         
                         // Photo 2
-                        VStack(spacing: geometry.adaptiveSpacing(8)) {
+                        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
                             UploadCard(
                                 label: "Photo 2",
                                 image: selectedImages.count > 1 ? selectedImages[1] : nil,
@@ -333,20 +333,20 @@ struct MergeUploadView: View {
                             .frame(height: geometry.size.height * 0.35)
                         }
                     }
-                    .padding(.horizontal, geometry.adaptiveSpacing(20))
+                    .padding(.horizontal, adaptiveSpacing(20, for: geometry))
                     .opacity(animateElements ? 1 : 0)
                     .offset(y: animateElements ? 0 : 30)
                     
                     // Hint
                     Text("Use clear portraits for best results")
-                        .font(.system(size: geometry.adaptiveFontSize(15), weight: .medium))
+                        .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
                         .foregroundColor(.softPlum.opacity(0.7))
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, geometry.adaptiveSpacing(40))
+                        .padding(.horizontal, adaptiveSpacing(40, for: geometry))
                         .opacity(animateElements ? 1 : 0)
                 }
-                .padding(.top, geometry.adaptiveSpacing(20))
-                .padding(.bottom, geometry.adaptiveSpacing(100))
+                .padding(.top, adaptiveSpacing(20, for: geometry))
+                .padding(.bottom, adaptiveSpacing(100, for: geometry))
             }
             
             Spacer()
@@ -354,21 +354,21 @@ struct MergeUploadView: View {
             // Continue Button
             if selectedImages.count >= 2 {
                 Button(action: onContinue) {
-                    HStack(spacing: geometry.adaptiveSpacing(12)) {
+                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
                         Text("Continue")
-                            .font(.system(size: geometry.adaptiveFontSize(17), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .semibold))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: geometry.adaptiveFontSize(16), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: geometry.adaptiveSize(56))
+                    .frame(height: adaptiveSize(56, for: geometry))
                     .background(LinearGradient.primaryBrand)
-                    .cornerRadius(geometry.adaptiveCornerRadius(16))
+                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                     .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
-                .padding(.horizontal, geometry.adaptiveSpacing(20))
-                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 16 : 24)
+                .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
                 .opacity(animateElements ? 1 : 0)
                 .offset(y: animateElements ? 0 : 40)
             }
@@ -429,13 +429,13 @@ struct MergeStyleSelectionView: View {
             // Header
             HStack {
                 Button(action: onBack) {
-                    HStack(spacing: geometry.adaptiveSpacing(8)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                             .foregroundColor(.deepPlum)
                         
                         Text("Choose a Style")
-                            .font(.system(size: geometry.adaptiveFontSize(20), weight: .bold, design: .rounded))
+                            .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                     }
                 }
@@ -443,14 +443,14 @@ struct MergeStyleSelectionView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, geometry.adaptiveSpacing(20))
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 16 : 24)
-            .padding(.bottom, geometry.adaptiveSpacing(16))
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+            .padding(.top, adaptiveSpacing(16, for: geometry))
+            .padding(.bottom, adaptiveSpacing(16, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
             ScrollView(showsIndicators: false) {
-                VStack(spacing: geometry.adaptiveSpacing(20)) {
+                VStack(spacing: adaptiveSpacing(20, for: geometry)) {
                     ForEach(MemoryMergeFlow.MergeStyle.allCases, id: \.self) { style in
                         StyleCard(
                             style: style,
@@ -464,9 +464,9 @@ struct MergeStyleSelectionView: View {
                         )
                     }
                 }
-                .padding(.horizontal, geometry.adaptiveSpacing(20))
-                .padding(.top, geometry.adaptiveSpacing(20))
-                .padding(.bottom, geometry.adaptiveSpacing(100))
+                .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                .padding(.top, adaptiveSpacing(20, for: geometry))
+                .padding(.bottom, adaptiveSpacing(100, for: geometry))
             }
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : 30)
@@ -475,20 +475,20 @@ struct MergeStyleSelectionView: View {
             
             // Continue Button
             Button(action: onContinue) {
-                HStack(spacing: geometry.adaptiveSpacing(12)) {
+                HStack(spacing: adaptiveSpacing(12, for: geometry)) {
                     Text("Continue")
-                        .font(.system(size: geometry.adaptiveFontSize(17), weight: .semibold))
+                        .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .semibold))
                     Image(systemName: "arrow.right")
-                        .font(.system(size: geometry.adaptiveFontSize(16), weight: .semibold))
+                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: geometry.adaptiveSize(56))
+                .frame(height: adaptiveSize(56, for: geometry))
                 .background(LinearGradient.primaryBrand)
-                .cornerRadius(geometry.adaptiveCornerRadius(16))
+                .cornerRadius(adaptiveCornerRadius(16, for: geometry))
                 .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
             }
-            .padding(.horizontal, geometry.adaptiveSpacing(20))
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
             .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 16 : 24)
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : 40)
@@ -511,7 +511,7 @@ struct StyleCard: View {
     
     var body: some View {
         Button(action: onSelect) {
-            HStack(spacing: geometry.adaptiveSpacing(16)) {
+            HStack(spacing: adaptiveSpacing(16, for: geometry)) {
                 // Icon
                 ZStack {
                     Circle()
@@ -522,21 +522,21 @@ struct StyleCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: geometry.adaptiveSize(60), height: geometry.adaptiveSize(60))
+                        .frame(width: adaptiveSize(60, for: geometry), height: adaptiveSize(60, for: geometry))
                     
                     Image(systemName: style.icon)
-                        .font(.system(size: geometry.adaptiveFontSize(24), weight: .semibold))
+                        .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .semibold))
                         .foregroundColor(.white)
                 }
                 
                 // Text
-                VStack(alignment: .leading, spacing: geometry.adaptiveSpacing(4)) {
+                VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
                     Text(style.rawValue)
-                        .font(.system(size: geometry.adaptiveFontSize(18), weight: .bold))
+                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold))
                         .foregroundColor(.deepPlum)
                     
                     Text(style.description)
-                        .font(.system(size: geometry.adaptiveFontSize(15), weight: .regular))
+                        .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .regular))
                         .foregroundColor(.softPlum)
                 }
                 
@@ -545,17 +545,17 @@ struct StyleCard: View {
                 // Checkmark
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: geometry.adaptiveFontSize(24), weight: .semibold))
+                        .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .semibold))
                         .foregroundStyle(LinearGradient.primaryBrand)
                 }
             }
-            .padding(geometry.adaptiveSpacing(20))
+            .padding(adaptiveSpacing(20, for: geometry))
             .background(Color.pureWhite)
             .overlay(
-                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
                     .stroke(isSelected ? LinearGradient.primaryBrand : LinearGradient.cardGlow, lineWidth: isSelected ? 2 : 1)
             )
-            .cornerRadius(geometry.adaptiveCornerRadius(16))
+            .cornerRadius(adaptiveCornerRadius(16, for: geometry))
             .shadow(
                 color: isSelected ? Color.blushPink.opacity(0.2) : Color.cardShadow,
                 radius: isSelected ? 12 : 4,
@@ -602,13 +602,13 @@ struct MergeResultView: View {
             // Header
             HStack {
                 Button(action: onDismiss) {
-                    HStack(spacing: geometry.adaptiveSpacing(8)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: geometry.adaptiveFontSize(18), weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                             .foregroundColor(.deepPlum)
                         
                         Text("Your Merged Photo")
-                            .font(.system(size: geometry.adaptiveFontSize(20), weight: .bold, design: .rounded))
+                            .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                     }
                 }
@@ -616,9 +616,9 @@ struct MergeResultView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, geometry.adaptiveSpacing(20))
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 16 : 24)
-            .padding(.bottom, geometry.adaptiveSpacing(16))
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+            .padding(.top, adaptiveSpacing(16, for: geometry))
+            .padding(.bottom, adaptiveSpacing(16, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
@@ -627,7 +627,7 @@ struct MergeResultView: View {
                 Image(uiImage: mergedImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: geometry.size.width - geometry.adaptiveSpacing(40))
+                    .frame(maxWidth: geometry.size.width - adaptiveSpacing(40, for: geometry))
                     .scaleEffect(imageScale)
                     .gesture(
                         MagnificationGesture()
@@ -642,9 +642,9 @@ struct MergeResultView: View {
             
             // Pinch hint
             Text("Pinch to zoom")
-                .font(.system(size: geometry.adaptiveFontSize(15), weight: .medium))
+                .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
                 .foregroundColor(.softPlum)
-                .padding(.top, geometry.adaptiveSpacing(16))
+                .padding(.top, adaptiveSpacing(16, for: geometry))
                 .opacity(animateElements ? 1 : 0)
             
             Spacer()
@@ -681,5 +681,35 @@ struct MergeResultView: View {
 #Preview {
     MemoryMergeFlow()
         .environmentObject(ImageProcessingService.shared)
+}
+
+// MARK: - Adaptive Functions
+private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    return max(12, min(16, screenWidth * 0.04))
+}
+
+private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+}
+
+private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
 }
 

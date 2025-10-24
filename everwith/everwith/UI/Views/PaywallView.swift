@@ -26,12 +26,15 @@ struct PaywallView: View {
     @State private var selectedTier: SubscriptionTier = .premiumMonthly
     @State private var showingCreditPacks = false
     @State private var showingTrialInfo = false
+    @State private var animateElements = false
+    @State private var headerScale: CGFloat = 0.9
+    @State private var contentOpacity: Double = 0
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background
-                Color.black.opacity(0.4)
+                // Beautiful gradient background matching HomeView
+                PremiumBackground()
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -40,48 +43,74 @@ struct PaywallView: View {
                         Spacer()
                         Button(action: { dismiss() }) {
                             Image(systemName: "xmark")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.white)
-                                .padding(12)
-                                .background(Color.black.opacity(0.3))
-                                .clipShape(Circle())
+                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                                .foregroundColor(.deepPlum)
+                                .padding(adaptiveSpacing(8, for: geometry))
+                                .background(
+                                    Circle()
+                                        .fill(Color.pureWhite)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(LinearGradient.primaryBrand, lineWidth: 1)
+                                        )
+                                        .shadow(
+                                            color: Color.cardShadow,
+                                            radius: 6,
+                                            x: 0,
+                                            y: 2
+                                        )
+                                )
                         }
                     }
-                    .padding(.top, 20)
-                    .padding(.horizontal, 20)
+                    .padding(.top, adaptiveSpacing(16, for: geometry))
+                    .padding(.horizontal, adaptivePadding(for: geometry))
+                    .scaleEffect(headerScale)
+                    .opacity(animateElements ? 1 : 0)
                     
-                    Spacer()
-                    
-                    // Main content
-                    ScrollView {
-                        VStack(spacing: 24) {
+                    // Main content with proper bounds
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                             // Hero section
                             heroSection(geometry: geometry)
                             
                             // Features list
-                            featuresSection
+                            featuresSection(geometry: geometry)
                             
                             // Pricing options
                             pricingSection(geometry: geometry)
                             
                             // Trial info
-                            trialInfoSection
+                            trialInfoSection(geometry: geometry)
                             
                             // Action buttons
                             actionButtons(geometry: geometry)
                             
                             // Footer
-                            footerSection
+                            footerSection(geometry: geometry)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
+                        .padding(.horizontal, adaptivePadding(for: geometry))
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
+                        .opacity(contentOpacity)
+                        .offset(y: animateElements ? 0 : 20)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
         }
+        .navigationBarHidden(true)
         .onAppear {
             Task {
                 await revenueCatService.updateSubscriptionStatus()
+            }
+            
+            // Staggered entrance animations
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                headerScale = 1.0
+                animateElements = true
+            }
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                contentOpacity = 1.0
             }
         }
     }
@@ -89,139 +118,172 @@ struct PaywallView: View {
     // MARK: - Hero Section
     @ViewBuilder
     private func heroSection(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: adaptiveSpacing(12, for: geometry)) {
             // Result preview (if available)
             if case .postResult(let image) = trigger,
                let resultImage = image {
                 Image(uiImage: resultImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .frame(maxHeight: min(adaptiveSize(180, for: geometry), geometry.size.height * 0.25))
+                    .clipShape(RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry)))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                            .stroke(LinearGradient.cardGlow, lineWidth: 1)
                     )
                     .blur(radius: 2)
                     .overlay(
-                        VStack {
+                        VStack(spacing: adaptiveSpacing(6, for: geometry)) {
                             Image(systemName: "lock.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
+                                .font(.system(size: adaptiveFontSize(20, for: geometry)))
+                                .foregroundStyle(LinearGradient.primaryBrand)
                             Text("Unlock HD Quality")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                .foregroundColor(.deepPlum)
                         }
-                        .padding(16)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(adaptiveSpacing(12, for: geometry))
+                        .background(
+                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(8, for: geometry))
+                                .fill(Color.pureWhite)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(8, for: geometry))
+                                        .stroke(LinearGradient.primaryBrand, lineWidth: 1)
+                                )
+                                .shadow(
+                                    color: Color.cardShadow,
+                                    radius: 6,
+                                    x: 0,
+                                    y: 2
+                                )
+                        )
                     )
             }
             
-            // Main headline
+            // Main headline with gradient
             Text(heroHeadline)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
+                .foregroundStyle(LinearGradient.primaryBrand)
                 .multilineTextAlignment(.center)
-                .lineLimit(3)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .fixedSize(horizontal: false, vertical: true)
             
             // Subheadline
             Text(heroSubheadline)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
+                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                .foregroundColor(.deepPlum.opacity(0.8))
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .lineLimit(3)
+                .minimumScaleFactor(0.8)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.horizontal, adaptivePadding(for: geometry))
     }
     
     // MARK: - Features Section
-    private var featuresSection: some View {
-        VStack(spacing: 16) {
+    @ViewBuilder
+    private func featuresSection(geometry: GeometryProxy) -> some View {
+        VStack(spacing: adaptiveSpacing(12, for: geometry)) {
             FeatureRow(
                 icon: "bolt.fill",
                 title: "Instant Processing",
-                description: "Skip the queue, get results immediately"
+                description: "Skip the queue, get results immediately",
+                geometry: geometry
             )
             
             FeatureRow(
                 icon: "4k.tv",
                 title: "4K HD Export",
-                description: "Crystal clear quality for your memories"
+                description: "Crystal clear quality for your memories",
+                geometry: geometry
             )
             
             FeatureRow(
                 icon: "wand.and.stars",
                 title: "Cinematic Filters",
-                description: "Professional-grade photo enhancement"
+                description: "Professional-grade photo enhancement",
+                geometry: geometry
             )
             
             FeatureRow(
                 icon: "infinity",
                 title: "Unlimited Usage",
-                description: "Process as many photos as you want"
+                description: "Process as many photos as you want",
+                geometry: geometry
             )
             
             FeatureRow(
                 icon: "checkmark.shield",
                 title: "No Watermarks",
-                description: "Clean, professional results"
+                description: "Clean, professional results",
+                geometry: geometry
             )
         }
-        .padding(.vertical, 8)
+        .padding(.horizontal, adaptivePadding(for: geometry))
+        .padding(.vertical, adaptiveSpacing(4, for: geometry))
     }
     
     // MARK: - Pricing Section
     @ViewBuilder
     private func pricingSection(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: adaptiveSpacing(12, for: geometry)) {
             // Subscription vs Credits toggle
             HStack(spacing: 0) {
                 Button(action: { showingCreditPacks = false }) {
                     Text("Subscription")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(showingCreditPacks ? .white.opacity(0.6) : .white)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 20)
+                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                        .foregroundColor(showingCreditPacks ? .deepPlum.opacity(0.6) : .deepPlum)
+                        .padding(.vertical, adaptiveSpacing(10, for: geometry))
+                        .padding(.horizontal, adaptiveSpacing(16, for: geometry))
                         .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(showingCreditPacks ? Color.clear : Color.white.opacity(0.2))
+                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(6, for: geometry))
+                                .fill(showingCreditPacks ? Color.clear : Color.pureWhite.opacity(0.8))
                         )
                 }
                 
                 Button(action: { showingCreditPacks = true }) {
                     Text("Pay-as-you-go")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(showingCreditPacks ? .white : .white.opacity(0.6))
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 20)
+                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                        .foregroundColor(showingCreditPacks ? .deepPlum : .deepPlum.opacity(0.6))
+                        .padding(.vertical, adaptiveSpacing(10, for: geometry))
+                        .padding(.horizontal, adaptiveSpacing(16, for: geometry))
                         .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(showingCreditPacks ? Color.white.opacity(0.2) : Color.clear)
+                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(6, for: geometry))
+                                .fill(showingCreditPacks ? Color.pureWhite.opacity(0.8) : Color.clear)
                         )
                 }
             }
-            .background(Color.white.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .background(
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(6, for: geometry))
+                    .fill(Color.pureWhite.opacity(0.3))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(6, for: geometry))
+                            .stroke(LinearGradient.cardGlow, lineWidth: 1)
+                    )
+            )
             
             if showingCreditPacks {
-                creditPacksView
+                creditPacksView(geometry: geometry)
             } else {
-                subscriptionPlansView
+                subscriptionPlansView(geometry: geometry)
             }
         }
+        .padding(.horizontal, adaptivePadding(for: geometry))
     }
     
     // MARK: - Subscription Plans
-    private var subscriptionPlansView: some View {
-        VStack(spacing: 12) {
+    @ViewBuilder
+    private func subscriptionPlansView(geometry: GeometryProxy) -> some View {
+        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
             // Monthly Premium
             PricingCard(
                 title: "Premium Monthly",
-                price: "£9.99",
+                price: "£4.99",
                 period: "per month",
                 features: ["Unlimited processing", "4K HD export", "Instant results", "All filters"],
                 isSelected: selectedTier == .premiumMonthly,
-                isPopular: false
+                isPopular: false,
+                geometry: geometry
             ) {
                 selectedTier = .premiumMonthly
             }
@@ -233,7 +295,8 @@ struct PaywallView: View {
                 period: "per year",
                 features: ["Everything in Monthly", "40% discount", "Save £50/year", "Best value"],
                 isSelected: selectedTier == .premiumYearly,
-                isPopular: true
+                isPopular: true,
+                geometry: geometry
             ) {
                 selectedTier = .premiumYearly
             }
@@ -241,36 +304,40 @@ struct PaywallView: View {
     }
     
     // MARK: - Credit Packs
-    private var creditPacksView: some View {
-        VStack(spacing: 12) {
+    @ViewBuilder
+    private func creditPacksView(geometry: GeometryProxy) -> some View {
+        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
             ForEach(CreditPack.packs) { pack in
-                CreditPackCard(pack: pack)
+                CreditPackCard(pack: pack, geometry: geometry)
             }
         }
     }
     
     // MARK: - Trial Info
-    private var trialInfoSection: some View {
-        VStack(spacing: 8) {
-            HStack {
+    @ViewBuilder
+    private func trialInfoSection(geometry: GeometryProxy) -> some View {
+        VStack(spacing: adaptiveSpacing(6, for: geometry)) {
+            HStack(spacing: adaptiveSpacing(6, for: geometry)) {
                 Image(systemName: "gift.fill")
-                    .foregroundColor(.yellow)
+                    .font(.system(size: adaptiveFontSize(14, for: geometry)))
+                    .foregroundStyle(LinearGradient.primaryBrand)
                 Text("Try Premium free for 3 days")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                    .foregroundColor(.deepPlum)
             }
             
             Text("Cancel anytime. No commitment.")
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.7))
+                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .foregroundColor(.deepPlum.opacity(0.7))
         }
-        .padding(.vertical, 8)
+        .padding(.horizontal, adaptivePadding(for: geometry))
+        .padding(.vertical, adaptiveSpacing(4, for: geometry))
     }
     
     // MARK: - Action Buttons
     @ViewBuilder
     private func actionButtons(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
             // Primary action button
             Button(action: {
                 Task {
@@ -291,65 +358,111 @@ struct PaywallView: View {
                     }
                 }
             }) {
-                HStack {
+                HStack(spacing: adaptiveSpacing(6, for: geometry)) {
                     if revenueCatService.isLoading {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                            .scaleEffect(0.8)
+                            .progressViewStyle(CircularProgressViewStyle(tint: .deepPlum))
+                            .scaleEffect(0.7)
                     } else {
                         Text(primaryButtonText)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
                     }
                 }
-                .foregroundColor(.black)
+                .foregroundColor(.deepPlum)
                 .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.yellow)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .frame(height: adaptiveSize(48, for: geometry))
+                .background(
+                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                        .fill(Color.pureWhite)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                                .stroke(LinearGradient.primaryBrand, lineWidth: 2)
+                        )
+                        .shadow(
+                            color: Color.cardShadow,
+                            radius: 8,
+                            x: 0,
+                            y: 3
+                        )
+                )
             }
             .disabled(revenueCatService.isLoading)
             
             // Secondary action button
             Button(action: { dismiss() }) {
                 Text("Keep Free Version")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
+                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                    .foregroundColor(.deepPlum.opacity(0.8))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: adaptiveSize(40, for: geometry))
             }
         }
+        .padding(.horizontal, adaptivePadding(for: geometry))
     }
     
     // MARK: - Footer
-    private var footerSection: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 20) {
+    @ViewBuilder
+    private func footerSection(geometry: GeometryProxy) -> some View {
+        VStack(spacing: adaptiveSpacing(6, for: geometry)) {
+            HStack(spacing: adaptiveSpacing(16, for: geometry)) {
                 Button("Restore Purchases") {
                     Task {
                         await revenueCatService.restorePurchases()
                     }
                 }
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.7))
+                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .foregroundColor(.deepPlum.opacity(0.7))
                 
                 Button("Terms of Service") {
                     // Show terms
                 }
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.7))
+                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .foregroundColor(.deepPlum.opacity(0.7))
                 
                 Button("Privacy Policy") {
                     // Show privacy policy
                 }
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.7))
+                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .foregroundColor(.deepPlum.opacity(0.7))
             }
             
             Text("Subscriptions auto-renew unless cancelled")
-                .font(.system(size: 12))
-                .foregroundColor(.white.opacity(0.5))
+                .font(.system(size: adaptiveFontSize(10, for: geometry)))
+                .foregroundColor(.deepPlum.opacity(0.5))
                 .multilineTextAlignment(.center)
         }
+        .padding(.horizontal, adaptivePadding(for: geometry))
+        .padding(.vertical, adaptiveSpacing(4, for: geometry))
+    }
+    
+    // MARK: - Adaptive Sizing Functions
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
+    }
+    
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
     }
     
     // MARK: - Computed Properties
@@ -408,26 +521,47 @@ struct FeatureRow: View {
     let icon: String
     let title: String
     let description: String
+    let geometry: GeometryProxy
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: adaptiveSpacing(12, for: geometry)) {
             Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.yellow)
-                .frame(width: 24)
+                .font(.system(size: adaptiveFontSize(16, for: geometry)))
+                .foregroundStyle(LinearGradient.primaryBrand)
+                .frame(width: adaptiveSize(20, for: geometry))
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: adaptiveSpacing(2, for: geometry)) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                    .foregroundColor(.deepPlum)
                 
                 Text(description)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.7))
+                    .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                    .foregroundColor(.deepPlum.opacity(0.7))
             }
             
             Spacer()
         }
+        .padding(.vertical, adaptiveSpacing(2, for: geometry))
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
     }
 }
 
@@ -439,25 +573,26 @@ struct PricingCard: View {
     let features: [String]
     let isSelected: Bool
     let isPopular: Bool
+    let geometry: GeometryProxy
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: adaptiveSpacing(2, for: geometry)) {
                         Text(title)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                            .foregroundColor(.deepPlum)
                         
-                        HStack(alignment: .bottom, spacing: 4) {
+                        HStack(alignment: .bottom, spacing: adaptiveSpacing(2, for: geometry)) {
                             Text(price)
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.white)
+                                .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold))
+                                .foregroundStyle(LinearGradient.primaryBrand)
                             
                             Text(period)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.7))
+                                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                                .foregroundColor(.deepPlum.opacity(0.7))
                         }
                     }
                     
@@ -465,74 +600,250 @@ struct PricingCard: View {
                     
                     if isPopular {
                         Text("POPULAR")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.yellow)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .bold))
+                            .foregroundColor(.deepPlum)
+                            .padding(.horizontal, adaptiveSpacing(6, for: geometry))
+                            .padding(.vertical, adaptiveSpacing(2, for: geometry))
+                            .background(
+                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(3, for: geometry))
+                                    .fill(Color.pureWhite)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(3, for: geometry))
+                                            .stroke(LinearGradient.primaryBrand, lineWidth: 1)
+                                    )
+                            )
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(features, id: \.self) { feature in
-                        HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: adaptiveSpacing(2, for: geometry)) {
+                    ForEach(features.prefix(3), id: \.self) { feature in
+                        HStack(spacing: adaptiveSpacing(6, for: geometry)) {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 12))
-                                .foregroundColor(.green)
+                                .font(.system(size: adaptiveFontSize(10, for: geometry)))
+                                .foregroundStyle(LinearGradient.primaryBrand)
                             
                             Text(feature)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                                .foregroundColor(.deepPlum.opacity(0.8))
                         }
                     }
                 }
             }
-            .padding(16)
+            .padding(adaptiveSpacing(12, for: geometry))
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
+                    .fill(Color.pureWhite)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.yellow : Color.clear, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
+                            .stroke(
+                                isSelected ? LinearGradient.primaryBrand : LinearGradient.cardGlow,
+                                lineWidth: isSelected ? 2 : 1
+                            )
+                    )
+                    .shadow(
+                        color: Color.cardShadow,
+                        radius: isSelected ? 12 : 6,
+                        x: 0,
+                        y: isSelected ? 4 : 2
                     )
             )
         }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
     }
 }
 
 // MARK: - Credit Pack Card Component
 struct CreditPackCard: View {
     let pack: CreditPack
+    let geometry: GeometryProxy
     
     var body: some View {
         Button(action: {
             // Handle credit pack selection
         }) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
                     Text("\(pack.credits) Credits")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                        .foregroundColor(.deepPlum)
                     
                     if let savings = pack.savings {
                         Text(savings)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.green)
+                            .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
+                            .foregroundStyle(LinearGradient.primaryBrand)
                     }
                 }
                 
                 Spacer()
                 
                 Text(pack.price)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold))
+                    .foregroundStyle(LinearGradient.primaryBrand)
             }
-            .padding(16)
+            .padding(adaptiveSpacing(16, for: geometry))
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.1))
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                    .fill(Color.pureWhite)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                            .stroke(LinearGradient.cardGlow, lineWidth: 1)
+                    )
+                    .shadow(
+                        color: Color.cardShadow,
+                        radius: 8,
+                        x: 0,
+                        y: 2
+                    )
             )
+        }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+}
+
+// MARK: - Premium Background Component
+struct PremiumBackground: View {
+    @State private var animateGradient = false
+    @State private var animateOrbs = false
+    @State private var animateColors = false
+    
+    var body: some View {
+        ZStack {
+            // Base vibrant gradient matching HomeView
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.blushPink.opacity(0.4),
+                    Color.roseMagenta.opacity(0.3),
+                    Color.memoryViolet.opacity(0.25),
+                    Color.lightBlush.opacity(0.2)
+                ]),
+                startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                endPoint: animateGradient ? .bottomTrailing : .topLeading
+            )
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true), value: animateGradient)
+            
+            // Secondary animated gradient layer
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.roseMagenta.opacity(0.2),
+                    Color.blushPink.opacity(0.15),
+                    Color.memoryViolet.opacity(0.1),
+                    Color.lightBlush.opacity(0.15)
+                ]),
+                startPoint: animateGradient ? .bottomLeading : .topTrailing,
+                endPoint: animateGradient ? .topTrailing : .bottomLeading
+            )
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 6.0).repeatForever(autoreverses: true), value: animateGradient)
+            .opacity(0.7)
+            
+            // Dynamic floating orbs
+            ForEach(0..<6, id: \.self) { index in
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            gradient: Gradient(colors: [
+                                [Color.blushPink, Color.roseMagenta, Color.memoryViolet, Color.lightBlush, Color.blushPink, Color.roseMagenta][index].opacity(animateColors ? 0.6 : 0.3),
+                                Color.clear
+                            ]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 120
+                        )
+                    )
+                    .frame(width: CGFloat(80 + index * 80), height: CGFloat(80 + index * 80))
+                    .offset(
+                        x: animateOrbs ? CGFloat(-100 + index * 120) : CGFloat(100 + index * 100),
+                        y: animateOrbs ? CGFloat(-150 + index * 150) : CGFloat(-200 + index * 120)
+                    )
+                    .blur(radius: 30)
+                    .opacity(0.6)
+            }
+            
+            // Additional smaller animated particles
+            ForEach(0..<8, id: \.self) { index in
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            gradient: Gradient(colors: [
+                                [Color.roseMagenta, Color.blushPink, Color.memoryViolet, Color.lightBlush][index % 4].opacity(0.4),
+                                Color.clear
+                            ]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 40
+                        )
+                    )
+                    .frame(width: CGFloat(30 + index * 20), height: CGFloat(30 + index * 20))
+                    .offset(
+                        x: animateOrbs ? CGFloat(-200 + index * 80) : CGFloat(200 + index * 60),
+                        y: animateOrbs ? CGFloat(-300 + index * 100) : CGFloat(-400 + index * 80)
+                    )
+                    .blur(radius: 15)
+                    .opacity(0.5)
+            }
+            
+            // Subtle overlay for text readability
+            Rectangle()
+                .fill(Color.black.opacity(0.05))
+                .ignoresSafeArea()
+        }
+        .onAppear {
+            animateGradient = true
+            withAnimation(.easeInOut(duration: 10.0).repeatForever(autoreverses: true).delay(Double.random(in: 0...3))) {
+                animateOrbs = true
+            }
+            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true).delay(Double.random(in: 0...2))) {
+                animateColors = true
+            }
         }
     }
 }

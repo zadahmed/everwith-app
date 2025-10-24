@@ -21,6 +21,9 @@ struct EverWithApp: App {
     }
     
     private func configureApp() {
+        // Configure RevenueCat first
+        RevenueCatConfig.shared.configure()
+        
         // Configure global app appearance
         GlobalAppearance.configure()
         

@@ -67,7 +67,7 @@ struct SettingsView: View {
                             // Subscription Section
                             SettingsSection(title: "Subscription", geometry: geometry) {
                                 NavigationLink {
-                                    PaywallView()
+                                    PaywallView(trigger: .general)
                                 } label: {
                                     SettingsNavRow(
                                         icon: "crown.fill",

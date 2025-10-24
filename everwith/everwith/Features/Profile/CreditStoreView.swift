@@ -176,7 +176,7 @@ struct CreditStoreView: View {
                                 .foregroundColor(.softPlum)
                             
                             NavigationLink {
-                                PaywallView()
+                                PaywallView(trigger: .general)
                             } label: {
                                 Text("View Premium Plans")
                                     .font(.system(size: geometry.adaptiveFontSize(16), weight: .semibold))

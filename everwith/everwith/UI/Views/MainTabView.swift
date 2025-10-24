@@ -32,7 +32,7 @@ struct MainTabView: View {
                         }
                     case .premium:
                         NavigationStack {
-                            PaywallView()
+                            PaywallView(trigger: .general)
                         }
                     case .settings:
                         NavigationStack {

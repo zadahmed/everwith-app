@@ -108,7 +108,8 @@ class SubscriptionAPIService: ObservableObject {
     func getUserCredits(userId: String) async throws -> Int {
         let response: CreditsResponse = try await performRequest(
             endpoint: "/subscription/credits/\(userId)",
-            method: "GET"
+            method: "GET",
+            body: nil as EmptyResponse?
         )
         
         return response.credits

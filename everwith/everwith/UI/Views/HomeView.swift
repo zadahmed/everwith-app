@@ -241,7 +241,7 @@ struct HomeView: View {
                 case .myCreations:
                     MyCreationsView()
                 case .premium:
-                    PaywallView()
+                    PaywallView(trigger: .general)
                 case .credits:
                     CreditStoreView()
                 case .feedback:

@@ -29,14 +29,17 @@ struct MainTabView: View {
                     case .myMemories:
                         NavigationStack {
                             MyCreationsView()
+                                .navigationBarHidden(true)
                         }
                     case .premium:
                         NavigationStack {
                             PaywallView(trigger: .general)
+                                .navigationBarHidden(true)
                         }
                     case .settings:
                         NavigationStack {
                             SettingsView()
+                                .navigationBarHidden(true)
                         }
                     }
                 }

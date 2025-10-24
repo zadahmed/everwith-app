@@ -53,14 +53,14 @@ struct OnboardingView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Elegant background with depth
-                ElegantBackground()
+                // Clean background
+                Color.white
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Status bar spacer
                     Spacer()
-                        .frame(height: max(geometry.safeAreaInsets.top, 20) + ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry))
+                        .frame(height: max(geometry.safeAreaInsets.top, 20) + 20)
                     
                     // Main Content
                     VStack(spacing: 0) {
@@ -78,7 +78,7 @@ struct OnboardingView: View {
                         Spacer()
                         
                         // Action Section
-                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
+                        VStack(spacing: 24) {
                             // Card Navigation
                             if currentCardIndex < onboardingCards.count - 1 {
                                 Button(action: {
@@ -86,18 +86,18 @@ struct OnboardingView: View {
                                         currentCardIndex += 1
                                     }
                                 }) {
-                                    HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
+                                    HStack(spacing: 8) {
                                         Text("Next")
-                                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold))
+                                            .font(.system(size: 18, weight: .semibold))
                                         
                                         Image(systemName: "arrow.right")
-                                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .semibold))
+                                            .font(.system(size: 16, weight: .semibold))
                                     }
-                                    .foregroundColor(.charcoal)
-                                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
-                                    .padding(.vertical, ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
                                     .background(
-                                        RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 12, for: geometry))
+                                        RoundedRectangle(cornerRadius: 12)
                                             .fill(Color.white.opacity(0.1))
                                             .background(.ultraThinMaterial)
                                     )
@@ -110,21 +110,21 @@ struct OnboardingView: View {
                                     requestPhotoPermission()
                                 }
                             }) {
-                                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                                HStack(spacing: 12) {
                                     Text("Continue")
-                                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold, design: .rounded))
+                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
                                     
                                     Image(systemName: "arrow.right")
-                                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .semibold))
+                                        .font(.system(size: 16, weight: .semibold))
                                 }
-                                .foregroundColor(.charcoal)
+                                .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
+                                .frame(height: 56)
                                 .background(
-                                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                        .fill(Color.honeyGold)
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.yellow)
                                         .shadow(
-                                            color: Color.honeyGold.opacity(0.4),
+                                            color: Color.yellow.opacity(0.4),
                                             radius: 12,
                                             x: 0,
                                             y: 6
@@ -133,29 +133,29 @@ struct OnboardingView: View {
                             }
                             .scaleEffect(isAnimating ? 1.05 : 1.0)
                             .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
-                            .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                            .padding(.horizontal, 32)
                             
                             // Footer Links
-                            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
+                            HStack(spacing: 24) {
                                 Button("Privacy") {
                                     showPrivacyPolicy = true
                                 }
-                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
-                                .foregroundColor(.charcoal.opacity(0.6))
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.black.opacity(0.6))
                                 
                                 Text("•")
-                                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry)))
-                                    .foregroundColor(.charcoal.opacity(0.4))
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.black.opacity(0.4))
                                 
                                 Button("Terms") {
                                     showTermsOfService = true
                                 }
-                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry), weight: .medium))
-                                .foregroundColor(.charcoal.opacity(0.6))
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.black.opacity(0.6))
                             }
-                            .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry))
+                            .padding(.bottom, 8)
                         }
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 32)
                     }
                 }
             }
@@ -186,12 +186,16 @@ struct OnboardingView: View {
         }
         .sheet(isPresented: $showPrivacyPolicy) {
             NavigationStack {
-                LegalView(type: .privacy)
+                Text("Privacy Policy")
+                    .navigationTitle("Privacy Policy")
+                    .navigationBarTitleDisplayMode(.inline)
             }
         }
         .sheet(isPresented: $showTermsOfService) {
             NavigationStack {
-                LegalView(type: .terms)
+                Text("Terms of Service")
+                    .navigationTitle("Terms of Service")
+                    .navigationBarTitleDisplayMode(.inline)
             }
         }
     }
@@ -263,255 +267,63 @@ struct OnboardingView: View {
     }
 }
 
-// MARK: - Elegant Background
-struct ElegantBackground: View {
-    @State private var animateGradient = false
-    
-    var body: some View {
-        ZStack {
-            // Base gradient
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.warmLinen.opacity(0.4),
-                    Color.sky.opacity(0.15),
-                    Color.honeyGold.opacity(0.08)
-                ]),
-                startPoint: animateGradient ? .topLeading : .bottomTrailing,
-                endPoint: animateGradient ? .bottomTrailing : .topLeading
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true), value: animateGradient)
-            
-            // Floating orbs for depth
-            ForEach(0..<3, id: \.self) { index in
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                Color.honeyGold.opacity(0.1),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 100
-                        )
-                    )
-                    .frame(width: CGFloat(120 + index * 40), height: CGFloat(120 + index * 40))
-                    .offset(
-                        x: CGFloat(50 + index * 80),
-                        y: CGFloat(-100 + index * 150)
-                    )
-                    .blur(radius: 20)
-                    .opacity(0.6)
-            }
-        }
-        .onAppear {
-            animateGradient = true
-        }
-    }
-}
-
 // MARK: - Single Onboarding Card
 struct SingleOnboardingCard: View {
     let cardData: OnboardingCardData
     let geometry: GeometryProxy
-    @State private var iconScale: CGFloat = 0.8
-    @State private var iconRotation: Double = 0
+    @State private var iconScale: CGFloat = 0.9
     @State private var textOpacity: Double = 0
     
     var body: some View {
-        let cardSpacing = ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry)
-        let glowRadius = ResponsiveDesign.adaptiveSpacing(baseSpacing: 120, for: geometry)
-        let glowSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 350, for: geometry)
-        let secondaryGlowRadius = ResponsiveDesign.adaptiveSpacing(baseSpacing: 100, for: geometry)
-        let secondaryGlowSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 300, for: geometry)
-        let mainCircleSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 200, for: geometry)
-        let imageSize = ResponsiveDesign.adaptiveSpacing(baseSpacing: 280, for: geometry)
-        
-        VStack(spacing: cardSpacing) {
-            // Hero Icon with Magical Overflow Animation
-            ZStack {
-                // Magical background glow effect with HomeView colors
-                Circle()
-                    .fill(primaryGlowGradient(endRadius: glowRadius))
-                    .frame(width: glowSize, height: glowSize)
-                    .blur(radius: 25)
-                
-                // Secondary magical glow layer
-                Circle()
-                    .fill(secondaryGlowGradient(endRadius: secondaryGlowRadius))
-                    .frame(width: secondaryGlowSize, height: secondaryGlowSize)
-                    .blur(radius: 20)
-                    .opacity(0.7)
-                
-                // Main circle container (subtle)
-                Circle()
-                    .fill(mainCircleGradient)
-                    .background(.ultraThinMaterial)
-                    .frame(width: mainCircleSize, height: mainCircleSize)
-                
-                // Image that overflows outside the circle
-                Image(cardData.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: imageSize, height: imageSize)
-                    .clipShape(Circle())
-                    .overlay(imageBorderOverlay)
-                    .scaleEffect(iconScale)
-                    .rotationEffect(.degrees(iconRotation))
-                    .shadow(
-                        color: Color.blushPink.opacity(0.3),
-                        radius: 25,
-                        x: 0,
-                        y: 12
-                    )
-                
-                // Magical floating particles
-                ForEach(0..<6, id: \.self) { index in
-                    floatingParticle(index: index)
-                }
-            }
+        VStack(spacing: 24) {
+            // Clean Image Focus
+            Image(cardData.imageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 200, height: 200)
+                .scaleEffect(iconScale)
+                .shadow(
+                    color: Color.black.opacity(0.1),
+                    radius: 8,
+                    x: 0,
+                    y: 4
+                )
             
             // Content
-            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry)) {
+            VStack(spacing: 12) {
                 Text(cardData.title)
-                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 32, for: geometry), weight: .bold, design: .rounded))
-                    .foregroundColor(.charcoal)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.8)
                     .lineLimit(nil)
                     .opacity(textOpacity)
                 
                 Text(cardData.subtitle)
-                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .medium, design: .rounded))
-                    .foregroundColor(.charcoal.opacity(0.8))
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundColor(.black.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .lineLimit(nil)
                     .minimumScaleFactor(0.8)
                     .opacity(textOpacity)
             }
-            .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry))
+            .padding(.horizontal, 20)
         }
-        .padding(ResponsiveDesign.adaptiveSpacing(baseSpacing: 40, for: geometry))
+        .padding(24)
         .background(
-            RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 24, for: geometry))
-                .fill(Color.white.opacity(0.1))
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.05))
                 .background(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 24, for: geometry))
-                        .stroke(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.white.opacity(0.2),
-                                    Color.clear
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
         )
-        .shadow(
-            color: Color.black.opacity(0.1),
-            radius: 30,
-            x: 0,
-            y: 15
-        )
-        .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+        .padding(.horizontal, 20)
         .onAppear {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.3)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
                 iconScale = 1.0
             }
-            withAnimation(.easeInOut(duration: 0.6).delay(0.5)) {
+            withAnimation(.easeInOut(duration: 0.5).delay(0.4)) {
                 textOpacity = 1.0
             }
-            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true).delay(1.0)) {
-                iconRotation = 5
-            }
         }
-    }
-    
-    // MARK: - Helper Methods and Computed Properties
-    private func primaryGlowGradient(endRadius: CGFloat) -> RadialGradient {
-        RadialGradient(
-            gradient: Gradient(colors: [
-                Color.blushPink.opacity(0.4),
-                Color.roseMagenta.opacity(0.3),
-                Color.memoryViolet.opacity(0.25),
-                Color.lightBlush.opacity(0.2),
-                Color.clear
-            ]),
-            center: .center,
-            startRadius: 0,
-            endRadius: endRadius
-        )
-    }
-    
-    private func secondaryGlowGradient(endRadius: CGFloat) -> RadialGradient {
-        RadialGradient(
-            gradient: Gradient(colors: [
-                Color.roseMagenta.opacity(0.2),
-                Color.blushPink.opacity(0.15),
-                Color.memoryViolet.opacity(0.1),
-                Color.lightBlush.opacity(0.15),
-                Color.clear
-            ]),
-            center: .center,
-            startRadius: 0,
-            endRadius: endRadius
-        )
-    }
-    
-    private var mainCircleGradient: LinearGradient {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                Color.blushPink.opacity(0.12),
-                Color.roseMagenta.opacity(0.08),
-                Color.lightBlush.opacity(0.06)
-            ]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-    
-    private var imageBorderOverlay: some View {
-        Circle()
-            .stroke(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.blushPink.opacity(0.25),
-                        Color.roseMagenta.opacity(0.15)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 2
-            )
-    }
-    
-    private func floatingParticle(index: Int) -> some View {
-        let particleColors = [Color.blushPink, Color.roseMagenta, Color.memoryViolet, Color.lightBlush, Color.blushPink, Color.roseMagenta]
-        
-        return Circle()
-            .fill(
-                RadialGradient(
-                    gradient: Gradient(colors: [
-                        particleColors[index].opacity(0.6),
-                        Color.clear
-                    ]),
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: 8
-                )
-            )
-            .frame(width: CGFloat(4 + index * 2), height: CGFloat(4 + index * 2))
-            .offset(
-                x: iconScale * CGFloat(cos(Double(index) * .pi / 3) * 120),
-                y: iconScale * CGFloat(sin(Double(index) * .pi / 3) * 120)
-            )
-            .opacity(iconScale * 0.8)
-            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(Double(index) * 0.2), value: iconScale)
     }
 }
 
@@ -522,22 +334,22 @@ struct FilesPickerView: View {
     var body: some View {
         GeometryReader { geometry in
             NavigationView {
-                VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry)) {
+                VStack(spacing: 32) {
                     // Icon
                     Image(systemName: "folder.badge.plus")
-                        .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 60, for: geometry), weight: .medium))
-                        .foregroundColor(.honeyGold)
+                        .font(.system(size: 60, weight: .medium))
+                        .foregroundColor(.yellow)
                     
-                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                    VStack(spacing: 16) {
                         Text("No problem—use Files instead.")
-                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 20, for: geometry), weight: .semibold, design: .rounded))
-                            .foregroundColor(.charcoal)
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundColor(.black)
                             .multilineTextAlignment(.center)
                             .lineLimit(geometry.isSmallScreen ? 3 : 2)
                         
                         Text("Select photos from your Files app to restore them.")
-                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .regular))
-                            .foregroundColor(.charcoal.opacity(0.7))
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.black.opacity(0.7))
                             .multilineTextAlignment(.center)
                             .lineLimit(geometry.isSmallScreen ? 4 : 3)
                     }
@@ -548,10 +360,17 @@ struct FilesPickerView: View {
                         // Handle file picker
                         dismiss()
                     }
-                    .buttonStyle(ModernButtonStyle(style: .primary, size: .large))
-                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.yellow)
+                    )
+                    .padding(.horizontal, 32)
                 }
-                .padding(ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                .padding(32)
                 .navigationTitle("Files")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -574,46 +393,46 @@ struct PermissionDeniedSheet: View {
     var body: some View {
         GeometryReader { geometry in
             NavigationView {
-                VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry)) {
+                VStack(spacing: 32) {
                     // Header
-                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry)) {
+                    VStack(spacing: 24) {
                         Image(systemName: "photo.badge.exclamationmark")
-                            .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 60, for: geometry), weight: .medium))
-                            .foregroundColor(.honeyGold)
+                            .font(.system(size: 60, weight: .medium))
+                            .foregroundColor(.yellow)
                         
-                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                        VStack(spacing: 16) {
                             Text("Photos Access Needed")
-                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 28, for: geometry), weight: .bold, design: .rounded))
-                                .foregroundColor(.charcoal)
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(.black)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(geometry.isSmallScreen ? 3 : 2)
                                 .minimumScaleFactor(0.8)
                             
                             Text("To restore your precious memories, we need access to your photo library.")
-                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .regular))
-                                .foregroundColor(.charcoal.opacity(0.7))
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(.black.opacity(0.7))
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(4)
                                 .lineLimit(geometry.isSmallScreen ? 5 : 3)
                         }
                     }
-                    .padding(.top, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                    .padding(.top, 32)
                     
                     Spacer()
                     
                     // Options
-                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                    VStack(spacing: 16) {
                         Button(action: onTryAgain) {
                             Text("Try Again")
-                                .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 18, for: geometry), weight: .semibold, design: .rounded))
-                                .foregroundColor(.charcoal)
+                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
+                                .frame(height: 56)
                                 .background(
-                                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                        .fill(Color.honeyGold)
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.yellow)
                                         .shadow(
-                                            color: Color.honeyGold.opacity(0.3),
+                                            color: Color.yellow.opacity(0.3),
                                             radius: 8,
                                             x: 0,
                                             y: 4
@@ -622,26 +441,26 @@ struct PermissionDeniedSheet: View {
                         }
                         
                         Button(action: onUseFiles) {
-                            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                            HStack(spacing: 12) {
                                 Image(systemName: "folder")
-                                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .medium))
+                                    .font(.system(size: 16, weight: .medium))
                                 Text("Pick from Files")
-                                    .font(.system(size: ResponsiveDesign.adaptiveFontSize(baseSize: 16, for: geometry), weight: .medium))
+                                    .font(.system(size: 16, weight: .medium))
                             }
-                            .foregroundColor(.charcoal.opacity(0.8))
+                            .foregroundColor(.black.opacity(0.8))
                             .frame(maxWidth: .infinity)
-                            .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 48, for: geometry))
+                            .frame(height: 48)
                             .background(Color.clear)
                             .overlay(
-                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 16, for: geometry))
-                                    .stroke(Color.charcoal.opacity(0.2), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.black.opacity(0.2), lineWidth: 1)
                             )
                         }
                     }
-                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
-                    .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 32, for: geometry))
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 32)
                 }
-                .background(Color.warmLinen)
+                .background(Color.white)
                 .navigationTitle("Permission")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -661,4 +480,3 @@ struct PermissionDeniedSheet: View {
 #Preview {
     OnboardingView()
 }
-

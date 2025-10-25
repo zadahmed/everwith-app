@@ -21,25 +21,29 @@ struct MainTabView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
-                // Content
+                // Content with proper bottom padding
                 Group {
                     switch selectedTab {
                     case .home:
                         HomeView(user: user)
+                            .padding(.bottom, tabBarHeight(for: geometry))
                     case .myMemories:
                         NavigationStack {
                             MyCreationsView()
                                 .navigationBarHidden(true)
+                                .padding(.bottom, tabBarHeight(for: geometry))
                         }
                     case .premium:
                         NavigationStack {
                             PaywallView(trigger: .general)
                                 .navigationBarHidden(true)
+                                .padding(.bottom, tabBarHeight(for: geometry))
                         }
                     case .settings:
                         NavigationStack {
                             SettingsView()
                                 .navigationBarHidden(true)
+                                .padding(.bottom, tabBarHeight(for: geometry))
                         }
                     }
                 }
@@ -50,6 +54,13 @@ struct MainTabView: View {
             }
             .ignoresSafeArea(.all, edges: .all)
         }
+    }
+    
+    // Calculate tab bar height including safe area
+    private func tabBarHeight(for geometry: GeometryProxy) -> CGFloat {
+        let baseHeight: CGFloat = 80 // Base tab bar height
+        let safeAreaBottom = geometry.safeAreaInsets.bottom
+        return baseHeight + safeAreaBottom + 8 // Add some extra padding
     }
 }
 

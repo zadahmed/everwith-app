@@ -120,7 +120,7 @@ struct MyCreationsView: View {
                                     .frame(height: geometry.adaptiveSpacing(32))
                             }
                             .padding(.top, geometry.adaptiveSpacing(16))
-                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 16 : 24)
+                            .padding(.bottom, adaptiveSpacing(16, for: geometry))
                         }
                     }
                 }

@@ -77,6 +77,7 @@ struct SettingsView: View {
                         }
                         .padding(.horizontal, adaptivePadding(for: geometry))
                         .padding(.top, adaptiveSpacing(16, for: geometry))
+                        .padding(.bottom, adaptiveSpacing(16, for: geometry))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }

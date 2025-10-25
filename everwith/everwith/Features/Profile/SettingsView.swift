@@ -73,11 +73,11 @@ struct SettingsView: View {
                             
                             // Bottom spacing
                             Spacer()
-                                .frame(height: adaptiveSpacing(32, for: geometry))
+                                .frame(height: adaptiveSpacing(16, for: geometry))
                         }
                         .padding(.horizontal, adaptivePadding(for: geometry))
                         .padding(.top, adaptiveSpacing(16, for: geometry))
-                        .padding(.bottom, adaptiveSpacing(16, for: geometry))
+                        .padding(.bottom, adaptiveSpacing(8, for: geometry))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -194,7 +194,7 @@ struct ModernSettingsHeader: View {
                         }
                         .padding(.horizontal, adaptivePadding(for: geometry))
         .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 20 : 30)
-        .padding(.bottom, adaptiveSpacing(20, for: geometry))
+        .padding(.bottom, adaptiveSpacing(12, for: geometry))
     }
     
     private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {

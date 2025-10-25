@@ -217,9 +217,9 @@ struct HomeView: View {
                             
                             // Bottom spacing
                             Spacer()
-                                .frame(height: adaptiveSpacing(12, for: geometry))
+                                .frame(height: adaptiveSpacing(8, for: geometry))
                         }
-                        .padding(.bottom, adaptiveSpacing(16, for: geometry))
+                        .padding(.bottom, adaptiveSpacing(8, for: geometry))
                     }
                     .scrollIndicators(.hidden)
                     .frame(width: geometry.size.width)

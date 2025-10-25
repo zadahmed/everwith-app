@@ -37,7 +37,7 @@ struct MyCreationsView: View {
                     }
                     .padding(.horizontal, adaptivePadding(for: geometry))
                     .padding(.top, adaptiveSpacing(16, for: geometry))
-                    .padding(.bottom, adaptiveSpacing(16, for: geometry))
+                    .padding(.bottom, adaptiveSpacing(8, for: geometry))
                     
                     if isLoading {
                         VStack(spacing: geometry.adaptiveSpacing(16)) {
@@ -117,10 +117,10 @@ struct MyCreationsView: View {
                                 .opacity(animateElements ? 1.0 : 0.0)
                                 
                                 Spacer()
-                                    .frame(height: geometry.adaptiveSpacing(32))
+                                    .frame(height: geometry.adaptiveSpacing(16))
                             }
                             .padding(.top, geometry.adaptiveSpacing(16))
-                            .padding(.bottom, adaptiveSpacing(16, for: geometry))
+                            .padding(.bottom, adaptiveSpacing(8, for: geometry))
                         }
                     }
                 }

@@ -104,7 +104,7 @@ struct PaywallView: View {
                             
                             // Bottom spacing
                             Spacer()
-                                .frame(height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry))
+                                .frame(height: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry))
                         }
                         .padding(.horizontal, geometry.adaptivePadding())
                     }
@@ -190,10 +190,10 @@ struct PaywallHeader: View {
         .padding(.horizontal, geometry.adaptivePadding())
         .padding(.top, ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry))
         .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry))
+        }
     }
-}
-
-// MARK: - Hero Section
+    
+    // MARK: - Hero Section
 struct HeroSection: View {
     let trigger: PaywallTrigger
     let geometry: GeometryProxy

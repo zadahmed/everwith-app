@@ -60,7 +60,7 @@ struct MainTabView: View {
     private func tabBarHeight(for geometry: GeometryProxy) -> CGFloat {
         let baseHeight: CGFloat = 80 // Base tab bar height
         let safeAreaBottom = geometry.safeAreaInsets.bottom
-        return baseHeight + safeAreaBottom + 8 // Add some extra padding
+        return baseHeight + safeAreaBottom
     }
 }
 
@@ -122,8 +122,8 @@ struct CustomTabBar: View {
             }
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, adaptiveSpacing(12, for: geometry))
-        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
+        .padding(.top, adaptiveSpacing(8, for: geometry))
+        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 4 : 12)
         .background(
             // Glassmorphic background
             ZStack {

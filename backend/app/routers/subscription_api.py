@@ -15,7 +15,7 @@ from enum import Enum
 # Configure logging
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/subscription", tags=["subscription"])
+router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
 
 # Enums
 class SubscriptionTier(str, Enum):

@@ -27,7 +27,6 @@ struct PaywallView: View {
     @State private var showingCreditPacks = false
     @State private var showingTrialInfo = false
     @State private var animateElements = false
-    @State private var headerScale: CGFloat = 0.9
     @State private var contentOpacity: Double = 0
     
     var body: some View {
@@ -38,35 +37,6 @@ struct PaywallView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Header with close button
-                    HStack {
-                        Spacer()
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                                .foregroundColor(.deepPlum)
-                                .padding(adaptiveSpacing(8, for: geometry))
-                                .background(
-                                    Circle()
-                                        .fill(Color.pureWhite)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(LinearGradient.primaryBrand, lineWidth: 1)
-                                        )
-                                        .shadow(
-                                            color: Color.cardShadow,
-                                            radius: 6,
-                                            x: 0,
-                                            y: 2
-                                        )
-                                )
-                        }
-                    }
-                    .padding(.top, adaptiveSpacing(16, for: geometry))
-                    .padding(.horizontal, adaptivePadding(for: geometry))
-                    .scaleEffect(headerScale)
-                    .opacity(animateElements ? 1 : 0)
-                    
                     // Main content with proper bounds
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: adaptiveSpacing(16, for: geometry)) {
@@ -88,6 +58,7 @@ struct PaywallView: View {
                             // Footer
                             footerSection(geometry: geometry)
                         }
+                        .frame(maxWidth: geometry.size.width)
                         .padding(.horizontal, adaptivePadding(for: geometry))
                         .padding(.top, adaptiveSpacing(8, for: geometry))
                         .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
@@ -106,7 +77,6 @@ struct PaywallView: View {
             
             // Staggered entrance animations
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
-                headerScale = 1.0
                 animateElements = true
             }
             withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
@@ -177,7 +147,6 @@ struct PaywallView: View {
                 .minimumScaleFactor(0.8)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
     }
     
     // MARK: - Features Section
@@ -219,7 +188,6 @@ struct PaywallView: View {
                 geometry: geometry
             )
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
         .padding(.vertical, adaptiveSpacing(4, for: geometry))
     }
     
@@ -268,7 +236,6 @@ struct PaywallView: View {
                 subscriptionPlansView(geometry: geometry)
             }
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
     }
     
     // MARK: - Subscription Plans
@@ -330,7 +297,6 @@ struct PaywallView: View {
                 .font(.system(size: adaptiveFontSize(12, for: geometry)))
                 .foregroundColor(.deepPlum.opacity(0.7))
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
         .padding(.vertical, adaptiveSpacing(4, for: geometry))
     }
     
@@ -397,33 +363,39 @@ struct PaywallView: View {
                     .frame(height: adaptiveSize(40, for: geometry))
             }
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Footer
     @ViewBuilder
     private func footerSection(geometry: GeometryProxy) -> some View {
         VStack(spacing: adaptiveSpacing(6, for: geometry)) {
-            HStack(spacing: adaptiveSpacing(16, for: geometry)) {
+            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                 Button("Restore Purchases") {
                     Task {
                         await revenueCatService.restorePurchases()
                     }
                 }
-                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .font(.system(size: adaptiveFontSize(11, for: geometry)))
                 .foregroundColor(.deepPlum.opacity(0.7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 
-                Button("Terms of Service") {
+                Button("Terms") {
                     // Show terms
                 }
-                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .font(.system(size: adaptiveFontSize(11, for: geometry)))
                 .foregroundColor(.deepPlum.opacity(0.7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 
-                Button("Privacy Policy") {
+                Button("Privacy") {
                     // Show privacy policy
                 }
-                .font(.system(size: adaptiveFontSize(12, for: geometry)))
+                .font(.system(size: adaptiveFontSize(11, for: geometry)))
                 .foregroundColor(.deepPlum.opacity(0.7))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
             
             Text("Subscriptions auto-renew unless cancelled")
@@ -431,14 +403,14 @@ struct PaywallView: View {
                 .foregroundColor(.deepPlum.opacity(0.5))
                 .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
+        .frame(maxWidth: .infinity)
         .padding(.vertical, adaptiveSpacing(4, for: geometry))
     }
     
     // MARK: - Adaptive Sizing Functions
     private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
         let screenWidth = geometry.size.width
-        return max(12, min(16, screenWidth * 0.04))
+        return max(8, min(12, screenWidth * 0.025))
     }
     
     private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
@@ -584,6 +556,8 @@ struct PricingCard: View {
                         Text(title)
                             .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
                             .foregroundColor(.deepPlum)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.8)
                         
                         HStack(alignment: .bottom, spacing: adaptiveSpacing(2, for: geometry)) {
                             Text(price)
@@ -625,10 +599,13 @@ struct PricingCard: View {
                             Text(feature)
                                 .font(.system(size: adaptiveFontSize(12, for: geometry)))
                                 .foregroundColor(.deepPlum.opacity(0.8))
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.8)
                         }
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(adaptiveSpacing(12, for: geometry))
             .background(
                 RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
@@ -690,11 +667,15 @@ struct CreditPackCard: View {
                     Text("\(pack.credits) Credits")
                         .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
                         .foregroundColor(.deepPlum)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     
                     if let savings = pack.savings {
                         Text(savings)
                             .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
                             .foregroundStyle(LinearGradient.primaryBrand)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
                 
@@ -703,7 +684,10 @@ struct CreditPackCard: View {
                 Text(pack.price)
                     .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold))
                     .foregroundStyle(LinearGradient.primaryBrand)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(adaptiveSpacing(16, for: geometry))
             .background(
                 RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))

@@ -448,7 +448,7 @@ struct ModernHomeHeader: View {
                 }
                 
                 Text(user.name)
-                    .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
+                    .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.deepPlum)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -457,7 +457,7 @@ struct ModernHomeHeader: View {
             Spacer()
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 32 : 42)
+        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 20 : 30)
         .padding(.bottom, adaptiveSpacing(12, for: geometry))
     }
     

@@ -50,6 +50,7 @@ struct AppCoordinator: View {
     @StateObject private var sessionManager = SessionManager.shared
     @State private var hasCompletedOnboarding = false
     @State private var showSessionExpiredAlert = false
+    @State private var showSplash = true
     
     var body: some View {
         content
@@ -83,7 +84,12 @@ struct AppCoordinator: View {
     
     @ViewBuilder
     private var content: some View {
-        if !hasCompletedOnboarding {
+        if showSplash {
+            SplashView {
+                showSplash = false
+            }
+            .transition(.opacity)
+        } else if !hasCompletedOnboarding {
             OnboardingView()
                 .onAppear {
                     checkOnboardingStatus()

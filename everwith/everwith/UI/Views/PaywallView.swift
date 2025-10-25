@@ -40,10 +40,8 @@ struct PaywallView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Custom header with close button
-                    PaywallHeader(geometry: geometry) {
-                        dismiss()
-                    }
+                    // Consistent header
+                    ModernPageHeader(title: "Premium", geometry: geometry)
                     
                     // Main content
                     ScrollView(.vertical, showsIndicators: false) {
@@ -162,37 +160,6 @@ struct PaywallView: View {
     }
 }
 
-// MARK: - Paywall Header
-struct PaywallHeader: View {
-    let geometry: GeometryProxy
-    let onClose: () -> Void
-    
-    var body: some View {
-        HStack {
-            Spacer()
-            
-            Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: geometry.adaptiveFontSize(16), weight: .medium))
-                    .foregroundColor(.deepPlum)
-                    .frame(width: geometry.adaptiveSize(32), height: geometry.adaptiveSize(32))
-                    .background(
-                        Circle()
-                            .fill(Color.pureWhite.opacity(0.8))
-                            .background(.ultraThinMaterial)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.subtleBorder, lineWidth: 1)
-                            )
-                    )
-            }
-        }
-        .padding(.horizontal, geometry.adaptivePadding())
-        .padding(.top, ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry))
-        .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry))
-        }
-    }
-    
     // MARK: - Hero Section
 struct HeroSection: View {
     let trigger: PaywallTrigger

@@ -128,28 +128,52 @@ class RevenueCatService: NSObject, ObservableObject {
             
             print("📦 Available offerings: \(offerings.all.keys)")
             print("📦 Current offering: \(offerings.current?.identifier ?? "none")")
-            print("📦 Available packages: \(offerings.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? [])")
             
-            guard let offering = offerings.current else {
+            // Debug: Print all available offerings
+            for (key, offering) in offerings.all {
+                print("📦 Offering '\(key)': \(offering.identifier) with \(offering.availablePackages.count) packages")
+                for package in offering.availablePackages {
+                    print("   📦 Package: \(package.identifier) - Product: \(package.storeProduct.productIdentifier)")
+                }
+            }
+            
+            // Try to use the specific offering identifier first
+            var offering: Offering?
+            if let everwithOffering = offerings.all["everwith_offering"] {
+                offering = everwithOffering
+                print("✅ Using offering: everwith_offering")
+            } else if let currentOffering = offerings.current {
+                offering = currentOffering
+                print("⚠️ Using current offering: \(currentOffering.identifier)")
+            } else if let firstOffering = offerings.all.values.first {
+                offering = firstOffering
+                print("⚠️ Using first available offering: \(firstOffering.identifier)")
+            }
+            
+            guard let selectedOffering = offering else {
+                print("❌ No offerings available. Available offerings: \(offerings.all.keys)")
                 errorMessage = "No offerings available"
                 isLoading = false
                 return false
             }
+            
+            print("📦 Using offering: \(selectedOffering.identifier)")
+            print("📦 Available packages: \(selectedOffering.availablePackages.map { $0.storeProduct.productIdentifier })")
             
             var package: Package?
             
             switch tier {
             case .premiumMonthly:
                 // Try to find monthly package by product ID
-                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.month" }
+                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.month" }
                 if package == nil {
-                    package = offering.monthly // Fallback to monthly package type
+                    package = selectedOffering.monthly // Fallback to monthly package type
                 }
             case .premiumYearly:
                 // Try to find yearly package by product ID
-                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.yearly" }
+                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.yearly" }
                 if package == nil {
-                    package = offering.annual // Fallback to annual package type
+                    package = selectedOffering.annual // Fallback to annual package type
                 }
             case .free:
                 return false // Can't purchase free tier
@@ -195,8 +219,11 @@ class RevenueCatService: NSObject, ObservableObject {
         do {
             let offerings = try await Purchases.shared.offerings()
             
-            guard let offering = offerings.current,
-                  let package = offering.availablePackages.first(where: { $0.storeProduct.productIdentifier == pack.productId }) else {
+            // Try to use the specific offering identifier first, fallback to current offering
+            let offering = offerings.all["everwith_offering"] ?? offerings.current
+            
+            guard let selectedOffering = offering,
+                  let package = selectedOffering.availablePackages.first(where: { $0.storeProduct.productIdentifier == pack.productId }) else {
                 errorMessage = "Credit pack not available"
                 isLoading = false
                 return false

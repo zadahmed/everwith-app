@@ -27,8 +27,8 @@ struct SettingsView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Custom Header
-                    ModernSettingsHeader(geometry: geometry)
+                    // Consistent Header
+                    ModernPageHeader(title: "Settings", geometry: geometry)
                     
                     // Main Content
                     ScrollView(.vertical, showsIndicators: false) {
@@ -73,7 +73,7 @@ struct SettingsView: View {
                             
                             // Bottom spacing
                             Spacer()
-                                .frame(height: adaptiveSpacing(16, for: geometry))
+                                .frame(height: adaptiveSpacing(8, for: geometry))
                         }
                         .padding(.horizontal, adaptivePadding(for: geometry))
                         .padding(.top, adaptiveSpacing(16, for: geometry))
@@ -180,40 +180,6 @@ private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFlo
     }
 }
 
-// MARK: - Modern Settings Header
-struct ModernSettingsHeader: View {
-    let geometry: GeometryProxy
-    
-    var body: some View {
-                        HStack {
-                            Text("Settings")
-                .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
-                                .foregroundColor(.deepPlum)
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 20 : 30)
-        .padding(.bottom, adaptiveSpacing(12, for: geometry))
-    }
-    
-    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return max(12, min(20, screenWidth * 0.05))
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-}
 
 // MARK: - Account Section
 struct AccountSection: View {

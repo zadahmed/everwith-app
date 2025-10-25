@@ -27,17 +27,8 @@ struct MyCreationsView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Custom Header
-                    HStack {
-                        Text("My Memories")
-                            .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
-                            .foregroundColor(.deepPlum)
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, adaptivePadding(for: geometry))
-                    .padding(.top, adaptiveSpacing(16, for: geometry))
-                    .padding(.bottom, adaptiveSpacing(8, for: geometry))
+                    // Consistent Header
+                    ModernPageHeader(title: "My Memories", geometry: geometry)
                     
                     if isLoading {
                         VStack(spacing: geometry.adaptiveSpacing(16)) {
@@ -117,7 +108,7 @@ struct MyCreationsView: View {
                                 .opacity(animateElements ? 1.0 : 0.0)
                                 
                                 Spacer()
-                                    .frame(height: geometry.adaptiveSpacing(16))
+                                    .frame(height: geometry.adaptiveSpacing(8))
                             }
                             .padding(.top, geometry.adaptiveSpacing(16))
                             .padding(.bottom, adaptiveSpacing(8, for: geometry))

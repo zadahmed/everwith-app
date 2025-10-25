@@ -60,7 +60,7 @@ class RevenueCatConfig {
         
         // RevenueCat automatically fetches offerings from the dashboard
         // No manual configuration needed - the SDK handles this
-        // Your offering "everwith_offering" will be available as offerings.current
+        // Your offering "everwith_offering" will be available as offerings.all["everwith_offering"]
     }
 }
 

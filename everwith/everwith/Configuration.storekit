@@ -53,7 +53,7 @@
         },
         {
           "identifier" : "yearly",
-          "platformProductIdentifier" : "com.everwith.premium.yearly"
+          "platformProductIdentifier" : "com.matrix.everwith.premium.yearly"
         }
       ]
     }

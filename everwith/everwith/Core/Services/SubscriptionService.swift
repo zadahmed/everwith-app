@@ -376,7 +376,7 @@ extension SubscriptionService {
     }
     
     private func extractCreditsFromProductId(_ productId: String) -> Int {
-        // Extract credit count from product ID (e.g., "com.everwith.credits.5" -> 5)
+        // Extract credit count from product ID (e.g., "com.matrix.everwith.credits.5" -> 5)
         if let lastComponent = productId.components(separatedBy: ".").last,
            let credits = Int(lastComponent) {
             return credits

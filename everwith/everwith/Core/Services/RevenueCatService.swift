@@ -141,13 +141,13 @@ class RevenueCatService: NSObject, ObservableObject {
             switch tier {
             case .premiumMonthly:
                 // Try to find monthly package by product ID
-                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.month" }
+                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.matrix.everwith.premium.month" }
                 if package == nil {
                     package = offering.monthly // Fallback to monthly package type
                 }
             case .premiumYearly:
                 // Try to find yearly package by product ID
-                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.yearly" }
+                package = offering.availablePackages.first { $0.storeProduct.productIdentifier == "com.matrix.everwith.premium.yearly" }
                 if package == nil {
                     package = offering.annual // Fallback to annual package type
                 }

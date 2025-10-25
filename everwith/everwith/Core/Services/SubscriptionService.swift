@@ -137,7 +137,35 @@ class SubscriptionService: ObservableObject {
     private let networkService = NetworkService.shared
     private let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            
+            // Try multiple date formats
+            let formatters = [
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // 2025-10-11T23:19:17.783000
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",      // 2025-10-11T23:19:17.783
+                "yyyy-MM-dd'T'HH:mm:ss",          // 2025-10-11T23:19:17
+                "yyyy-MM-dd'T'HH:mm:ssZ",         // 2025-10-11T23:19:17Z
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZ"      // 2025-10-11T23:19:17.783Z
+            ]
+            
+            for formatter in formatters {
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = formatter
+                if let date = dateFormatter.date(from: dateString) {
+                    return date
+                }
+            }
+            
+            // Fallback to ISO8601
+            let iso8601Formatter = ISO8601DateFormatter()
+            if let date = iso8601Formatter.date(from: dateString) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
+        }
         return decoder
     }()
     
@@ -376,7 +404,7 @@ extension SubscriptionService {
     }
     
     private func extractCreditsFromProductId(_ productId: String) -> Int {
-        // Extract credit count from product ID (e.g., "com.matrix.everwith.credits.5" -> 5)
+        // Extract credit count from product ID (e.g., "com.everwith.credits.5" -> 5)
         if let lastComponent = productId.components(separatedBy: ".").last,
            let credits = Int(lastComponent) {
             return credits

@@ -18,14 +18,14 @@ class RevenueCatConfig {
     // Product IDs - Replace with your actual product IDs from App Store Connect
     struct ProductIDs {
         // Subscriptions
-        static let premiumMonthly = "com.matrix.everwith.premium.month"
-        static let premiumYearly = "com.matrix.everwith.premium.yearly"
+        static let premiumMonthly = "com.everwith.premium.month"
+        static let premiumYearly = "com.everwith.premium.yearly"
         
         // Credit Packs
-        static let credits5 = "com.matrix.everwith.credits.5"
-        static let credits10 = "com.matrix.everwith.credits.10"
-        static let credits25 = "com.matrix.everwith.credits.25"
-        static let credits50 = "com.matrix.everwith.credits.50"
+        static let credits5 = "com.everwith.credits.5"
+        static let credits10 = "com.everwith.credits.10"
+        static let credits25 = "com.everwith.credits.25"
+        static let credits50 = "com.everwith.credits.50"
     }
     
     // Entitlement IDs

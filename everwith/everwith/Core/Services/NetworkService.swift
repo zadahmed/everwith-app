@@ -19,6 +19,41 @@ class NetworkService: ObservableObject {
         self.sessionManager = SessionManager.shared
     }
     
+    // MARK: - Flexible Date Decoder
+    private func createFlexibleDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            
+            // Try multiple date formats
+            let formatters = [
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // 2025-10-11T23:19:17.783000
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",      // 2025-10-11T23:19:17.783
+                "yyyy-MM-dd'T'HH:mm:ss",          // 2025-10-11T23:19:17
+                "yyyy-MM-dd'T'HH:mm:ssZ",         // 2025-10-11T23:19:17Z
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZ"      // 2025-10-11T23:19:17.783Z
+            ]
+            
+            for formatter in formatters {
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = formatter
+                if let date = dateFormatter.date(from: dateString) {
+                    return date
+                }
+            }
+            
+            // Fallback to ISO8601
+            let iso8601Formatter = ISO8601DateFormatter()
+            if let date = iso8601Formatter.date(from: dateString) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
+        }
+        return decoder
+    }
+    
     func makeAuthenticatedRequest<T: Codable>(
         url: URL,
         method: HTTPMethod = .GET,
@@ -62,7 +97,7 @@ class NetworkService: ObservableObject {
                 throw NetworkError.httpError(httpResponse.statusCode)
             }
             
-            let decodedResponse = try JSONDecoder().decode(responseType, from: data)
+            let decodedResponse = try createFlexibleDecoder().decode(responseType, from: data)
             return decodedResponse
             
         } catch {
@@ -100,7 +135,7 @@ class NetworkService: ObservableObject {
                 throw NetworkError.httpError(httpResponse.statusCode)
             }
             
-            let decodedResponse = try JSONDecoder().decode(responseType, from: data)
+            let decodedResponse = try createFlexibleDecoder().decode(responseType, from: data)
             return decodedResponse
             
         } catch {

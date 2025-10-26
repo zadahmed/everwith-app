@@ -39,22 +39,21 @@ struct HomeView: View {
                         .ignoresSafeArea(.all, edges: .all)
                 
                 VStack(spacing: 0) {
-                    // Enhanced Header
+                    // Fixed Header (outside scroll view)
                     ModernHomeHeader(user: user, geometry: geometry)
                         .scaleEffect(headerScale)
                         .opacity(animateElements ? 1 : 0)
+                        .background(Color.clear)
                     
+                    // Scrollable Content
                     ScrollView {
                         VStack(spacing: adaptiveSpacing(16, for: geometry)) {
-                            // Top spacing
-                            Spacer()
-                                .frame(height: adaptiveSpacing(16, for: geometry))
-                            
                             // Welcome Message
                             WelcomeMessageCard(geometry: geometry)
                                 .padding(.horizontal, adaptivePadding(for: geometry))
                                 .opacity(welcomeCardOpacity)
                                 .offset(y: animateElements ? 0 : 20)
+                                .padding(.top, adaptiveSpacing(16, for: geometry))
                             
                             // Simple Action Buttons
                             VStack(spacing: adaptiveSpacing(12, for: geometry)) {
@@ -445,39 +444,59 @@ struct ModernVibrantBackground: View {
 struct ModernHomeHeader: View {
     let user: User
     let geometry: GeometryProxy
+    @StateObject private var monetizationManager = MonetizationManager.shared
+    @State private var userCredits: Int = 0
+    @State private var isLoadingCredits = true
     
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: adaptiveSpacing(6, for: geometry)) {
-                // Welcome back row
-                HStack(spacing: adaptiveSpacing(4, for: geometry)) {
-                    Text("Welcome back")
-                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                        .foregroundColor(.softPlum)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+        VStack(spacing: 0) {
+            // Main header content
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: adaptiveSpacing(6, for: geometry)) {
+                    // Welcome back row
+                    HStack(spacing: adaptiveSpacing(4, for: geometry)) {
+                        Text("Welcome back")
+                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                            .foregroundColor(.softPlum)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        
+                        Image(systemName: "sparkles")
+                            .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
+                            .foregroundStyle(LinearGradient.primaryBrand)
+                            .layoutPriority(1)
+                    }
                     
-                    Image(systemName: "sparkles")
-                        .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                        .foregroundStyle(LinearGradient.primaryBrand)
-                        .layoutPriority(1)
+                    // User name with maximum constraints
+                    Text(user.name)
+                        .font(.system(size: adaptiveFontSize(22, for: geometry), weight: .bold, design: .rounded))
+                        .foregroundColor(.deepPlum)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.6)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                // User name with maximum constraints
-                Text(user.name)
-                    .font(.system(size: adaptiveFontSize(22, for: geometry), weight: .bold, design: .rounded))
-                    .foregroundColor(.deepPlum)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.6)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Credits Badge (top right)
+                CreditsBadge(credits: userCredits, isLoading: isLoadingCredits, geometry: geometry)
             }
-            .frame(maxWidth: geometry.size.width - (adaptivePadding(for: geometry) * 2), alignment: .leading)
-            
-            Spacer(minLength: 0)
+            .padding(.horizontal, adaptivePadding(for: geometry))
+            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 32 : 48)
+            .padding(.bottom, adaptiveSpacing(20, for: geometry))
         }
-        .padding(.horizontal, adaptivePadding(for: geometry))
-        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 20 : 30)
-        .padding(.bottom, adaptiveSpacing(12, for: geometry))
+        .onAppear {
+            loadUserCredits()
+        }
+        .onReceive(monetizationManager.$userCredits) { credits in
+            userCredits = credits
+        }
+    }
+    
+    private func loadUserCredits() {
+        Task {
+            userCredits = monetizationManager.userCredits
+            isLoadingCredits = false
+        }
     }
     
     // MARK: - Adaptive Functions
@@ -502,6 +521,66 @@ struct ModernHomeHeader: View {
         let screenWidth = geometry.size.width
         let scaleFactor = screenWidth / 375.0
         return base * scaleFactor
+    }
+}
+
+// MARK: - Credits Badge
+struct CreditsBadge: View {
+    let credits: Int
+    let isLoading: Bool
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        HStack(spacing: adaptiveSpacing(6, for: geometry)) {
+            Image(systemName: "diamond.fill")
+                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                .foregroundStyle(LinearGradient.primaryBrand)
+            
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(0.8)
+            } else {
+                Text("\(credits)")
+                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                    .foregroundColor(.deepPlum)
+            }
+        }
+        .padding(.horizontal, adaptiveSpacing(12, for: geometry))
+        .padding(.vertical, adaptiveSpacing(8, for: geometry))
+        .background(
+            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blushPink.opacity(0.15),
+                            Color.roseMagenta.opacity(0.10)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blushPink.opacity(0.4),
+                            Color.roseMagenta.opacity(0.3)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(
+            color: Color.blushPink.opacity(0.2),
+            radius: 8,
+            x: 0,
+            y: 2
+        )
     }
 }
 

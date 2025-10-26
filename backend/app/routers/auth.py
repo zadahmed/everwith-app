@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.schemas import User, UserCreate, UserLogin, GoogleAuthRequest
-from app.models.database import User as DBUser
+from app.models.database import User as DBUser, CreditTransaction
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
+from app.core.credit_config import INITIAL_SIGNUP_CREDITS
 from app.services.google_auth import google_auth_service
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 import logging
 
@@ -34,16 +35,30 @@ async def register(user: UserCreate):
                 detail="Password must be no more than 72 characters long"
             )
         
-        # Create new user
+        # Create new user with initial credits
         hashed_password = get_password_hash(user.password)
         db_user = DBUser(
             email=user.email,
             name=user.name,
             hashed_password=hashed_password,
-            is_google_user=False
+            is_google_user=False,
+            credits=INITIAL_SIGNUP_CREDITS,  # Give new users initial credits (matches monthly allocation)
+            free_uses_remaining=0,  # Disable free uses - everything credit-driven
+            monthly_credits_reset_date=datetime.utcnow()  # Initialize monthly tracking
         )
         
         await db_user.insert()
+        
+        # Log the credit transaction for signup bonus
+        signup_credit = CreditTransaction(
+            user_id=db_user,
+            credits=INITIAL_SIGNUP_CREDITS,
+            transaction_type="reward",
+            description="Welcome bonus - Signup reward"
+        )
+        await signup_credit.insert()
+        
+        logger.info(f"New user registered: {user.email} with {INITIAL_SIGNUP_CREDITS} initial credits")
         
         # Create access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

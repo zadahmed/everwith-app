@@ -212,6 +212,18 @@ class AuthenticationService: ObservableObject {
             return
         }
         
+        // Reject guest users - require full authentication
+        if user.provider == .guest {
+            print("🚫 SESSION: Guest session detected - clearing and requiring authentication")
+            userDefaults.removeObject(forKey: userKey)
+            userDefaults.removeObject(forKey: tokenKey)
+            userDefaults.removeObject(forKey: tokenExpiryKey)
+            await MainActor.run {
+                self.authenticationState = .unauthenticated
+            }
+            return
+        }
+        
         // Check local token expiry first
         if isTokenExpired() {
             print("⚠️ SESSION: Token expired locally")
@@ -245,8 +257,8 @@ class AuthenticationService: ObservableObject {
     
     func validateSession() async -> Bool {
         guard let token = userDefaults.string(forKey: tokenKey) else {
-            // Silently fail - no token is expected for guest users or fresh installs
-            print("ℹ️ SESSION: No token found (expected for guest users)")
+            // Silently fail - no token is expected for fresh installs or when not authenticated
+            print("ℹ️ SESSION: No token found - user needs to authenticate")
             return false
         }
         
@@ -293,7 +305,7 @@ class AuthenticationService: ObservableObject {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (_, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("ℹ️ SESSION: Invalid response from backend")

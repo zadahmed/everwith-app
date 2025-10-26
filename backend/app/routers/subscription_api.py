@@ -10,6 +10,12 @@ from datetime import datetime, timedelta
 import logging
 from app.models.database import User as DBUser, Subscription, CreditTransaction, UsageLog, Transaction
 from app.core.security import get_current_user
+from app.core.credit_config import (
+    ServiceType, get_credit_cost, get_all_costs, 
+    FREE_MONTHLY_CREDITS, INITIAL_SIGNUP_CREDITS,
+    PREMIUM_CREDITS_ON_UPGRADE, PREMIUM_YEARLY_BONUS,
+    PREMIUM_SOFT_LIMIT
+)
 from enum import Enum
 
 # Configure logging
@@ -93,48 +99,101 @@ class UserCreditsResponse(BaseModel):
     last_purchase_date: Optional[datetime]
 
 # Helper functions
-def reset_daily_free_uses_if_needed(user: DBUser) -> bool:
-    """Reset free uses if it's a new day. Returns True if reset occurred."""
-    if user.last_free_use_date is None:
-        user.free_uses_remaining = 1
+def reset_free_user_monthly_credits(user: DBUser) -> bool:
+    """Reset free user's monthly credits if it's a new month. Returns True if reset occurred."""
+    if user.subscription_tier != "free":
+        return False
+    
+    now = datetime.utcnow()
+    
+    # If never reset before, do initial setup
+    if user.monthly_credits_reset_date is None:
+        user.monthly_credits_reset_date = now
+        user.credits = FREE_MONTHLY_CREDITS
         return True
     
-    if user.last_free_use_date.date() < datetime.utcnow().date():
-        user.free_uses_remaining = 1
-        user.last_free_use_date = None
+    # Check if a new month has started
+    if user.monthly_credits_reset_date.month != now.month or user.monthly_credits_reset_date.year != now.year:
+        user.monthly_credits_reset_date = now
+        user.credits = FREE_MONTHLY_CREDITS  # Reset to monthly allocation
         return True
     
     return False
 
-def can_use_feature(user: DBUser) -> bool:
-    """Check if user can use a feature based on their subscription status."""
-    if user.subscription_tier in ["premium_monthly", "premium_yearly"]:
+def reset_premium_usage_tracking(user: DBUser) -> bool:
+    """Reset premium usage counter if it's a new month. Returns True if reset occurred."""
+    if user.subscription_tier not in ["premium_monthly", "premium_yearly"]:
+        return False
+    
+    now = datetime.utcnow()
+    
+    # Initialize if never tracked
+    if user.premium_usage_reset_date is None:
+        user.premium_usage_this_month = 0
+        user.premium_usage_reset_date = now
         return True
     
-    if user.subscription_tier == "free":
-        reset_daily_free_uses_if_needed(user)
-        return user.free_uses_remaining > 0
+    # Check if a new month has started
+    if user.premium_usage_reset_date.month != now.month or user.premium_usage_reset_date.year != now.year:
+        user.premium_usage_this_month = 0
+        user.premium_usage_reset_date = now
+        return True
     
     return False
+
+def can_use_feature(user: DBUser, credits_needed: int = 1) -> bool:
+    """Check if user can use a feature based on their subscription status.
+    
+    Credit-driven system:
+    - Premium users: Unlimited access (with internal soft limit monitoring)
+    - Free users: Requires credits
+    """
+    if user.subscription_tier in ["premium_monthly", "premium_yearly"]:
+        # Check if premium user has hit soft limit
+        reset_premium_usage_tracking(user)
+        if user.premium_usage_this_month >= PREMIUM_SOFT_LIMIT:
+            logger.warning(f"Premium user {user.email} has hit soft limit: {user.premium_usage_this_month}/{PREMIUM_SOFT_LIMIT}")
+            return False  # Block access to protect costs
+        return True  # Premium users have access within soft limit
+    
+    # Free users must have credits
+    reset_free_user_monthly_credits(user)  # Check monthly reset
+    return user.credits >= credits_needed
 
 # API Endpoints
 
 @router.post("/check-access", response_model=AccessCheckResponse)
 async def check_access(request: AccessCheckRequest, current_user: DBUser = Depends(get_current_user)):
-    """Check if user has access to a feature."""
+    """Check if user has access to a feature (credit-driven system with service-specific costs)."""
     try:
-        # Reset daily free uses if needed
-        reset_daily_free_uses_if_needed(current_user)
-        await current_user.save()
+        # Determine service type based on mode
+        service_type_map = {
+            "restore": ServiceType.PHOTO_RESTORE,
+            "together": ServiceType.MEMORY_MERGE,
+            "cinematic": ServiceType.CINEMATIC_FILTER,
+        }
         
-        has_access = can_use_feature(current_user)
+        service_type = service_type_map.get(request.mode, ServiceType.PHOTO_RESTORE)
+        credits_needed = get_credit_cost(service_type)
+        
+        has_access = can_use_feature(current_user, credits_needed)
+        
+        # Build message based on user type
+        if current_user.subscription_tier in ["premium_monthly", "premium_yearly"]:
+            reset_premium_usage_tracking(current_user)
+            remaining_uses = PREMIUM_SOFT_LIMIT - current_user.premium_usage_this_month
+            message = f"Access granted. {remaining_uses}/{PREMIUM_SOFT_LIMIT} uses remaining this month" if has_access else f"Monthly limit reached ({PREMIUM_SOFT_LIMIT} uses)"
+        elif has_access:
+            message = f"Access granted ({credits_needed} credit(s) required)"
+        else:
+            message = f"Insufficient credits. Need {credits_needed}, have {current_user.credits} credits"
         
         return AccessCheckResponse(
             has_access=has_access,
             remaining_credits=current_user.credits,
-            free_uses_remaining=current_user.free_uses_remaining,
+            free_uses_remaining=0,  # No free uses in credit-driven system
             subscription_tier=current_user.subscription_tier,
-            message="Access granted" if has_access else "No access remaining"
+            message=message
         )
     
     except Exception as e:
@@ -143,29 +202,49 @@ async def check_access(request: AccessCheckRequest, current_user: DBUser = Depen
 
 @router.post("/use-credit", response_model=CreditUsageResponse)
 async def use_credit(request: CreditUsageRequest, current_user: DBUser = Depends(get_current_user)):
-    """Use a credit or free use for processing."""
+    """Use credits for processing (credit-driven system with service-specific costs)."""
     try:
-        # Reset daily free uses if needed
-        reset_daily_free_uses_if_needed(current_user)
+        # Determine service type based on mode
+        service_type_map = {
+            "restore": ServiceType.PHOTO_RESTORE,
+            "together": ServiceType.MEMORY_MERGE,
+            "cinematic": ServiceType.CINEMATIC_FILTER,
+        }
+        
+        service_type = service_type_map.get(request.mode, ServiceType.PHOTO_RESTORE)
+        credits_needed = get_credit_cost(service_type)
         
         success = False
         used_credit = False
-        used_free_use = False
+        credits_used = 0
+        is_premium = current_user.subscription_tier in ["premium_monthly", "premium_yearly"]
         
-        if current_user.subscription_tier in ["premium_monthly", "premium_yearly"]:
-            # Premium users have unlimited access
+        if is_premium:
+            # Premium users have unlimited access (within soft limit)
+            # Track usage for cost control
+            reset_premium_usage_tracking(current_user)
+            
+            if current_user.premium_usage_this_month >= PREMIUM_SOFT_LIMIT:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Monthly usage limit reached. You've used {current_user.premium_usage_this_month}/{PREMIUM_SOFT_LIMIT} this month."
+                )
+            
+            current_user.premium_usage_this_month += 1
             success = True
-        elif current_user.credits > 0:
-            # Use a credit
-            current_user.credits -= 1
+            used_credit = False  # Premium users don't use credits
+        elif current_user.credits >= credits_needed:
+            # Free users: Deduct the required credits
+            current_user.credits -= credits_needed
             success = True
             used_credit = True
-        elif current_user.free_uses_remaining > 0:
-            # Use free use
-            current_user.free_uses_remaining -= 1
-            current_user.last_free_use_date = datetime.utcnow()
-            success = True
-            used_free_use = True
+            credits_used = credits_needed
+        else:
+            # Not enough credits
+            raise HTTPException(
+                status_code=402,
+                detail=f"Insufficient credits. Need {credits_needed}, have {current_user.credits}"
+            )
         
         if success:
             # Log the usage
@@ -173,19 +252,29 @@ async def use_credit(request: CreditUsageRequest, current_user: DBUser = Depends
                 user_id=current_user,
                 mode=request.mode,
                 used_credit=used_credit,
-                used_free_use=used_free_use
+                used_free_use=False  # No free uses in credit-driven system
             )
             await usage_log.insert()
         
         await current_user.save()
         
+        message = ""
+        if is_premium:
+            message = f"Processing started (Premium - Unlimited access)"
+        elif used_credit:
+            message = f"Processing started using {credits_needed} credit(s)"
+        else:
+            message = "No credits remaining"
+        
         return CreditUsageResponse(
             success=success,
             remaining_credits=current_user.credits,
-            free_uses_remaining=current_user.free_uses_remaining,
-            message="Credit used successfully" if success else "No credits or free uses remaining"
+            free_uses_remaining=0,  # No free uses in credit-driven system
+            message=message
         )
     
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error using credit: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -209,14 +298,59 @@ async def purchase_notification(
         
         # Update user based on purchase type
         if request.purchase_type == "subscription":
+            was_free_user = current_user.subscription_tier == "free"
+            
             if "premium_monthly" in request.product_id:
                 current_user.subscription_tier = "premium_monthly"
                 # Set expiration date (30 days from now)
                 current_user.subscription_expires_at = datetime.utcnow() + timedelta(days=30)
+                # Initialize premium usage tracking
+                current_user.premium_usage_this_month = 0
+                current_user.premium_usage_reset_date = datetime.utcnow()
+                
+                # Give upgrade bonus if converting from free
+                if was_free_user:
+                    current_user.credits += PREMIUM_CREDITS_ON_UPGRADE
+                    credit_transaction = CreditTransaction(
+                        user_id=current_user,
+                        credits=PREMIUM_CREDITS_ON_UPGRADE,
+                        transaction_type="reward",
+                        description="Premium Monthly Upgrade - Welcome bonus",
+                        transaction_id=request.transaction_id
+                    )
+                    await credit_transaction.insert()
+                
             elif "premium_yearly" in request.product_id:
                 current_user.subscription_tier = "premium_yearly"
                 # Set expiration date (365 days from now)
                 current_user.subscription_expires_at = datetime.utcnow() + timedelta(days=365)
+                # Initialize premium usage tracking
+                current_user.premium_usage_this_month = 0
+                current_user.premium_usage_reset_date = datetime.utcnow()
+                
+                # Give upgrade bonus + yearly bonus if converting from free
+                if was_free_user:
+                    bonus_credits = PREMIUM_CREDITS_ON_UPGRADE + PREMIUM_YEARLY_BONUS
+                    current_user.credits += bonus_credits
+                    credit_transaction = CreditTransaction(
+                        user_id=current_user,
+                        credits=bonus_credits,
+                        transaction_type="reward",
+                        description="Premium Yearly Upgrade - Welcome bonus + annual bonus",
+                        transaction_id=request.transaction_id
+                    )
+                    await credit_transaction.insert()
+                else:
+                    # Existing premium users get the yearly bonus
+                    current_user.credits += PREMIUM_YEARLY_BONUS
+                    credit_transaction = CreditTransaction(
+                        user_id=current_user,
+                        credits=PREMIUM_YEARLY_BONUS,
+                        transaction_type="reward",
+                        description="Premium Yearly Subscription - Annual bonus",
+                        transaction_id=request.transaction_id
+                    )
+                    await credit_transaction.insert()
         
         elif request.purchase_type == "credit_pack":
             # Add credits based on product ID
@@ -261,19 +395,15 @@ async def get_user_credits(user_id: str, current_user: DBUser = Depends(get_curr
 
 @router.get("/user/{user_id}")
 async def get_user_status(user_id: str, current_user: DBUser = Depends(get_current_user)):
-    """Get comprehensive user subscription status."""
+    """Get comprehensive user subscription status (credit-driven system)."""
     try:
-        # Reset daily free uses if needed
-        reset_daily_free_uses_if_needed(current_user)
-        await current_user.save()
-        
         return {
             "user_id": str(current_user.id),
             "subscription_tier": current_user.subscription_tier,
             "subscription_expires_at": current_user.subscription_expires_at,
             "credits": current_user.credits,
-            "free_uses_remaining": current_user.free_uses_remaining,
-            "last_free_use_date": current_user.last_free_use_date,
+            "free_uses_remaining": 0,  # No free uses in credit-driven system
+            "last_free_use_date": None,
             "can_use_feature": can_use_feature(current_user)
         }
     
@@ -545,6 +675,26 @@ async def use_credit(
         "credits_remaining": credits_response.credits_remaining - 1,
         "subscription_active": False
     }
+
+@router.get("/credit-costs", response_model=dict)
+async def get_credit_costs():
+    """Get credit costs for all services (centralized configuration)."""
+    try:
+        service_costs = get_all_costs()
+        return {
+            "message": "Credit costs retrieved successfully",
+            "service_costs": service_costs,
+            "description": {
+                ServiceType.PHOTO_RESTORE.value: "Restore old photos to HD quality",
+                ServiceType.MEMORY_MERGE.value: "Merge multiple photos together",
+                ServiceType.CINEMATIC_FILTER.value: "Apply cinematic filters"
+            },
+            "initial_signup_credits": 3,
+            "premium_unlimited": True
+        }
+    except Exception as e:
+        logger.error(f"Error getting credit costs: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/pricing", response_model=dict)
 async def get_pricing():

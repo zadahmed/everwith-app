@@ -17,6 +17,8 @@
       ],
       "productID" : "com.everwith.premium.month",
       "referenceName" : "Premium Monthly",
+      "recurringSubscriptionPeriod" : "P1M",
+      "subscriptionGroupIdentifier" : "21482456",
       "type" : "RecurringSubscription"
     },
     {
@@ -32,6 +34,8 @@
       ],
       "productID" : "com.everwith.premium.yearly",
       "referenceName" : "Premium Yearly",
+      "recurringSubscriptionPeriod" : "P1Y",
+      "subscriptionGroupIdentifier" : "21482456",
       "type" : "RecurringSubscription"
     }
   ],

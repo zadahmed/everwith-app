@@ -8,9 +8,11 @@
 import Foundation
 import Combine
 
+// Import HTTPMethod from NetworkService
+// Note: HTTPMethod is defined as an enum in NetworkService.swift
+
 // MARK: - API Models
 struct AccessCheckRequest: Codable {
-    let userId: String
     let mode: String // "restore" or "merge"
 }
 
@@ -19,20 +21,25 @@ struct AccessCheckResponse: Codable {
     let remainingCredits: Int
     let freeUsesRemaining: Int
     let subscriptionTier: String
-    let message: String?
+    let message: String
 }
 
 struct CreditUsageRequest: Codable {
-    let userId: String
     let mode: String
-    let transactionId: String?
 }
 
 struct CreditUsageResponse: Codable {
     let success: Bool
+    let creditsUsed: Int
     let remainingCredits: Int
-    let freeUsesRemaining: Int
-    let message: String?
+    let message: String
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case creditsUsed = "credits_used"
+        case remainingCredits = "remaining_credits"
+        case message
+    }
 }
 
 struct PurchaseNotificationRequest: Codable {
@@ -50,20 +57,19 @@ class SubscriptionAPIService: ObservableObject {
     @Published var isLoading = false
     @Published var lastError: String? = nil
     
-    private let baseURL = "https://your-api-domain.com/api" // Replace with your actual API URL
-    private let session = URLSession.shared
+    private let baseURL = AppConfiguration.API.baseURL
+    private let networkService = NetworkService.shared
     
     private init() {}
     
     // MARK: - Access Control
-    func checkAccess(userId: String, mode: ProcessingMode) async throws -> AccessCheckResponse {
+    func checkAccess(mode: String) async throws -> AccessCheckResponse {
         let request = AccessCheckRequest(
-            userId: userId,
-            mode: mode.rawValue
+            mode: mode
         )
         
         let response: AccessCheckResponse = try await performRequest(
-            endpoint: "/subscription/check-access",
+            endpoint: "/api/subscriptions/check-access",
             method: "POST",
             body: request
         )
@@ -71,15 +77,13 @@ class SubscriptionAPIService: ObservableObject {
         return response
     }
     
-    func useCredit(userId: String, mode: ProcessingMode, transactionId: String? = nil) async throws -> CreditUsageResponse {
+    func useCredit(mode: String) async throws -> CreditUsageResponse {
         let request = CreditUsageRequest(
-            userId: userId,
-            mode: mode.rawValue,
-            transactionId: transactionId
+            mode: mode
         )
         
         let response: CreditUsageResponse = try await performRequest(
-            endpoint: "/subscription/use-credit",
+            endpoint: "/api/subscriptions/use-credit",
             method: "POST",
             body: request
         )
@@ -115,7 +119,7 @@ class SubscriptionAPIService: ObservableObject {
         return response.credits
     }
     
-    // MARK: - Generic Request Method
+    // MARK: - Generic Request Method  
     private func performRequest<T: Codable, U: Codable>(
         endpoint: String,
         method: String,
@@ -129,23 +133,20 @@ class SubscriptionAPIService: ObservableObject {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add authentication header if needed
-        if let authToken = UserDefaults.standard.string(forKey: "auth_token") {
-            request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        // Add authentication header
+        if let token = UserDefaults.standard.string(forKey: "access_token") {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         
         if let body = body {
             request.httpBody = try JSONEncoder().encode(body)
         }
         
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse else {
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
             throw APIError.invalidResponse
-        }
-        
-        guard httpResponse.statusCode == 200 else {
-            throw APIError.serverError(httpResponse.statusCode)
         }
         
         let decoder = JSONDecoder()
@@ -165,16 +166,4 @@ enum APIError: Error {
     case invalidResponse
     case serverError(Int)
     case decodingError
-}
-
-// MARK: - Processing Mode Extension
-extension ProcessingMode {
-    var rawValue: String {
-        switch self {
-        case .restore:
-            return "restore"
-        case .merge:
-            return "merge"
-        }
-    }
 }

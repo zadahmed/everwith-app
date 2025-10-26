@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct SplashView: View {
-    @State private var logoScale: CGFloat = 0.5
-    @State private var logoOpacity: Double = 0
-    @State private var backgroundOpacity: Double = 0
+    @State private var logoScale: CGFloat = 1.0
+    @State private var logoOpacity: Double = 1.0
+    @State private var backgroundOpacity: Double = 1.0
     @State private var animateGradient = false
     @State private var animateOrbs = false
     @State private var animateColors = false
-    @State private var showContent = false
+    @State private var showContent = true
     
     let onComplete: () -> Void
     
@@ -46,7 +46,7 @@ struct SplashView: View {
                             )
                         
                         // App name with gradient
-                        Text("EverWith")
+                        Text("Everwith")
                             .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                             .opacity(logoOpacity)
@@ -99,24 +99,8 @@ struct SplashView: View {
     }
     
     private func startAnimations() {
-        // Background fade in
-        withAnimation(.easeOut(duration: 0.8)) {
-            backgroundOpacity = 1.0
-        }
-        
-        // Logo entrance animation
-        withAnimation(.spring(response: 1.2, dampingFraction: 0.7).delay(0.3)) {
-            logoScale = 1.0
-            logoOpacity = 1.0
-        }
-        
-        // Content slide up
-        withAnimation(.easeOut(duration: 0.8).delay(0.8)) {
-            showContent = true
-        }
-        
-        // Note: Dismissal is controlled by the parent coordinator
-        // No auto-dismiss here - wait for parent to set showSplash = false
+        // Start with visible content, then animate if needed
+        // Content is already visible with initial states
     }
     
     // MARK: - Adaptive Sizing Functions

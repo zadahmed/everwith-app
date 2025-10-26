@@ -8,6 +8,45 @@
 import SwiftUI
 import PhotosUI
 
+// MARK: - Continue Button Component
+struct ContinueButton: View {
+    let onContinue: () -> Void
+    let creditCost: Int
+    let isPremium: Bool
+    let isEnabled: Bool
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        Button(action: onContinue) {
+            HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                if !isPremium {
+                    // Show credit cost for free users
+                    HStack(spacing: 4) {
+                        Image(systemName: "diamond.fill")
+                            .font(.system(size: adaptiveFontSize(14, for: geometry)))
+                        Text("\(creditCost)")
+                            .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .semibold))
+                    }
+                    .foregroundColor(isEnabled ? .white : .white.opacity(0.5))
+                }
+                
+                Text("Continue")
+                    .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .semibold))
+                
+                Image(systemName: "arrow.right")
+                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+            }
+            .foregroundColor(isEnabled ? .white : .white.opacity(0.5))
+            .frame(maxWidth: .infinity)
+            .frame(height: adaptiveSize(56, for: geometry))
+            .background(isEnabled ? LinearGradient.primaryBrand : LinearGradient.cardGlow)
+            .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+            .shadow(color: isEnabled ? Color.blushPink.opacity(0.3) : Color.gray.opacity(0.2), radius: 8, x: 0, y: 4)
+        }
+        .disabled(!isEnabled)
+    }
+}
+
 // MARK: - Upload Card Component
 struct UploadCard: View {
     let label: String
@@ -255,6 +294,31 @@ struct ResultActionButtons: View {
         let screenWidth = geometry.size.width
         return base * (screenWidth / 375.0)
     }
+}
+
+// MARK: - Adaptive Helper Functions for ContinueButton
+private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+}
+
+private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
+}
+
+private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+    let screenWidth = geometry.size.width
+    let scaleFactor = screenWidth / 375.0
+    return base * scaleFactor
 }
 
 // MARK: - Before/After Slider Component

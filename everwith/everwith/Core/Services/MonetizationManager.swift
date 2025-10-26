@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import Foundation
 import Combine
 
@@ -18,19 +19,67 @@ class MonetizationManager: ObservableObject {
     @Published var currentPaywallTrigger: PaywallTrigger = .general
     @Published var pendingResultImage: UIImage?
     @Published var isProcessing = false
+    @Published var creditCosts: CreditCosts?
+    @Published var userCredits: Int = 0
     
     let revenueCatService = RevenueCatService.shared
     private let apiService = SubscriptionAPIService.shared
+    private let subscriptionService = SubscriptionService.shared
     
-    private init() {}
+    private init() {
+        Task {
+            await fetchCreditCosts()
+        }
+    }
     
-    // MARK: - Access Control
+    // MARK: - Credit Cost Management
+    
+    func fetchCreditCosts() async {
+        do {
+            let costs = try await subscriptionService.fetchCreditCosts()
+            creditCosts = costs
+        } catch {
+            print("❌ Failed to fetch credit costs: \(error)")
+        }
+    }
+    
+    func getCreditCost(for mode: ProcessingMode) -> Int {
+        guard let costs = creditCosts else {
+            // Return defaults if not fetched yet
+            switch mode {
+            case .restore: return 1
+            case .merge: return 2
+            }
+        }
+        
+        switch mode {
+        case .restore:
+            return costs.photoRestoreCost
+        case .merge:
+            return costs.memoryMergeCost
+        }
+    }
+    
     func checkAccess(for mode: ProcessingMode) async -> Bool {
-        return await revenueCatService.checkAccess(for: mode)
+        do {
+            let response = try await apiService.checkAccess(mode: mode.rawValue)
+            userCredits = response.remainingCredits
+            return response.hasAccess
+        } catch {
+            print("❌ Failed to check access: \(error)")
+            return false
+        }
     }
     
     func requestAccess(for mode: ProcessingMode) async -> Bool {
-        return await revenueCatService.useFeature(for: mode)
+        do {
+            let response = try await apiService.useCredit(mode: mode.rawValue)
+            userCredits = response.remainingCredits
+            return response.success
+        } catch {
+            print("❌ Failed to use credit: \(error)")
+            return false
+        }
     }
     
     // MARK: - Emotional Upgrade Triggers
@@ -187,7 +236,7 @@ class MonetizationManager: ObservableObject {
             image.draw(at: .zero)
             
             // Add watermark
-            let watermarkText = "Made with EverWith"
+            let watermarkText = "Made with Everwith"
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 16, weight: .medium),
                 .foregroundColor: UIColor.white.withAlphaComponent(0.7)

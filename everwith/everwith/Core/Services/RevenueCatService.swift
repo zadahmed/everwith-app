@@ -366,7 +366,7 @@ class RevenueCatService: NSObject, ObservableObject {
         isLoading = true
         
         do {
-            let customerInfo = try await Purchases.shared.restorePurchases()
+            _ = try await Purchases.shared.restorePurchases()
             await updateSubscriptionStatus()
             isLoading = false
             return true
@@ -391,4 +391,13 @@ extension RevenueCatService: PurchasesDelegate {
 enum ProcessingMode {
     case restore
     case merge
+    
+    var rawValue: String {
+        switch self {
+        case .restore:
+            return "restore"
+        case .merge:
+            return "merge"
+        }
+    }
 }

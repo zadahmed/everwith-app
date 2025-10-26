@@ -17,9 +17,14 @@ class User(Document):
     # Monetization fields
     subscription_tier: str = "free"  # free, premium_monthly, premium_yearly
     subscription_expires_at: Optional[datetime] = None
-    credits: int = 0
-    free_uses_remaining: int = 1
+    credits: int = 0  # Credits required for all processing (credit-driven system)
+    free_uses_remaining: int = 0  # No free uses - everything requires credits
     last_free_use_date: Optional[datetime] = None
+    
+    # Monthly credit allocation tracking
+    monthly_credits_reset_date: Optional[datetime] = None  # When monthly credits were last reset
+    premium_usage_this_month: int = 0  # Track premium user monthly usage for cost control
+    premium_usage_reset_date: Optional[datetime] = None  # When monthly premium usage was last reset
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

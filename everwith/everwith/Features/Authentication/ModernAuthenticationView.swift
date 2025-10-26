@@ -22,23 +22,23 @@ struct ModernAuthenticationView: View {
     @State private var animateElements = false
     @State private var buttonPressedEmail: Bool = false
     @State private var buttonPressedGoogle: Bool = false
-    @State private var formOpacity: Double = 0
+    @State private var contentOpacity: Double = 0
     @State private var logoScale: CGFloat = 0.8
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Clean White Background with Subtle Gradient Band
+                // Clean White Background
                 CleanWhiteBackground()
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .ignoresSafeArea(.all, edges: .all)
                 
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        
-                        // App Logo and Branding - Modern & Vibrant
-                        VStack(spacing: geometry.isSmallScreen ? 12 : 16) {
-                            // App Logo with brand gradient (matching HomeView)
+                VStack(spacing: 0) {
+                    // Header Section (fixed)
+                    VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                        // App Logo and Branding
+                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                            // App Logo - circular and larger
                             ZStack {
                                 // Glow effect
                                 Circle()
@@ -53,57 +53,47 @@ struct ModernAuthenticationView: View {
                                         )
                                     )
                                     .frame(
-                                        width: geometry.isSmallScreen ? 72 : adaptiveSize(85, for: geometry),
-                                        height: geometry.isSmallScreen ? 72 : adaptiveSize(85, for: geometry)
+                                        width: geometry.adaptiveSize(120),
+                                        height: geometry.adaptiveSize(120)
                                     )
                                     .blur(radius: 20)
                                 
-                                // Main logo circle
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.blushPink.opacity(0.9),
-                                                Color.roseMagenta.opacity(0.7),
-                                                Color.memoryViolet.opacity(0.6)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
+                                Image("AppLogo")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
                                     .frame(
-                                        width: geometry.isSmallScreen ? 68 : adaptiveSize(80, for: geometry),
-                                        height: geometry.isSmallScreen ? 68 : adaptiveSize(80, for: geometry)
+                                        width: geometry.adaptiveSize(100),
+                                        height: geometry.adaptiveSize(100)
                                     )
+                                    .clipShape(Circle())
                                     .overlay(
                                         Circle()
                                             .stroke(
-                                                Color.white.opacity(0.3),
-                                                lineWidth: 2
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        Color.blushPink.opacity(0.9),
+                                                        Color.roseMagenta.opacity(0.7)
+                                                    ]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                lineWidth: 3
                                             )
                                     )
-                                
-                                Image("AppLogo")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(
-                                        width: geometry.isSmallScreen ? 40 : adaptiveSize(48, for: geometry),
-                                        height: geometry.isSmallScreen ? 40 : adaptiveSize(48, for: geometry)
+                                    .shadow(
+                                        color: Color.blushPink.opacity(0.3),
+                                        radius: 8,
+                                        x: 0,
+                                        y: 4
                                     )
                             }
                             .scaleEffect(logoScale)
-                            .shadow(
-                                color: Color.blushPink.opacity(0.4),
-                                radius: geometry.isSmallScreen ? 10 : adaptiveSpacing(15, for: geometry),
-                                x: 0,
-                                y: geometry.isSmallScreen ? 4 : adaptiveSpacing(6, for: geometry)
-                            )
                             
-                            // App Name and Tagline - Modern
-                            VStack(spacing: geometry.isSmallScreen ? 6 : adaptiveSpacing(8, for: geometry)) {
+                            // App Name and Tagline
+                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
                                 Text("Everwith")
                                     .font(.system(
-                                        size: geometry.isSmallScreen ? 32 : adaptiveFontSize(36, for: geometry),
+                                        size: ResponsiveDesign.adaptiveFontSize(baseSize: 32, for: geometry),
                                         weight: .black,
                                         design: .rounded
                                     ))
@@ -113,7 +103,7 @@ struct ModernAuthenticationView: View {
                                 
                                 Text("Create beautiful memories together")
                                     .font(.system(
-                                        size: geometry.isSmallScreen ? 14 : adaptiveFontSize(16, for: geometry),
+                                        size: ResponsiveDesign.adaptiveFontSize(baseSize: 15, for: geometry),
                                         weight: .medium
                                     ))
                                     .foregroundColor(.softPlum)
@@ -123,14 +113,16 @@ struct ModernAuthenticationView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 24 : 36)
-                        .padding(.bottom, 24)
-                        .opacity(animateElements ? 1 : 0)
+                        .padding(.horizontal, geometry.adaptivePadding())
+                        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 60 : 76)
+                        .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 20, for: geometry))
+                        .opacity(contentOpacity)
                         .offset(y: animateElements ? 0 : -20)
-                        
-                        // Authentication Form Container
-                        VStack(spacing: geometry.isSmallScreen ? 14 : 18) {
-                            
+                    }
+                    
+                    // Scrollable Form Content
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 18, for: geometry)) {
                             // Modern Segmented Control - Sign In / Sign Up
                             HStack(spacing: 0) {
                                 Button(action: {
@@ -141,16 +133,16 @@ struct ModernAuthenticationView: View {
                                 }) {
                                     Text("Sign In")
                                         .font(.system(
-                                            size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
+                                            size: geometry.adaptiveFontSize(16),
                                             weight: .bold
                                         ))
                                         .foregroundColor(isSignUp ? .softPlum : .white)
-                                        .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
+                                        .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 52, for: geometry))
                                         .frame(maxWidth: .infinity)
                                         .background(
                                             ZStack {
                                                 if !isSignUp {
-                                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                                    RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                                                         .fill(
                                                             LinearGradient.primaryBrand
                                                         )
@@ -174,16 +166,16 @@ struct ModernAuthenticationView: View {
                                 }) {
                                     Text("Sign Up")
                                         .font(.system(
-                                            size: geometry.isSmallScreen ? 15 : adaptiveFontSize(16, for: geometry),
+                                            size: geometry.adaptiveFontSize(16),
                                             weight: .bold
                                         ))
                                         .foregroundColor(isSignUp ? .white : .softPlum)
-                                        .frame(height: geometry.isSmallScreen ? 48 : adaptiveSize(52, for: geometry))
+                                        .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 52, for: geometry))
                                         .frame(maxWidth: .infinity)
                                         .background(
                                             ZStack {
                                                 if isSignUp {
-                                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                                    RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                                                         .fill(
                                                             LinearGradient.primaryBrand
                                                         )
@@ -201,14 +193,13 @@ struct ModernAuthenticationView: View {
                             }
                             .padding(4)
                             .background(
-                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(18, for: geometry))
+                                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(18))
                                     .fill(Color.white)
                                     .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
                             )
                             
                             // Form Fields
-                            VStack(spacing: geometry.isSmallScreen ? 12 : 14) {
-                                
+                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 14, for: geometry)) {
                                 // Name field (only for sign up)
                                 if isSignUp {
                                     ModernTextField(
@@ -217,7 +208,7 @@ struct ModernAuthenticationView: View {
                                         icon: "person.fill",
                                         geometry: geometry
                                     )
-                                    .opacity(animateElements ? 1 : 0)
+                                    .opacity(contentOpacity)
                                     .offset(x: animateElements ? 0 : -20)
                                 }
                                 
@@ -229,7 +220,7 @@ struct ModernAuthenticationView: View {
                                     keyboardType: .emailAddress,
                                     geometry: geometry
                                 )
-                                .opacity(animateElements ? 1 : 0)
+                                .opacity(contentOpacity)
                                 .offset(x: animateElements ? 0 : -20)
                                 
                                 // Password field
@@ -239,7 +230,7 @@ struct ModernAuthenticationView: View {
                                     showPassword: $showPassword,
                                     geometry: geometry
                                 )
-                                .opacity(animateElements ? 1 : 0)
+                                .opacity(contentOpacity)
                                 .offset(x: animateElements ? 0 : -20)
                                 
                                 // Confirm Password field (only for sign up)
@@ -250,12 +241,12 @@ struct ModernAuthenticationView: View {
                                         showPassword: $showConfirmPassword,
                                         geometry: geometry
                                     )
-                                    .opacity(animateElements ? 1 : 0)
+                                    .opacity(contentOpacity)
                                     .offset(x: animateElements ? 0 : -20)
                                 }
                             }
                             
-                            // Primary Action Button - Vibrant Gradient
+                            // Primary Action Button
                             Button(action: {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                     buttonPressedEmail = true
@@ -269,7 +260,7 @@ struct ModernAuthenticationView: View {
                                     buttonPressedEmail = false
                                 }
                             }) {
-                                HStack(spacing: 10) {
+                                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry)) {
                                     if isLoading {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -277,32 +268,32 @@ struct ModernAuthenticationView: View {
                                     } else {
                                         Image(systemName: isSignUp ? "person.badge.plus.fill" : "arrow.right.circle.fill")
                                             .font(.system(
-                                                size: geometry.isSmallScreen ? 17 : 19,
+                                                size: geometry.adaptiveFontSize(18),
                                                 weight: .semibold
                                             ))
                                     }
                                     
                                     Text(isSignUp ? "Create Account" : "Sign In")
                                         .font(.system(
-                                            size: geometry.isSmallScreen ? 15 : 16,
+                                            size: geometry.adaptiveFontSize(16),
                                             weight: .bold
                                         ))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                 }
                                 .foregroundColor(.white)
-                                .frame(height: geometry.isSmallScreen ? 52 : 56)
+                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
                                 .frame(maxWidth: .infinity)
                                 .background(
                                     ZStack {
-                                        // Gradient background (matching HomeView)
-                                        RoundedRectangle(cornerRadius: 16)
+                                        // Gradient background
+                                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                                             .fill(
                                                 LinearGradient.primaryBrand
                                             )
                                         
                                         // Shimmer overlay effect
-                                        RoundedRectangle(cornerRadius: 16)
+                                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                                             .fill(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
@@ -318,26 +309,26 @@ struct ModernAuthenticationView: View {
                                 )
                                 .shadow(
                                     color: Color.blushPink.opacity(0.4),
-                                    radius: 12,
+                                    radius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry),
                                     x: 0,
-                                    y: 6
+                                    y: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)
                                 )
                             }
                             .scaleEffect(buttonPressedEmail ? 0.96 : 1.0)
                             .disabled(isLoading || !isFormValid)
                             .opacity(isFormValid ? 1 : 0.6)
-                            .opacity(animateElements ? 1 : 0)
+                            .opacity(contentOpacity)
                             .offset(y: animateElements ? 0 : 20)
                             
                             // Divider
-                            HStack(spacing: 12) {
+                            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
                                 Rectangle()
                                     .fill(Color.subtleBorder)
                                     .frame(height: 1)
                                 
                                 Text("or")
                                     .font(.system(
-                                        size: geometry.isSmallScreen ? 12 : 13,
+                                        size: geometry.adaptiveFontSize(13),
                                         weight: .medium
                                     ))
                                     .foregroundColor(.softPlum)
@@ -348,7 +339,7 @@ struct ModernAuthenticationView: View {
                                     .fill(Color.subtleBorder)
                                     .frame(height: 1)
                             }
-                            .opacity(animateElements ? 1 : 0)
+                            .opacity(contentOpacity)
                             
                             // Social Sign In - Google Button
                             Button(action: {
@@ -360,39 +351,41 @@ struct ModernAuthenticationView: View {
                                     buttonPressedGoogle = false
                                 }
                             }) {
-                                HStack(spacing: 10) {
-                                    // Google icon
+                                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                                    // Google logo
                                     ZStack {
-                                        Circle()
+                                        RoundedRectangle(cornerRadius: 4)
                                             .fill(Color.white)
-                                            .frame(width: 26, height: 26)
+                                            .frame(width: geometry.adaptiveSize(22), height: geometry.adaptiveSize(22))
                                         
-                                        Image(systemName: "globe")
-                                            .font(.system(
-                                                size: 15,
-                                                weight: .semibold
-                                            ))
+                                        // Google "G" icon
+                                        Text("G")
+                                            .font(.system(size: geometry.adaptiveFontSize(14), weight: .bold))
                                             .foregroundStyle(
-                                                LinearGradient.primaryBrand
+                                                LinearGradient(
+                                                    colors: [Color.blue, Color.green, Color.yellow, Color.orange],
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
                                             )
                                     }
                                     
                                     Text("Continue with Google")
                                         .font(.system(
-                                            size: geometry.isSmallScreen ? 14 : 15,
+                                            size: geometry.adaptiveFontSize(15),
                                             weight: .semibold
                                         ))
                                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                 }
-                                .frame(height: geometry.isSmallScreen ? 52 : 56)
+                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
                                 .frame(maxWidth: .infinity)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 16)
+                                    RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                                         .fill(Color.white)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
+                                            RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                                                 .stroke(
                                                     LinearGradient.cardGlow,
                                                     lineWidth: 2
@@ -403,11 +396,11 @@ struct ModernAuthenticationView: View {
                             }
                             .scaleEffect(buttonPressedGoogle ? 0.96 : 1.0)
                             .disabled(isLoading)
-                            .opacity(animateElements ? 1 : 0)
+                            .opacity(contentOpacity)
                             .offset(y: animateElements ? 0 : 20)
                             
                             // Additional Options
-                            VStack(spacing: 8) {
+                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
                                 if !isSignUp {
                                     Button(action: {
                                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -417,7 +410,7 @@ struct ModernAuthenticationView: View {
                                     }) {
                                         Text("Don't have an account? Sign Up")
                                             .font(.system(
-                                                size: geometry.isSmallScreen ? 13 : 14,
+                                                size: geometry.adaptiveFontSize(14),
                                                 weight: .semibold
                                             ))
                                             .foregroundStyle(
@@ -443,7 +436,7 @@ struct ModernAuthenticationView: View {
                                     }) {
                                         Text("Already have an account? Sign In")
                                             .font(.system(
-                                                size: geometry.isSmallScreen ? 13 : 14,
+                                                size: geometry.adaptiveFontSize(14),
                                                 weight: .semibold
                                             ))
                                             .foregroundStyle(
@@ -462,50 +455,37 @@ struct ModernAuthenticationView: View {
                                     .disabled(isLoading)
                                 }
                                 
-                                // Guest Access (less prominent)
-                                Button(action: {
-                                    skipAuthentication()
-                                }) {
-                                    Text("Continue as Guest")
-                                        .font(.system(
-                                            size: geometry.isSmallScreen ? 11 : 12,
-                                            weight: .regular
-                                        ))
-                                        .foregroundColor(.lightGray)
-                                        .lineLimit(1)
-                                }
-                                .disabled(isLoading)
                             }
-                            .opacity(animateElements ? 1 : 0)
+                            .opacity(contentOpacity)
                             
                             // Error Message
                             if let errorMessage = errorMessage {
                                 Text(errorMessage)
                                     .font(.system(
-                                        size: geometry.isSmallScreen ? 12 : ResponsiveDesign.adaptiveFontSize(baseSize: 14, for: geometry),
+                                        size: geometry.adaptiveFontSize(13),
                                         weight: .medium
                                     ))
                                     .foregroundColor(.red)
                                     .multilineTextAlignment(.center)
-                                    .padding(.horizontal, ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry))
-                                    .opacity(animateElements ? 1 : 0)
+                                    .padding(.horizontal, geometry.adaptivePadding())
+                                    .opacity(contentOpacity)
                             }
                         }
-                        .padding(.all, 20)
+                        .padding(.all, geometry.adaptivePadding())
                         .background(
                             ZStack {
                                 // Base white background
-                                RoundedRectangle(cornerRadius: 24)
+                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
                                     .fill(Color.white)
                                 
-                                // Subtle gradient overlay (matching HomeView)
-                                RoundedRectangle(cornerRadius: 24)
+                                // Subtle gradient overlay
+                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
                                     .fill(
                                         LinearGradient.subtleHighlight
                                     )
                                 
-                                // Border with gradient (matching HomeView)
-                                RoundedRectangle(cornerRadius: 24)
+                                // Border with gradient
+                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
                                     .stroke(
                                         LinearGradient.cardGlow,
                                         lineWidth: 1.5
@@ -514,18 +494,17 @@ struct ModernAuthenticationView: View {
                         )
                         .shadow(
                             color: Color.cardShadow,
-                            radius: 12,
+                            radius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry),
                             x: 0,
-                            y: 4
+                            y: ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry)
                         )
-                        .opacity(formOpacity)
+                        .opacity(contentOpacity)
                         .offset(y: animateElements ? 0 : 30)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 20 : 36)
+                    .padding(.horizontal, geometry.adaptivePadding())
+                    .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
                 }
-                .scrollIndicators(.hidden)
-                .frame(width: geometry.size.width)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -540,7 +519,7 @@ struct ModernAuthenticationView: View {
                 animateElements = true
             }
             withAnimation(.easeOut(duration: 0.7).delay(0.3)) {
-                formOpacity = 1.0
+                contentOpacity = 1.0
             }
         }
         .alert("Authentication Error", isPresented: $showErrorAlert) {
@@ -551,37 +530,6 @@ struct ModernAuthenticationView: View {
         } message: {
             Text(errorMessage ?? "An error occurred during authentication. Please try again.")
         }
-    }
-    
-    // MARK: - Adaptive Sizing Functions (matching HomeView)
-    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        // iPhone SE (375pt) = 12pt, iPhone 15 Pro (393pt) = 14pt, iPhone 15 Pro Max (430pt) = 16pt
-        return max(12, min(16, screenWidth * 0.04))
-    }
-    
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return base * scaleFactor
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return base * scaleFactor
     }
     
     // MARK: - Computed Properties
@@ -717,29 +665,6 @@ struct ModernAuthenticationView: View {
         }
     }
     
-    private func skipAuthentication() {
-        isLoading = true
-        errorMessage = nil
-        
-        Task {
-            let result = await authService.signInAsGuest()
-            
-            await MainActor.run {
-                isLoading = false
-                
-                switch result {
-                case .success(let user):
-                    print("User skipped authentication successfully: \(user.name)")
-                    // Success! The app will automatically navigate to HomeView via auth state change
-                case .failure(let error):
-                    errorMessage = error.localizedDescription
-                    showErrorAlert = true
-                case .cancelled:
-                    break
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Modern Text Field Component
@@ -751,31 +676,31 @@ struct ModernTextField: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
             Text(title)
                 .font(.system(
-                    size: geometry.isSmallScreen ? 11 : 12,
+                    size: geometry.adaptiveFontSize(12),
                     weight: .medium
                 ))
                 .foregroundColor(.softPlum)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
             
-            HStack(spacing: 10) {
+            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry)) {
                 Image(systemName: icon)
                     .font(.system(
-                        size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
+                        size: geometry.adaptiveFontSize(17),
                         weight: .semibold
                     ))
-                                    .foregroundStyle(
-                                        LinearGradient.primaryBrand
-                                    )
-                    .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
-                    .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
+                    .foregroundStyle(
+                        LinearGradient.primaryBrand
+                    )
+                    .frame(width: geometry.adaptiveSize(22))
+                    .frame(minWidth: geometry.adaptiveSize(22))
                 
                 TextField(title, text: $text)
                     .font(.system(
-                        size: geometry.isSmallScreen ? 14 : 15,
+                        size: geometry.adaptiveFontSize(15),
                         weight: .medium
                     ))
                     .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
@@ -785,43 +710,18 @@ struct ModernTextField: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.horizontal, geometry.adaptivePadding())
+            .padding(.vertical, geometry.adaptivePadding())
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.subtleBorder, lineWidth: 1.5)
+                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
+                            .stroke(Color.subtleBorder, lineWidth: 1.5)
                     )
             )
         }
         .frame(maxWidth: .infinity)
-    }
-    
-    // MARK: - Adaptive Functions (matching HomeView)
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
     }
 }
 
@@ -833,32 +733,32 @@ struct ModernPasswordField: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
             Text(title)
                 .font(.system(
-                    size: geometry.isSmallScreen ? 11 : 12,
+                    size: geometry.adaptiveFontSize(12),
                     weight: .medium
                 ))
                 .foregroundColor(.softPlum)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
             
-            HStack(spacing: 10) {
+            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry)) {
                 Image(systemName: "lock.fill")
                     .font(.system(
-                        size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
+                        size: geometry.adaptiveFontSize(17),
                         weight: .semibold
                     ))
-                                    .foregroundStyle(
-                                        LinearGradient.primaryBrand
-                                    )
-                    .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
-                    .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
+                    .foregroundStyle(
+                        LinearGradient.primaryBrand
+                    )
+                    .frame(width: geometry.adaptiveSize(22))
+                    .frame(minWidth: geometry.adaptiveSize(22))
                 
                 if showPassword {
                     TextField(title, text: $text)
                         .font(.system(
-                            size: geometry.isSmallScreen ? 14 : 15,
+                            size: geometry.adaptiveFontSize(15),
                             weight: .medium
                         ))
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
@@ -869,7 +769,7 @@ struct ModernPasswordField: View {
                 } else {
                     SecureField(title, text: $text)
                         .font(.system(
-                            size: geometry.isSmallScreen ? 14 : 15,
+                            size: geometry.adaptiveFontSize(15),
                             weight: .medium
                         ))
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
@@ -884,51 +784,26 @@ struct ModernPasswordField: View {
                 }) {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
                         .font(.system(
-                            size: geometry.isSmallScreen ? 16 : adaptiveFontSize(17, for: geometry),
+                            size: geometry.adaptiveFontSize(17),
                             weight: .medium
                         ))
-                                        .foregroundColor(.softPlum)
-                        .frame(width: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
-                        .frame(minWidth: geometry.isSmallScreen ? 20 : adaptiveSize(22, for: geometry))
+                        .foregroundColor(.softPlum)
+                        .frame(width: geometry.adaptiveSize(22))
+                        .frame(minWidth: geometry.adaptiveSize(22))
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.horizontal, geometry.adaptivePadding())
+            .padding(.vertical, geometry.adaptivePadding())
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.subtleBorder, lineWidth: 1.5)
+                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
+                            .stroke(Color.subtleBorder, lineWidth: 1.5)
                     )
             )
         }
         .frame(maxWidth: .infinity)
-    }
-    
-    // MARK: - Adaptive Functions (matching HomeView)
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
     }
 }
 

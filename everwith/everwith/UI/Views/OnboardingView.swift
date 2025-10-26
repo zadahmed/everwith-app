@@ -35,7 +35,7 @@ struct OnboardingView: View {
     private let onboardingCards = [
         OnboardingCardData(
             imageName: "OnboardingWelcome",
-            title: "Welcome to EverWith",
+            title: "Welcome to Everwith",
             subtitle: "Where memories come alive",
             description: "Transform your precious photos with AI-powered magic. Restore faded memories and create beautiful moments together.",
             features: ["AI-powered restoration", "Professional quality", "Easy to use"]
@@ -73,7 +73,7 @@ struct OnboardingView: View {
                 VStack(spacing: 0) {
                     // Status bar spacer
                     Spacer()
-                        .frame(height: max(geometry.safeAreaInsets.top, 20) + adaptiveSpacing(20, for: geometry))
+                        .frame(height: max(geometry.safeAreaInsets.top, 20) + adaptiveSpacing(40, for: geometry))
                     
                     // Main Content
                     VStack(spacing: 0) {
@@ -144,7 +144,7 @@ struct OnboardingView: View {
                                 }
                             }) {
                                 HStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                                    Text(currentCardIndex == onboardingCards.count - 1 ? "Start Free Trial" : "Get Started")
+                                    Text("Get Started")
                                         .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
                                         .minimumScaleFactor(0.8)
                                         .lineLimit(1)
@@ -349,9 +349,9 @@ struct SingleOnboardingCard: View {
     @State private var featuresOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: adaptiveSpacing(32, for: geometry)) {
+        VStack(spacing: adaptiveSpacing(20, for: geometry)) {
             // Hero Image Section - Main Focus
-            VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+            VStack(spacing: adaptiveSpacing(12, for: geometry)) {
                 ZStack {
                     // Background glow effect
                     Circle()
@@ -365,7 +365,7 @@ struct SingleOnboardingCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: adaptiveSize(280, for: geometry), height: adaptiveSize(280, for: geometry))
+                        .frame(width: adaptiveSize(200, for: geometry), height: adaptiveSize(200, for: geometry))
                         .blur(radius: adaptiveSpacing(20, for: geometry))
                         .opacity(imageOpacity)
                     
@@ -373,7 +373,7 @@ struct SingleOnboardingCard: View {
                     Image(cardData.imageName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: adaptiveSize(240, for: geometry), height: adaptiveSize(240, for: geometry))
+                        .frame(width: adaptiveSize(160, for: geometry), height: adaptiveSize(160, for: geometry))
                         .scaleEffect(imageScale)
                         .shadow(
                             color: Color.black.opacity(0.15),
@@ -386,23 +386,25 @@ struct SingleOnboardingCard: View {
             }
             
             // Content Section
-            VStack(spacing: adaptiveSpacing(20, for: geometry)) {
+            VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                 // Title and Subtitle
-                VStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                VStack(spacing: adaptiveSpacing(8, for: geometry)) {
                     Text(cardData.title)
-                        .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
+                        .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
                         .foregroundColor(.deepPlum)
                         .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.8)
-                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: false)
                         .opacity(textOpacity)
                     
                     Text(cardData.subtitle)
-                        .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .semibold, design: .rounded))
+                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold, design: .rounded))
                         .foregroundColor(.softPlum)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.8)
                         .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: false)
                         .opacity(textOpacity)
                 }
                 
@@ -412,8 +414,9 @@ struct SingleOnboardingCard: View {
                     .foregroundColor(.deepPlum.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .lineSpacing(adaptiveSpacing(4, for: geometry))
-                    .lineLimit(4)
-                    .minimumScaleFactor(0.9)
+                    .lineLimit(5)
+                    .minimumScaleFactor(0.85)
+                    .fixedSize(horizontal: false, vertical: false)
                     .opacity(textOpacity)
                 
                 // Features List
@@ -435,7 +438,7 @@ struct SingleOnboardingCard: View {
             }
             .padding(.horizontal, adaptiveSpacing(24, for: geometry))
         }
-        .padding(adaptiveSpacing(32, for: geometry))
+        .padding(adaptiveSpacing(24, for: geometry))
         .background(
             RoundedRectangle(cornerRadius: adaptiveCornerRadius(24, for: geometry))
                 .fill(Color.pureWhite)
@@ -450,7 +453,7 @@ struct SingleOnboardingCard: View {
                     y: adaptiveSpacing(8, for: geometry)
                 )
         )
-        .padding(.horizontal, adaptiveSpacing(24, for: geometry))
+        .padding(.horizontal, adaptiveSpacing(16, for: geometry))
         .onAppear {
             // Staggered animations for maximum impact
             withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {

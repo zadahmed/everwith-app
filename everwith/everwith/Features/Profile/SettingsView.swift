@@ -123,7 +123,8 @@ struct SettingsView: View {
         do {
             async let subscription = subscriptionService.fetchSubscriptionStatus()
             async let credits = subscriptionService.fetchUserCredits()
-            _ = try await (subscription, credits)
+            _ = try await subscription
+            _ = try await credits
         } catch {
             print("Failed to load subscription data: \(error)")
         }
@@ -141,12 +142,8 @@ struct SettingsView: View {
     
     private func deleteAccount() async {
         // Implement account deletion logic
-        do {
-            // Call API to delete account
-            print("Account deletion requested")
-        } catch {
-            print("Failed to delete account: \(error)")
-        }
+        // Call API to delete account
+        print("Account deletion requested")
     }
     
 // MARK: - Adaptive Functions
@@ -769,7 +766,7 @@ struct LegalView: View {
         
         Last updated: October 2025
         
-        At EverWith, we take your privacy seriously. This policy explains how we handle your data.
+        At Everwith, we take your privacy seriously. This policy explains how we handle your data.
         
         Data Collection:
         • We only access photos you explicitly select for processing
@@ -806,10 +803,10 @@ struct LegalView: View {
         
         Last updated: October 2025
         
-        By using EverWith, you agree to these terms.
+        By using Everwith, you agree to these terms.
         
         Service Description:
-        • EverWith provides AI-powered photo restoration and merging
+        • Everwith provides AI-powered photo restoration and merging
         • Results may vary based on input quality
         • Processing times depend on server load
         

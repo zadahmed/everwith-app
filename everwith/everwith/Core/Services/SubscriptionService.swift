@@ -78,6 +78,26 @@ struct PricingInfo: Codable {
     }
 }
 
+struct CreditCosts: Codable {
+    let message: String
+    let serviceCosts: [String: Int]
+    let descriptions: [String: String]
+    let initialSignupCredits: Int
+    let premiumUnlimited: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case message
+        case serviceCosts = "service_costs"
+        case descriptions = "description"
+        case initialSignupCredits = "initial_signup_credits"
+        case premiumUnlimited = "premium_unlimited"
+    }
+    
+    var photoRestoreCost: Int { serviceCosts["photo_restore"] ?? 1 }
+    var memoryMergeCost: Int { serviceCosts["memory_merge"] ?? 2 }
+    var cinematicFilterCost: Int { serviceCosts["cinematic_filter"] ?? 3 }
+}
+
 // MARK: - Response Models
 struct SubscriptionResponse: Codable {
     let message: String
@@ -132,6 +152,7 @@ class SubscriptionService: ObservableObject {
     @Published var currentSubscription: SubscriptionStatus?
     @Published var userCredits: UserCredits?
     @Published var pricing: PricingInfo?
+    @Published var creditCosts: CreditCosts?
     @Published var isLoading = false
     
     private let networkService = NetworkService.shared
@@ -215,7 +236,7 @@ class SubscriptionService: ObservableObject {
         )
         
         // Refresh subscription status
-        try await fetchSubscriptionStatus()
+        _ = try await fetchSubscriptionStatus()
         
         return response
     }
@@ -235,7 +256,7 @@ class SubscriptionService: ObservableObject {
         )
         
         // Refresh subscription status
-        try await fetchSubscriptionStatus()
+        _ = try await fetchSubscriptionStatus()
     }
     
     func restorePurchases(receiptData: String) async throws -> RestoreResponse {
@@ -310,7 +331,7 @@ class SubscriptionService: ObservableObject {
         )
         
         // Refresh credits
-        try await fetchUserCredits()
+        _ = try await fetchUserCredits()
         
         return response
     }
@@ -331,7 +352,7 @@ class SubscriptionService: ObservableObject {
         
         // Refresh credits if not using subscription
         if !response.subscriptionActive {
-            try await fetchUserCredits()
+            _ = try await fetchUserCredits()
         }
         
         return response.subscriptionActive
@@ -350,6 +371,21 @@ class SubscriptionService: ObservableObject {
         
         pricing = pricingInfo
         return pricingInfo
+    }
+    
+    func fetchCreditCosts() async throws -> CreditCosts {
+        guard let url = URL(string: "\(AppConfiguration.API.baseURL)/api/subscriptions/credit-costs") else {
+            throw SubscriptionError.invalidURL
+        }
+        
+        let costs: CreditCosts = try await networkService.makeAuthenticatedRequest(
+            url: url,
+            method: .GET,
+            responseType: CreditCosts.self
+        )
+        
+        creditCosts = costs
+        return costs
     }
     
     // MARK: - Helper Methods
@@ -376,6 +412,9 @@ extension SubscriptionService {
     
     func handleSuccessfulPurchase(_ transaction: Transaction, productId: String) async throws {
         // Get receipt data
+        // Note: appStoreReceiptURL is deprecated in iOS 18.0, but we need to support older iOS versions
+        // We'll migrate to AppTransaction.shared and Transaction.all when iOS 18 is the minimum version
+        #warning("appStoreReceiptURL deprecated in iOS 18.0 - will migrate to AppTransaction.shared when minimum iOS version is 18.0")
         guard let receiptURL = Bundle.main.appStoreReceiptURL,
               let receiptData = try? Data(contentsOf: receiptURL) else {
             throw NSError(domain: "SubscriptionService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not load receipt"])

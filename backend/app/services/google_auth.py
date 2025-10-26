@@ -1,9 +1,10 @@
 from google.auth.transport import requests
 from google.oauth2 import id_token
-from app.models.database import User
+from app.models.database import User, CreditTransaction
 from app.models.schemas import GoogleUserInfo
 from app.core.security import create_access_token
-from datetime import timedelta
+from app.core.credit_config import INITIAL_SIGNUP_CREDITS
+from datetime import timedelta, datetime
 import os
 from dotenv import load_dotenv
 import logging
@@ -59,6 +60,8 @@ class GoogleAuthService:
         """
         Get existing user or create new user from Google authentication
         """
+        is_new_user = False
+        
         # Check if user exists by Google ID
         user = await User.find_one(User.google_id == google_user.google_id)
         
@@ -81,17 +84,33 @@ class GoogleAuthService:
             await existing_user.save()
             return existing_user
         
-        # Create new user
+        # Create new user with initial credits
+        is_new_user = True
         new_user = User(
             email=google_user.email,
             name=google_user.name,
             google_id=google_user.google_id,
             is_google_user=True,
             profile_image_url=google_user.picture,
-            hashed_password=None  # No password for Google users
+            hashed_password=None,  # No password for Google users
+            credits=INITIAL_SIGNUP_CREDITS,  # Give new users initial credits (matches monthly allocation)
+            free_uses_remaining=0,  # Disable free uses - everything credit-driven
+            monthly_credits_reset_date=datetime.utcnow()  # Initialize monthly tracking
         )
         
         await new_user.insert()
+        
+        # Log the credit transaction for signup bonus
+        if is_new_user:
+            signup_credit = CreditTransaction(
+                user_id=new_user,
+                credits=INITIAL_SIGNUP_CREDITS,
+                transaction_type="reward",
+                description="Welcome bonus - Google signup reward"
+            )
+            await signup_credit.insert()
+            logger.info(f"New Google user registered: {google_user.email} with {INITIAL_SIGNUP_CREDITS} initial credits")
+        
         return new_user
     
     async def authenticate_google_user(self, id_token_str: str) -> dict:

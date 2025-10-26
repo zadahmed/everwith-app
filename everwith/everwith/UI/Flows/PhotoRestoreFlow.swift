@@ -275,27 +275,18 @@ struct RestoreUploadView: View {
             
             Spacer()
             
-            // Continue Button
-            if selectedImage != nil {
-                Button(action: onContinue) {
-                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                        Text("Continue")
-                            .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .semibold))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: adaptiveSize(56, for: geometry))
-                    .background(LinearGradient.primaryBrand)
-                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
-                    .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
-                .padding(.horizontal, adaptiveSpacing(20, for: geometry))
-                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
-                .opacity(animateElements ? 1 : 0)
-                .offset(y: animateElements ? 0 : 40)
-            }
+            // Continue Button (always visible to show credit cost)
+            ContinueButton(
+                onContinue: onContinue,
+                creditCost: MonetizationManager.shared.getCreditCost(for: .restore),
+                isPremium: MonetizationManager.shared.revenueCatService.subscriptionStatus.tier != .free,
+                isEnabled: selectedImage != nil,
+                geometry: geometry
+            )
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
+            .opacity(animateElements ? 1 : 0)
+            .offset(y: animateElements ? 0 : 40)
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: Binding(
             get: { nil },

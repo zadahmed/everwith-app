@@ -18,6 +18,12 @@ class SessionManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let authService: AuthenticationService
     
+    // Optimization: Add debouncing and caching
+    private var lastValidationTime: Date = Date.distantPast
+    private var validationCooldown: TimeInterval = 30.0 // 30 seconds cooldown
+    private var backgroundTime: Date?
+    private var minimumBackgroundTime: TimeInterval = 60.0 // Only validate if backgrounded for >1min
+    
     private init() {
         // Get the auth service instance
         self.authService = AuthenticationService()
@@ -51,32 +57,47 @@ class SessionManager: ObservableObject {
     
     private func handleAppBackgrounded() {
         print("App went to background - session validation paused")
+        backgroundTime = Date()
     }
     
     private func handleAppForegrounded() {
-        print("App came to foreground - validating session")
+        print("App came to foreground - checking if validation needed")
         Task {
-            await validateSessionOnForeground()
+            await validateSessionIfNeeded(reason: "foreground")
         }
     }
     
     private func handleAppBecameActive() {
-        print("App became active - checking session validity")
+        print("App became active - checking if validation needed")
         Task {
-            await validateSessionOnActive()
+            await validateSessionIfNeeded(reason: "active")
         }
     }
     
-    private func validateSessionOnForeground() async {
-        let isValid = await authService.validateSession()
-        if !isValid {
-            await MainActor.run {
-                self.sessionExpired = true
+    // MARK: - Optimized Session Validation
+    
+    /// Smart validation that avoids unnecessary /auth/me calls
+    private func validateSessionIfNeeded(reason: String) async {
+        let now = Date()
+        
+        // Check cooldown period
+        if now.timeIntervalSince(lastValidationTime) < validationCooldown {
+            print("⏭️ SESSION: Skipping validation - within cooldown period (\(reason))")
+            return
+        }
+        
+        // Check if app was backgrounded long enough to warrant validation
+        if let backgroundTime = backgroundTime {
+            let backgroundDuration = now.timeIntervalSince(backgroundTime)
+            if backgroundDuration < minimumBackgroundTime {
+                print("⏭️ SESSION: Skipping validation - backgrounded for only \(Int(backgroundDuration))s (\(reason))")
+                return
             }
         }
-    }
-    
-    private func validateSessionOnActive() async {
+        
+        print("✅ SESSION: Proceeding with validation (\(reason))")
+        lastValidationTime = now
+        
         let isValid = await authService.validateSession()
         if !isValid {
             await MainActor.run {

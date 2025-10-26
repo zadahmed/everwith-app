@@ -19,6 +19,10 @@ class AuthenticationService: ObservableObject {
     private let tokenKey = "access_token"
     private let tokenExpiryKey = "token_expiry"
     
+    // Optimization: Cache validation results
+    private var lastValidationResult: (isValid: Bool, timestamp: Date)?
+    private let validationCacheTime: TimeInterval = 60.0 // Cache for 1 minute
+    
     init() {
         // Load stored user and validate session on startup
         Task {
@@ -253,8 +257,20 @@ class AuthenticationService: ObservableObject {
             return false
         }
         
+        // Check cached validation result
+        if let cachedResult = lastValidationResult,
+           Date().timeIntervalSince(cachedResult.timestamp) < validationCacheTime {
+            print("📋 SESSION: Using cached validation result: \(cachedResult.isValid)")
+            return cachedResult.isValid
+        }
+        
         // Validate token with backend
-        return await validateTokenWithBackend(token)
+        let isValid = await validateTokenWithBackend(token)
+        
+        // Cache the result
+        lastValidationResult = (isValid: isValid, timestamp: Date())
+        
+        return isValid
     }
     
     private func isTokenExpired() -> Bool {

@@ -115,23 +115,8 @@ struct SplashView: View {
             showContent = true
         }
         
-        // Auto dismiss after 2.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            dismissSplash()
-        }
-    }
-    
-    private func dismissSplash() {
-        withAnimation(.easeInOut(duration: 0.6)) {
-            logoScale = 1.1
-            logoOpacity = 0
-            backgroundOpacity = 0
-            showContent = false
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            onComplete()
-        }
+        // Note: Dismissal is controlled by the parent coordinator
+        // No auto-dismiss here - wait for parent to set showSplash = false
     }
     
     // MARK: - Adaptive Sizing Functions

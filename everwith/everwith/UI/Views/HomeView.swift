@@ -68,43 +68,49 @@ struct HomeView: View {
                                         buttonPressedRestore = false
                                     }
                                 }) {
-                                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                                        // Gradient Icon
-                                        Image(systemName: "photo.badge.plus")
-                                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                            .foregroundStyle(LinearGradient.primaryBrand)
-                                            .frame(width: adaptiveSize(40, for: geometry), height: adaptiveSize(40, for: geometry))
-                                            .background(
-                                                Circle()
-                                                    .fill(Color.pureWhite)
-                                                    .overlay(
-                                                        Circle()
-                                                            .stroke(LinearGradient.primaryBrand, lineWidth: 2)
-                                                    )
-                                            )
+                                    HStack(spacing: 0) {
+                                        // Image Preview
+                                        Image("restore_image")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
+                                            .clipped()
+                                            .cornerRadius(adaptiveCornerRadius(20, for: geometry), corners: [.topLeft, .bottomLeft])
                                         
-                                        VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
-                                            Text("Photo Restore")
-                                                .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
-                                                .foregroundStyle(LinearGradient.primaryBrand)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.8)
+                                        // Content Section
+                                        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                                                Image(systemName: "photo.badge.plus")
+                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                                                    .foregroundStyle(LinearGradient.primaryBrand)
+                                                
+                                                Text("Photo Restore")
+                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                                                    .foregroundStyle(LinearGradient.primaryBrand)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.8)
+                                            }
                                             
                                             Text("Make old photos HD again")
                                                 .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
                                                 .foregroundColor(.softPlum)
-                                                .lineLimit(1)
+                                                .lineLimit(2)
                                                 .minimumScaleFactor(0.9)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            
+                                            Spacer()
+                                            
+                                            HStack {
+                                                Spacer()
+                                                Image(systemName: "arrow.right")
+                                                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                                    .foregroundStyle(LinearGradient.primaryBrand)
+                                            }
                                         }
-                                        
-                                        Spacer(minLength: adaptiveSpacing(8, for: geometry))
-                                        
-                                        Image(systemName: "arrow.right")
-                                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                            .foregroundStyle(LinearGradient.primaryBrand)
+                                        .padding(adaptiveSpacing(16, for: geometry))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .padding(.horizontal, adaptivePadding(for: geometry))
-                                    .padding(.vertical, adaptiveSpacing(16, for: geometry))
+                                    .frame(height: adaptiveSize(120, for: geometry))
                                     .background(
                                         RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
                                             .fill(Color.pureWhite)
@@ -119,6 +125,7 @@ struct HomeView: View {
                                                 y: buttonPressedRestore ? 2 : 4
                                             )
                                     )
+                                    .clipped()
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(buttonPressedRestore ? 0.96 : restoreButtonScale)
@@ -135,43 +142,49 @@ struct HomeView: View {
                                         buttonPressedTogether = false
                                     }
                                 }) {
-                                    HStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                                        // Gradient Icon
-                                        Image(systemName: "heart.circle.fill")
-                                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                            .foregroundStyle(LinearGradient.primaryBrand)
-                                            .frame(width: adaptiveSize(40, for: geometry), height: adaptiveSize(40, for: geometry))
-                                            .background(
-                                                Circle()
-                                                    .fill(Color.pureWhite)
-                                                    .overlay(
-                                                        Circle()
-                                                            .stroke(LinearGradient.primaryBrand, lineWidth: 2)
-                                                    )
-                                            )
+                                    HStack(spacing: 0) {
+                                        // Image Preview
+                                        Image("together_image")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
+                                            .clipped()
+                                            .cornerRadius(adaptiveCornerRadius(20, for: geometry), corners: [.topLeft, .bottomLeft])
                                         
-                                        VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
-                                            Text("Memory Merge")
-                                                .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
-                                                .foregroundStyle(LinearGradient.primaryBrand)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.8)
+                                        // Content Section
+                                        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                                                Image(systemName: "heart.circle.fill")
+                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                                                    .foregroundStyle(LinearGradient.primaryBrand)
+                                                
+                                                Text("Memory Merge")
+                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                                                    .foregroundStyle(LinearGradient.primaryBrand)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.8)
+                                            }
                                             
                                             Text("Bring old memories together")
                                                 .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
                                                 .foregroundColor(.softPlum)
-                                                .lineLimit(1)
+                                                .lineLimit(2)
                                                 .minimumScaleFactor(0.9)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            
+                                            Spacer()
+                                            
+                                            HStack {
+                                                Spacer()
+                                                Image(systemName: "arrow.right")
+                                                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                                    .foregroundStyle(LinearGradient.primaryBrand)
+                                            }
                                         }
-                                        
-                                        Spacer(minLength: adaptiveSpacing(8, for: geometry))
-                                        
-                                        Image(systemName: "arrow.right")
-                                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                            .foregroundStyle(LinearGradient.primaryBrand)
+                                        .padding(adaptiveSpacing(16, for: geometry))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .padding(.horizontal, adaptivePadding(for: geometry))
-                                    .padding(.vertical, adaptiveSpacing(16, for: geometry))
+                                    .frame(height: adaptiveSize(120, for: geometry))
                                     .background(
                                         RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
                                             .fill(Color.pureWhite)
@@ -186,6 +199,7 @@ struct HomeView: View {
                                                 y: buttonPressedTogether ? 2 : 4
                                             )
                                     )
+                                    .clipped()
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(buttonPressedTogether ? 0.96 : togetherButtonScale)
@@ -433,28 +447,33 @@ struct ModernHomeHeader: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: adaptiveSpacing(6, for: geometry)) {
-                HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                // Welcome back row
+                HStack(spacing: adaptiveSpacing(4, for: geometry)) {
                     Text("Welcome back")
-                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
                         .foregroundColor(.softPlum)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.7)
                     
                     Image(systemName: "sparkles")
-                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                        .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
                         .foregroundStyle(LinearGradient.primaryBrand)
+                        .layoutPriority(1)
                 }
                 
+                // User name with maximum constraints
                 Text(user.name)
-                    .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .bold, design: .rounded))
+                    .font(.system(size: adaptiveFontSize(22, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.deepPlum)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.6)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: geometry.size.width - (adaptivePadding(for: geometry) * 2), alignment: .leading)
             
-            Spacer()
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, adaptivePadding(for: geometry))
         .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 20 : 30)

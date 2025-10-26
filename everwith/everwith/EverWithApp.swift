@@ -50,7 +50,6 @@ struct AppCoordinator: View {
     @StateObject private var sessionManager = SessionManager.shared
     @State private var hasCompletedOnboarding = false
     @State private var showSessionExpiredAlert = false
-    @State private var showSplash = true
     
     var body: some View {
         content
@@ -58,6 +57,9 @@ struct AppCoordinator: View {
             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: authService.authenticationState)
             .environmentObject(authService)
             .environmentObject(sessionManager)
+            .onAppear {
+                checkOnboardingStatus()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
                 hasCompletedOnboarding = true
             }
@@ -82,49 +84,35 @@ struct AppCoordinator: View {
             }
     }
     
+    private func checkOnboardingStatus() {
+        hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        print("📱 ONBOARDING: Status - \(hasCompletedOnboarding ? "completed" : "not completed")")
+    }
+    
     @ViewBuilder
     private var content: some View {
-        if showSplash {
-            SplashView {
-                showSplash = false
-            }
-            .transition(.opacity)
-        } else if !hasCompletedOnboarding {
+        if !hasCompletedOnboarding {
             OnboardingView()
-                .onAppear {
-                    checkOnboardingStatus()
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .scale(scale: 0.95)),
-                    removal: .opacity.combined(with: .scale(scale: 1.05))
-                ))
+                .transition(.opacity)
         } else {
             switch authService.authenticationState {
             case .loading:
                 LoadingView()
                     .onAppear {
-                        // Ensure session is being validated
                         print("🔄 App loaded - checking for existing session...")
                     }
                     .transition(.opacity)
             case .authenticated(let user):
                 MainTabView(user: user)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             case .unauthenticated:
                 ModernAuthenticationView()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .bottom).combined(with: .opacity),
-                        removal: .move(edge: .top).combined(with: .opacity)
-                    ))
+                    .transition(.opacity)
             case .error(let message):
                 GeometryReader { geometry in
                     ErrorView(
                         error: message,
                         onRetry: {
-                            // Retry by setting to unauthenticated and letting user sign in again
                             authService.authenticationState = .unauthenticated
                         },
                         onDismiss: {
@@ -136,9 +124,5 @@ struct AppCoordinator: View {
                 }
             }
         }
-    }
-    
-    private func checkOnboardingStatus() {
-        hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     }
 }

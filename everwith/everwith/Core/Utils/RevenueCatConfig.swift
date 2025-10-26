@@ -37,18 +37,28 @@ class RevenueCatConfig {
     private init() {}
     
     func configure() {
-        // Configure RevenueCat
+        // Configure RevenueCat with error handling
         print("🚀 Configuring RevenueCat with project ID: app660b5a6b08")
+        
+        // Only enable debug logging in debug builds
+        #if DEBUG
         Purchases.logLevel = .debug
+        #else
+        Purchases.logLevel = .info
+        #endif
+        
+        // Configure RevenueCat - this may show warnings if packages aren't set up yet
+        // but won't crash the app
         Purchases.configure(withAPIKey: apiKey)
         
         // Set up delegate
         Purchases.shared.delegate = RevenueCatService.shared
         
-        // Configure offerings
+        // Configure offerings (may show warnings if not configured in dashboard)
         configureOfferings()
         
         print("✅ RevenueCat configuration completed")
+        print("⚠️ Note: Configure offerings with packages in RevenueCat dashboard to enable purchases")
     }
     
     private func configureOfferings() {

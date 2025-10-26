@@ -14,6 +14,8 @@ struct OnboardingCardData {
     let imageName: String
     let title: String
     let subtitle: String
+    let description: String
+    let features: [String]
 }
 
 struct OnboardingView: View {
@@ -26,80 +28,111 @@ struct OnboardingView: View {
     @State private var currentCardIndex = 0
     @State private var showPrivacyPolicy = false
     @State private var showTermsOfService = false
+    @State private var headerScale: CGFloat = 0.9
+    @State private var contentOpacity: Double = 0
+    @State private var buttonScale: CGFloat = 0.8
     
     private let onboardingCards = [
         OnboardingCardData(
             imageName: "OnboardingWelcome",
-            title: "Welcome to Everwith",
-            subtitle: "AI photo magic"
+            title: "Welcome to EverWith",
+            subtitle: "Where memories come alive",
+            description: "Transform your precious photos with AI-powered magic. Restore faded memories and create beautiful moments together.",
+            features: ["AI-powered restoration", "Professional quality", "Easy to use"]
         ),
         OnboardingCardData(
             imageName: "OnboardingRestore",
-            title: "Restore photos",
-            subtitle: "Bring memories back"
+            title: "Restore Old Photos",
+            subtitle: "Bring faded memories back to life",
+            description: "Our advanced AI technology can restore damaged, faded, or low-quality photos to stunning clarity. See your memories in HD quality.",
+            features: ["HD quality restoration", "Color enhancement", "Damage repair"]
         ),
         OnboardingCardData(
             imageName: "OnboardingTogether",
-            title: "Create together",
-            subtitle: "Merge loved ones"
+            title: "Create Together",
+            subtitle: "Merge loved ones in one frame",
+            description: "Combine photos of family members who were never photographed together. Create beautiful memories that never existed before.",
+            features: ["Realistic merging", "Multiple styles", "Natural results"]
         ),
         OnboardingCardData(
             imageName: "OnboardingPremium",
-            title: "Premium features",
-            subtitle: "Unlimited access"
+            title: "Unlock Premium",
+            subtitle: "Unlimited possibilities",
+            description: "Get unlimited access to all features, priority processing, and exclusive styles. Start your journey with a free trial.",
+            features: ["Unlimited processing", "Priority queue", "Premium styles"]
         )
     ]
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Clean background
-                Color.white
+                // Brand Background with Gradient
+                CleanWhiteBackground()
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Status bar spacer
                     Spacer()
-                        .frame(height: max(geometry.safeAreaInsets.top, 20) + 20)
+                        .frame(height: max(geometry.safeAreaInsets.top, 20) + adaptiveSpacing(20, for: geometry))
                     
                     // Main Content
                     VStack(spacing: 0) {
-                        Spacer()
-                        
-                        // Single Card Content
-                        SingleOnboardingCard(
-                            cardData: onboardingCards[currentCardIndex],
+                        // Progress Indicator
+                        OnboardingProgressIndicator(
+                            currentIndex: min(currentCardIndex, onboardingCards.count - 1),
+                            totalCount: onboardingCards.count,
                             geometry: geometry
                         )
+                        .padding(.horizontal, adaptivePadding(for: geometry))
+                        .padding(.bottom, adaptiveSpacing(24, for: geometry))
+                        
+                        // Single Card Content
+                        if currentCardIndex < onboardingCards.count {
+                            SingleOnboardingCard(
+                                cardData: onboardingCards[currentCardIndex],
+                                geometry: geometry
+                            )
                             .scaleEffect(showContent ? 1.0 : 0.8)
                             .opacity(showContent ? 1.0 : 0.0)
                             .animation(.spring(response: 0.8, dampingFraction: 0.8), value: showContent)
+                        }
                         
                         Spacer()
                         
                         // Action Section
-                        VStack(spacing: 24) {
+                        VStack(spacing: adaptiveSpacing(24, for: geometry)) {
                             // Card Navigation
                             if currentCardIndex < onboardingCards.count - 1 {
                                 Button(action: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                        currentCardIndex += 1
+                                        if currentCardIndex < onboardingCards.count - 1 {
+                                            currentCardIndex += 1
+                                        }
                                     }
                                 }) {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                                         Text("Next")
-                                            .font(.system(size: 18, weight: .semibold))
+                                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
                                         
                                         Image(systemName: "arrow.right")
-                                            .font(.system(size: 16, weight: .semibold))
+                                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
                                     }
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 12)
+                                    .foregroundColor(.deepPlum)
+                                    .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                                    .padding(.vertical, adaptiveSpacing(10, for: geometry))
                                     .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.1))
-                                            .background(.ultraThinMaterial)
+                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                                            .fill(Color.pureWhite)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
+                                                    .stroke(LinearGradient.cardGlow, lineWidth: 1)
+                                            )
+                                            .shadow(
+                                                color: Color.cardShadow,
+                                                radius: adaptiveSpacing(8, for: geometry),
+                                                x: 0,
+                                                y: adaptiveSpacing(2, for: geometry)
+                                            )
                                     )
                                 }
                             }
@@ -110,60 +143,69 @@ struct OnboardingView: View {
                                     requestPhotoPermission()
                                 }
                             }) {
-                                HStack(spacing: 12) {
-                                    Text("Continue")
-                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                                    Text(currentCardIndex == onboardingCards.count - 1 ? "Start Free Trial" : "Get Started")
+                                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                                        .minimumScaleFactor(0.8)
+                                        .lineLimit(1)
                                     
                                     Image(systemName: "arrow.right")
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold))
                                 }
-                                .foregroundColor(.black)
+                                .foregroundColor(.pureWhite)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 56)
+                                .frame(height: adaptiveSize(56, for: geometry))
                                 .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.yellow)
+                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                        .fill(LinearGradient.primaryBrand)
                                         .shadow(
-                                            color: Color.yellow.opacity(0.4),
-                                            radius: 12,
+                                            color: Color.blushPink.opacity(0.4),
+                                            radius: adaptiveSpacing(12, for: geometry),
                                             x: 0,
-                                            y: 6
+                                            y: adaptiveSpacing(6, for: geometry)
                                         )
                                 )
                             }
-                            .scaleEffect(isAnimating ? 1.05 : 1.0)
-                            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
-                            .padding(.horizontal, 32)
+                            .scaleEffect(buttonScale)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: buttonScale)
+                            .padding(.horizontal, adaptivePadding(for: geometry))
                             
                             // Footer Links
-                            HStack(spacing: 24) {
+                            HStack(spacing: adaptiveSpacing(24, for: geometry)) {
                                 Button("Privacy") {
                                     showPrivacyPolicy = true
                                 }
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.black.opacity(0.6))
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                .foregroundColor(.softPlum)
                                 
                                 Text("•")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.black.opacity(0.4))
+                                    .font(.system(size: adaptiveFontSize(14, for: geometry)))
+                                    .foregroundColor(.softPlum.opacity(0.4))
                                 
                                 Button("Terms") {
                                     showTermsOfService = true
                                 }
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.black.opacity(0.6))
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                .foregroundColor(.softPlum)
                             }
-                            .padding(.bottom, 8)
+                            .padding(.bottom, adaptiveSpacing(8, for: geometry))
                         }
-                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + 32)
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 20) + adaptiveSpacing(32, for: geometry))
                     }
                 }
             }
         }
         .ignoresSafeArea(.all)
         .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                headerScale = 1.0
+            }
             withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
                 showContent = true
+                contentOpacity = 1.0
+            }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3)) {
+                buttonScale = 1.0
             }
             withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(1.0)) {
                 isAnimating = true
@@ -265,65 +307,225 @@ struct OnboardingView: View {
         
         print("Onboarding completed!")
     }
+    
+    // MARK: - Adaptive Sizing Functions
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
+    }
+    
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
+        return base * scaleFactor
+    }
 }
 
 // MARK: - Single Onboarding Card
 struct SingleOnboardingCard: View {
     let cardData: OnboardingCardData
     let geometry: GeometryProxy
-    @State private var iconScale: CGFloat = 0.9
+    @State private var imageScale: CGFloat = 0.9
+    @State private var imageOpacity: Double = 0
     @State private var textOpacity: Double = 0
+    @State private var featuresOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: 24) {
-            // Clean Image Focus
-            Image(cardData.imageName)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 200, height: 200)
-                .scaleEffect(iconScale)
-                .shadow(
-                    color: Color.black.opacity(0.1),
-                    radius: 8,
-                    x: 0,
-                    y: 4
-                )
+        VStack(spacing: adaptiveSpacing(32, for: geometry)) {
+            // Hero Image Section - Main Focus
+            VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                ZStack {
+                    // Background glow effect
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.blushPink.opacity(0.1),
+                                    Color.roseMagenta.opacity(0.05)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: adaptiveSize(280, for: geometry), height: adaptiveSize(280, for: geometry))
+                        .blur(radius: adaptiveSpacing(20, for: geometry))
+                        .opacity(imageOpacity)
+                    
+                    // Main product image
+                    Image(cardData.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: adaptiveSize(240, for: geometry), height: adaptiveSize(240, for: geometry))
+                        .scaleEffect(imageScale)
+                        .shadow(
+                            color: Color.black.opacity(0.15),
+                            radius: adaptiveSpacing(20, for: geometry),
+                            x: 0,
+                            y: adaptiveSpacing(8, for: geometry)
+                        )
+                        .opacity(imageOpacity)
+                }
+            }
             
-            // Content
-            VStack(spacing: 12) {
-                Text(cardData.title)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
+            // Content Section
+            VStack(spacing: adaptiveSpacing(20, for: geometry)) {
+                // Title and Subtitle
+                VStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                    Text(cardData.title)
+                        .font(.system(size: adaptiveFontSize(32, for: geometry), weight: .bold, design: .rounded))
+                        .foregroundColor(.deepPlum)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(2)
+                        .opacity(textOpacity)
+                    
+                    Text(cardData.subtitle)
+                        .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .semibold, design: .rounded))
+                        .foregroundColor(.softPlum)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(2)
+                        .opacity(textOpacity)
+                }
+                
+                // Description
+                Text(cardData.description)
+                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .regular))
+                    .foregroundColor(.deepPlum.opacity(0.8))
                     .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.8)
-                    .lineLimit(nil)
+                    .lineSpacing(adaptiveSpacing(4, for: geometry))
+                    .lineLimit(4)
+                    .minimumScaleFactor(0.9)
                     .opacity(textOpacity)
                 
-                Text(cardData.subtitle)
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundColor(.black.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(nil)
-                    .minimumScaleFactor(0.8)
-                    .opacity(textOpacity)
+                // Features List
+                VStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                    ForEach(cardData.features, id: \.self) { feature in
+                        HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                .foregroundColor(.blushPink)
+                            
+                            Text(feature)
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                .foregroundColor(.deepPlum.opacity(0.8))
+                        }
+                        .opacity(featuresOpacity)
+                    }
+                }
+                .padding(.top, adaptiveSpacing(8, for: geometry))
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, adaptiveSpacing(24, for: geometry))
         }
-        .padding(24)
+        .padding(adaptiveSpacing(32, for: geometry))
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
-                .background(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: adaptiveCornerRadius(24, for: geometry))
+                .fill(Color.pureWhite)
+                .overlay(
+                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(24, for: geometry))
+                        .stroke(LinearGradient.cardGlow, lineWidth: 1)
+                )
+                .shadow(
+                    color: Color.cardShadow,
+                    radius: adaptiveSpacing(20, for: geometry),
+                    x: 0,
+                    y: adaptiveSpacing(8, for: geometry)
+                )
         )
-        .padding(.horizontal, 20)
+        .padding(.horizontal, adaptiveSpacing(24, for: geometry))
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
-                iconScale = 1.0
+            // Staggered animations for maximum impact
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {
+                imageScale = 1.0
+                imageOpacity = 1.0
             }
-            withAnimation(.easeInOut(duration: 0.5).delay(0.4)) {
+            withAnimation(.easeOut(duration: 0.6).delay(0.3)) {
                 textOpacity = 1.0
             }
+            withAnimation(.easeOut(duration: 0.5).delay(0.5)) {
+                featuresOpacity = 1.0
+            }
         }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+}
+
+// MARK: - Progress Indicator
+struct OnboardingProgressIndicator: View {
+    let currentIndex: Int
+    let totalCount: Int
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+            ForEach(0..<totalCount, id: \.self) { index in
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(2, for: geometry))
+                    .fill(index <= currentIndex ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.softPlum.opacity(0.3)))
+                    .frame(height: adaptiveSize(4, for: geometry))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: currentIndex)
+            }
+        }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
     }
 }
 
@@ -334,43 +536,71 @@ struct FilesPickerView: View {
     var body: some View {
         GeometryReader { geometry in
             NavigationView {
-                VStack(spacing: 32) {
-                    // Icon
-                    Image(systemName: "folder.badge.plus")
-                        .font(.system(size: 60, weight: .medium))
-                        .foregroundColor(.yellow)
+                ZStack {
+                    CleanWhiteBackground()
+                        .ignoresSafeArea()
                     
-                    VStack(spacing: 16) {
-                        Text("No problem—use Files instead.")
-                            .font(.system(size: 20, weight: .semibold, design: .rounded))
-                            .foregroundColor(.black)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                    VStack(spacing: adaptiveSpacing(32, for: geometry)) {
+                        // Icon
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.blushPink.opacity(0.1),
+                                            Color.roseMagenta.opacity(0.05)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
+                            
+                            Image(systemName: "folder.badge.plus")
+                                .font(.system(size: adaptiveFontSize(50, for: geometry), weight: .medium))
+                                .foregroundStyle(LinearGradient.primaryBrand)
+                        }
                         
-                        Text("Select photos from your Files app to restore them.")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(.black.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(geometry.isSmallScreen ? 4 : 3)
+                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                            Text("No problem—use Files instead.")
+                                .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .bold, design: .rounded))
+                                .foregroundColor(.deepPlum)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                                .minimumScaleFactor(0.8)
+                            
+                            Text("Select photos from your Files app to restore them.")
+                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .regular))
+                                .foregroundColor(.softPlum)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(geometry.isSmallScreen ? 4 : 3)
+                                .minimumScaleFactor(0.9)
+                        }
+                        
+                        Spacer()
+                        
+                        Button("Open Files") {
+                            // Handle file picker
+                            dismiss()
+                        }
+                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                        .foregroundColor(.pureWhite)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: adaptiveSize(56, for: geometry))
+                        .background(
+                            RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                .fill(LinearGradient.primaryBrand)
+                                .shadow(
+                                    color: Color.blushPink.opacity(0.4),
+                                    radius: adaptiveSpacing(12, for: geometry),
+                                    x: 0,
+                                    y: adaptiveSpacing(6, for: geometry)
+                                )
+                        )
+                        .padding(.horizontal, adaptivePadding(for: geometry))
                     }
-                    
-                    Spacer()
-                    
-                    Button("Open Files") {
-                        // Handle file picker
-                        dismiss()
-                    }
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.yellow)
-                    )
-                    .padding(.horizontal, 32)
+                    .padding(adaptiveSpacing(32, for: geometry))
                 }
-                .padding(32)
                 .navigationTitle("Files")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -378,10 +608,41 @@ struct FilesPickerView: View {
                         Button("Cancel") {
                             dismiss()
                         }
+                        .foregroundColor(.deepPlum)
                     }
                 }
             }
         }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
     }
 }
 
@@ -393,74 +654,96 @@ struct PermissionDeniedSheet: View {
     var body: some View {
         GeometryReader { geometry in
             NavigationView {
-                VStack(spacing: 32) {
-                    // Header
-                    VStack(spacing: 24) {
-                        Image(systemName: "photo.badge.exclamationmark")
-                            .font(.system(size: 60, weight: .medium))
-                            .foregroundColor(.yellow)
-                        
-                        VStack(spacing: 16) {
-                            Text("Photos Access Needed")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundColor(.black)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(geometry.isSmallScreen ? 3 : 2)
-                                .minimumScaleFactor(0.8)
-                            
-                            Text("To restore your precious memories, we need access to your photo library.")
-                                .font(.system(size: 18, weight: .regular))
-                                .foregroundColor(.black.opacity(0.7))
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(4)
-                                .lineLimit(geometry.isSmallScreen ? 5 : 3)
-                        }
-                    }
-                    .padding(.top, 32)
+                ZStack {
+                    CleanWhiteBackground()
+                        .ignoresSafeArea()
                     
-                    Spacer()
-                    
-                    // Options
-                    VStack(spacing: 16) {
-                        Button(action: onTryAgain) {
-                            Text("Try Again")
-                                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                .foregroundColor(.black)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.yellow)
-                                        .shadow(
-                                            color: Color.yellow.opacity(0.3),
-                                            radius: 8,
-                                            x: 0,
-                                            y: 4
+                    VStack(spacing: adaptiveSpacing(32, for: geometry)) {
+                        // Header
+                        VStack(spacing: adaptiveSpacing(24, for: geometry)) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.blushPink.opacity(0.1),
+                                                Color.roseMagenta.opacity(0.05)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
                                         )
-                                )
-                        }
-                        
-                        Button(action: onUseFiles) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "folder")
-                                    .font(.system(size: 16, weight: .medium))
-                                Text("Pick from Files")
-                                    .font(.system(size: 16, weight: .medium))
+                                    )
+                                    .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
+                                
+                                Image(systemName: "photo.badge.exclamationmark")
+                                    .font(.system(size: adaptiveFontSize(50, for: geometry), weight: .medium))
+                                    .foregroundStyle(LinearGradient.primaryBrand)
                             }
-                            .foregroundColor(.black.opacity(0.8))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color.clear)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.black.opacity(0.2), lineWidth: 1)
-                            )
+                            
+                            VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                                Text("Photos Access Needed")
+                                    .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
+                                    .foregroundColor(.deepPlum)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(geometry.isSmallScreen ? 3 : 2)
+                                    .minimumScaleFactor(0.8)
+                                
+                                Text("To restore your precious memories, we need access to your photo library.")
+                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .regular))
+                                    .foregroundColor(.softPlum)
+                                    .multilineTextAlignment(.center)
+                                    .lineSpacing(adaptiveSpacing(4, for: geometry))
+                                    .lineLimit(geometry.isSmallScreen ? 5 : 3)
+                                    .minimumScaleFactor(0.9)
+                            }
                         }
+                        .padding(.top, adaptiveSpacing(32, for: geometry))
+                        
+                        Spacer()
+                        
+                        // Options
+                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                            Button(action: onTryAgain) {
+                                Text("Try Again")
+                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                                    .foregroundColor(.pureWhite)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: adaptiveSize(56, for: geometry))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                            .fill(LinearGradient.primaryBrand)
+                                            .shadow(
+                                                color: Color.blushPink.opacity(0.4),
+                                                radius: adaptiveSpacing(12, for: geometry),
+                                                x: 0,
+                                                y: adaptiveSpacing(6, for: geometry)
+                                            )
+                                    )
+                            }
+                            
+                            Button(action: onUseFiles) {
+                                HStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                                    Image(systemName: "folder")
+                                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                                    Text("Pick from Files")
+                                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                                        .minimumScaleFactor(0.8)
+                                        .lineLimit(1)
+                                }
+                                .foregroundColor(.deepPlum)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: adaptiveSize(48, for: geometry))
+                                .background(Color.pureWhite)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(16, for: geometry))
+                                        .stroke(LinearGradient.cardGlow, lineWidth: 1)
+                                )
+                            }
+                        }
+                        .padding(.horizontal, adaptivePadding(for: geometry))
+                        .padding(.bottom, adaptiveSpacing(32, for: geometry))
                     }
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 32)
                 }
-                .background(Color.white)
                 .navigationTitle("Permission")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -468,12 +751,43 @@ struct PermissionDeniedSheet: View {
                         Button("Cancel") {
                             onUseFiles() // Default to files if cancelled
                         }
+                        .foregroundColor(.deepPlum)
                     }
                 }
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
+    }
+    
+    // MARK: - Adaptive Functions
+    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    }
+    
+    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        let scaleFactor = screenWidth / 375.0
+        return base * scaleFactor
+    }
+    
+    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
+        let screenWidth = geometry.size.width
+        return max(12, min(16, screenWidth * 0.04))
     }
 }
 

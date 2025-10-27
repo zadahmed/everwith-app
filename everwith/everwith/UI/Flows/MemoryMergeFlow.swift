@@ -667,33 +667,3 @@ struct MergeResultView: View {
         .environmentObject(ImageProcessingService.shared)
 }
 
-// MARK: - Adaptive Functions
-private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    return max(12, min(16, screenWidth * 0.04))
-}
-
-private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return base * scaleFactor
-}
-
-private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-}
-
-private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return base * scaleFactor
-}
-
-private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return base * scaleFactor
-}
-

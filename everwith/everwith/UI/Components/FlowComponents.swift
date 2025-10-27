@@ -90,22 +90,6 @@ struct UploadCard: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
-    
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
 }
 
 // MARK: - Progress Animation Component
@@ -186,22 +170,6 @@ struct ProgressAnimation: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(CleanWhiteBackground())
     }
-    
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
 }
 
 // MARK: - Result Action Buttons Component
@@ -271,54 +239,8 @@ struct ResultActionButtons: View {
             }
         }
         .padding(.horizontal, adaptiveSpacing(20, for: geometry))
-        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 16 : 24)
+            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 16 : 24)
     }
-    
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return base * (screenWidth / 375.0)
-    }
-}
-
-// MARK: - Adaptive Helper Functions for ContinueButton
-private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return base * scaleFactor
-}
-
-private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-}
-
-private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return base * scaleFactor
-}
-
-private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-    let screenWidth = geometry.size.width
-    let scaleFactor = screenWidth / 375.0
-    return base * scaleFactor
 }
 
 // MARK: - Before/After Slider Component
@@ -417,12 +339,6 @@ struct BeforeAfterSlider: View {
                 )
             }
         }
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
     }
 }
 

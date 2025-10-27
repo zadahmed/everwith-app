@@ -93,6 +93,19 @@ class NetworkService: ObservableObject {
                 throw NetworkError.sessionExpired
             }
             
+            // Handle content moderation (400 Bad Request)
+            if httpResponse.statusCode == 400 {
+                // Try to extract error message from response
+                if let errorData = try? JSONDecoder().decode([String: String].self, from: data),
+                   let detail = errorData["detail"] {
+                    if detail.contains("Content Moderated") || detail.contains("content was flagged") {
+                        throw NetworkError.contentModerated(detail)
+                    }
+                    throw NetworkError.httpError(httpResponse.statusCode)
+                }
+                throw NetworkError.httpError(httpResponse.statusCode)
+            }
+            
             guard httpResponse.statusCode == 200 else {
                 throw NetworkError.httpError(httpResponse.statusCode)
             }
@@ -162,6 +175,7 @@ enum NetworkError: LocalizedError {
     case httpError(Int)
     case networkError(Error)
     case decodingError(Error)
+    case contentModerated(String)
     
     var errorDescription: String? {
         switch self {
@@ -175,6 +189,8 @@ enum NetworkError: LocalizedError {
             return "Network error: \(error.localizedDescription)"
         case .decodingError(let error):
             return "Failed to decode response: \(error.localizedDescription)"
+        case .contentModerated(let message):
+            return message
         }
     }
 }

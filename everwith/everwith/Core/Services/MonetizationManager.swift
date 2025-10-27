@@ -22,11 +22,26 @@ class MonetizationManager: ObservableObject {
     @Published var creditCosts: CreditCosts?
     @Published var userCredits: Int = 0
     
+    // MARK: - Testing Override
+    #if DEBUG
+    // Set to true to override credits to 0 for testing in simulator
+    var overrideTestingCredits: Bool = true
+    var testingCredits: Int = 1000000 // Set this value for testing (0 = no credits)
+    #endif
+    
     let revenueCatService = RevenueCatService.shared
     private let apiService = SubscriptionAPIService.shared
     private let subscriptionService = SubscriptionService.shared
     
     private init() {
+        #if DEBUG
+        // Set initial credits for testing
+        if overrideTestingCredits {
+            userCredits = testingCredits
+            print("🧪 TESTING MODE: Credits set to \(testingCredits)")
+        }
+        #endif
+        
         Task {
             await fetchCreditCosts()
         }
@@ -61,6 +76,14 @@ class MonetizationManager: ObservableObject {
     }
     
     func checkAccess(for mode: ProcessingMode) async -> Bool {
+        #if DEBUG
+        if overrideTestingCredits {
+            userCredits = testingCredits
+            // Return false to trigger paywall (testing scenario with 0 credits)
+            return testingCredits > 0
+        }
+        #endif
+        
         do {
             let response = try await apiService.checkAccess(mode: mode.rawValue)
             userCredits = response.remainingCredits

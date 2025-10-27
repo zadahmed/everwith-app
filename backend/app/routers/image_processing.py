@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from app.models.schemas import RestoreRequest, TogetherRequest, JobResult
+from app.models.schemas import RestoreRequest, TogetherRequest, JobResult, TimelineRequest, CelebrityRequest, ReuniteRequest, FamilyRequest
 from app.models.database import User
 from app.core.security import get_current_user
 from app.services.image_processing import ImageProcessingService
@@ -172,4 +172,79 @@ async def together_photo(
         raise HTTPException(
             status_code=500,
             detail=f"Together photo creation failed: {str(e)}"
+        )
+
+@router.post("/timeline", response_model=JobResult)
+async def timeline_photo(
+    req: TimelineRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create age progression or regression for a person.
+    
+    This endpoint transforms a photo to show the person at a different age.
+    """
+    try:
+        return ImageProcessingService.timeline_pipeline(req)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Timeline transformation failed: {str(e)}"
+        )
+
+@router.post("/celebrity", response_model=JobResult)
+async def celebrity_photo(
+    req: CelebrityRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Transform a photo to give it a celebrity glamour treatment.
+    
+    This endpoint:
+    - Applies glamour makeup and styling
+    - Enhances lighting and composition
+    - Adds celebrity-like polish and refinement
+    """
+    try:
+        return ImageProcessingService.celebrity_pipeline(req)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Celebrity transformation failed: {str(e)}"
+        )
+
+@router.post("/reunite", response_model=JobResult)
+async def reunite_photo(
+    req: ReuniteRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create a photo that reunites two people who couldn't be together in real life.
+    
+    This endpoint combines two people into a natural scene together.
+    """
+    try:
+        return ImageProcessingService.reunite_pipeline(req)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Reunite photo creation failed: {str(e)}"
+        )
+
+@router.post("/family", response_model=JobResult)
+async def family_photo(
+    req: FamilyRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create enhanced family photos or memory collages.
+    
+    This endpoint combines and enhances multiple family photos.
+    """
+    try:
+        return ImageProcessingService.family_pipeline(req)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Family photo processing failed: {str(e)}"
         )

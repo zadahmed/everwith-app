@@ -508,6 +508,363 @@ class ImageProcessingService: ObservableObject {
         return migrationResult
     }
     
+    // MARK: - Timeline Processing
+    
+    func processTimeline(
+        image: UIImage,
+        targetAge: TimelineAge,
+        qualityTarget: ImageProcessingQuality = .standard,
+        outputFormat: ImageProcessingFormat = .png,
+        aspectRatio: AspectRatio = .original,
+        seed: Int? = nil
+    ) async throws -> UIImage {
+        
+        print("🔄 ImageProcessingService.processTimeline called")
+        
+        await MainActor.run {
+            processingState = .uploading
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Uploading image",
+                totalSteps: 3,
+                currentStepIndex: 0
+            )
+        }
+        
+        let imageUrl = try await uploadImage(image)
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Processing timeline",
+                totalSteps: 3,
+                currentStepIndex: 1
+            )
+        }
+        
+        let timelineRequest = TimelineRequest(
+            imageUrl: imageUrl,
+            targetAge: targetAge,
+            qualityTarget: qualityTarget,
+            outputFormat: outputFormat,
+            aspectRatio: aspectRatio,
+            seed: seed
+        )
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Transforming image",
+                totalSteps: 3,
+                currentStepIndex: 2
+            )
+        }
+        
+        let result = try await callTimelineAPI(request: timelineRequest)
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Complete",
+                totalSteps: 3,
+                currentStepIndex: 3
+            )
+            processingState = .completed(result)
+        }
+        
+        return try await downloadProcessedImage(from: result.outputUrl)
+    }
+    
+    private func callTimelineAPI(request: TimelineRequest) async throws -> JobResult {
+        guard let url = URL(string: AppConfiguration.imageProcessingURL(for: AppConfiguration.ImageProcessingEndpoints.timeline)) else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let requestData = try encoder.encode(request)
+        
+        do {
+            return try await networkService.makeAuthenticatedRequest(
+                url: url,
+                method: .POST,
+                body: requestData,
+                responseType: JobResult.self
+            )
+        } catch let error as NetworkError {
+            if case .contentModerated(let message) = error {
+                throw ImageProcessingError.contentModerated
+            }
+            throw ImageProcessingError.networkError(error)
+        } catch {
+            throw ImageProcessingError.networkError(error)
+        }
+    }
+    
+    // MARK: - Celebrity Processing
+    
+    func processCelebrity(
+        image: UIImage,
+        celebrityStyle: CelebrityStyle,
+        qualityTarget: ImageProcessingQuality = .standard,
+        outputFormat: ImageProcessingFormat = .png,
+        aspectRatio: AspectRatio = .original,
+        seed: Int? = nil
+    ) async throws -> UIImage {
+        await MainActor.run {
+            processingState = .uploading
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Uploading image",
+                totalSteps: 3,
+                currentStepIndex: 0
+            )
+        }
+        
+        let imageUrl = try await uploadImage(image)
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Processing celebrity transformation",
+                totalSteps: 3,
+                currentStepIndex: 1
+            )
+        }
+        
+        let celebrityRequest = CelebrityRequest(
+            imageUrl: imageUrl,
+            celebrityStyle: celebrityStyle,
+            qualityTarget: qualityTarget,
+            outputFormat: outputFormat,
+            aspectRatio: aspectRatio,
+            seed: seed
+        )
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Transforming image",
+                totalSteps: 3,
+                currentStepIndex: 2
+            )
+        }
+        
+        let result = try await callCelebrityAPI(request: celebrityRequest)
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Complete",
+                totalSteps: 3,
+                currentStepIndex: 3
+            )
+            processingState = .completed(result)
+        }
+        
+        return try await downloadProcessedImage(from: result.outputUrl)
+    }
+    
+    private func callCelebrityAPI(request: CelebrityRequest) async throws -> JobResult {
+        guard let url = URL(string: AppConfiguration.imageProcessingURL(for: AppConfiguration.ImageProcessingEndpoints.celebrity)) else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let requestData = try encoder.encode(request)
+        
+        do {
+            return try await networkService.makeAuthenticatedRequest(
+                url: url,
+                method: .POST,
+                body: requestData,
+                responseType: JobResult.self
+            )
+        } catch let error as NetworkError {
+            if case .contentModerated(_) = error {
+                throw ImageProcessingError.contentModerated
+            }
+            throw ImageProcessingError.networkError(error)
+        } catch {
+            throw ImageProcessingError.networkError(error)
+        }
+    }
+    
+    // MARK: - Reunite Processing
+    
+    func processReunite(
+        imageA: UIImage,
+        imageB: UIImage,
+        backgroundPrompt: String? = nil,
+        qualityTarget: ImageProcessingQuality = .standard,
+        outputFormat: ImageProcessingFormat = .png,
+        aspectRatio: AspectRatio = .fourFive,
+        seed: Int? = nil
+    ) async throws -> UIImage {
+        await MainActor.run {
+            processingState = .uploading
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Uploading images",
+                totalSteps: 4,
+                currentStepIndex: 0
+            )
+        }
+        
+        let imageAUrl = try await uploadImage(imageA, fileName: "reunite_a.jpg")
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Uploading second image",
+                totalSteps: 4,
+                currentStepIndex: 1
+            )
+        }
+        
+        let imageBUrl = try await uploadImage(imageB, fileName: "reunite_b.jpg")
+        
+        await MainActor.run {
+            processingState = .processing
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Creating reunion",
+                totalSteps: 4,
+                currentStepIndex: 2
+            )
+        }
+        
+        let reuniteRequest = ReuniteRequest(
+            imageAUrl: imageAUrl,
+            imageBUrl: imageBUrl,
+            backgroundPrompt: backgroundPrompt,
+            qualityTarget: qualityTarget,
+            outputFormat: outputFormat,
+            aspectRatio: aspectRatio,
+            seed: seed
+        )
+        
+        let result = try await callReuniteAPI(request: reuniteRequest)
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Complete",
+                totalSteps: 4,
+                currentStepIndex: 4
+            )
+            processingState = .completed(result)
+        }
+        
+        return try await downloadProcessedImage(from: result.outputUrl)
+    }
+    
+    private func callReuniteAPI(request: ReuniteRequest) async throws -> JobResult {
+        guard let url = URL(string: AppConfiguration.imageProcessingURL(for: AppConfiguration.ImageProcessingEndpoints.reunite)) else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let requestData = try encoder.encode(request)
+        
+        do {
+            return try await networkService.makeAuthenticatedRequest(
+                url: url,
+                method: .POST,
+                body: requestData,
+                responseType: JobResult.self
+            )
+        } catch let error as NetworkError {
+            if case .contentModerated(_) = error {
+                throw ImageProcessingError.contentModerated
+            }
+            throw ImageProcessingError.networkError(error)
+        } catch {
+            throw ImageProcessingError.networkError(error)
+        }
+    }
+    
+    // MARK: - Family Processing
+    
+    func processFamily(
+        images: [UIImage],
+        style: FamilyStyle = .enhanced,
+        qualityTarget: ImageProcessingQuality = .standard,
+        outputFormat: ImageProcessingFormat = .png,
+        aspectRatio: AspectRatio = .original,
+        seed: Int? = nil
+    ) async throws -> UIImage {
+        await MainActor.run {
+            processingState = .uploading
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Uploading images",
+                totalSteps: 3,
+                currentStepIndex: 0
+            )
+        }
+        
+        var imageUrls: [String] = []
+        for (index, image) in images.enumerated() {
+            let url = try await uploadImage(image, fileName: "family_\(index).jpg")
+            imageUrls.append(url)
+            
+            await MainActor.run {
+                processingProgress = ImageProcessingProgress(
+                    currentStep: "Uploading image \(index + 1) of \(images.count)",
+                    totalSteps: 3,
+                    currentStepIndex: 0
+                )
+            }
+        }
+        
+        await MainActor.run {
+            processingState = .processing
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Processing family photos",
+                totalSteps: 3,
+                currentStepIndex: 1
+            )
+        }
+        
+        let familyRequest = FamilyRequest(
+            images: imageUrls,
+            style: style,
+            qualityTarget: qualityTarget,
+            outputFormat: outputFormat,
+            aspectRatio: aspectRatio,
+            seed: seed
+        )
+        
+        let result = try await callFamilyAPI(request: familyRequest)
+        
+        await MainActor.run {
+            processingProgress = ImageProcessingProgress(
+                currentStep: "Complete",
+                totalSteps: 3,
+                currentStepIndex: 3
+            )
+            processingState = .completed(result)
+        }
+        
+        return try await downloadProcessedImage(from: result.outputUrl)
+    }
+    
+    private func callFamilyAPI(request: FamilyRequest) async throws -> JobResult {
+        guard let url = URL(string: AppConfiguration.imageProcessingURL(for: AppConfiguration.ImageProcessingEndpoints.family)) else {
+            throw ImageProcessingError.invalidURL
+        }
+        
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let requestData = try encoder.encode(request)
+        
+        do {
+            return try await networkService.makeAuthenticatedRequest(
+                url: url,
+                method: .POST,
+                body: requestData,
+                responseType: JobResult.self
+            )
+        } catch let error as NetworkError {
+            if case .contentModerated(_) = error {
+                throw ImageProcessingError.contentModerated
+            }
+            throw ImageProcessingError.networkError(error)
+        } catch {
+            throw ImageProcessingError.networkError(error)
+        }
+    }
+    
     // MARK: - Reset State
     
     func resetState() {
@@ -538,6 +895,7 @@ enum ImageProcessingError: LocalizedError {
     case networkError(Error)
     case downloadFailed
     case processingFailed(String)
+    case contentModerated
     
     var errorDescription: String? {
         switch self {
@@ -555,6 +913,15 @@ enum ImageProcessingError: LocalizedError {
             return "Failed to download processed image"
         case .processingFailed(let message):
             return "Processing failed: \(message)"
+        case .contentModerated:
+            return "⚠️ Content Moderated\n\nYour image was flagged by our safety system. Please try a different photo.\n\nTIPS:\n• Use clear, appropriate photos\n• Avoid sensitive or inappropriate content\n• Try a different image"
         }
+    }
+    
+    var isContentModeratedError: Bool {
+        if case .contentModerated = self {
+            return true
+        }
+        return false
     }
 }

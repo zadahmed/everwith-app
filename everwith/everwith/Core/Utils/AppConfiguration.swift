@@ -76,6 +76,10 @@ struct AppConfiguration {
         static let upload = "/api/v1/upload"
         static let restore = "/api/v1/restore"
         static let together = "/api/v1/together"
+        static let timeline = "/api/v1/timeline"
+        static let celebrity = "/api/v1/celebrity"
+        static let reunite = "/api/v1/reunite"
+        static let family = "/api/v1/family"
     }
     
     // MARK: - Debug Information

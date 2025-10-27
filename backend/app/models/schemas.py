@@ -114,9 +114,43 @@ class JobResult(BaseModel):
     output_url: str
     meta: dict
 
+# New Mode Schemas
+class TimelineRequest(BaseModel):
+    image_url: AnyHttpUrl
+    target_age: Literal["young", "current", "old"] = "current"
+    quality_target: Literal["standard", "premium"] = "standard"
+    output_format: Literal["png", "webp", "jpg"] = "png"
+    aspect_ratio: Literal["original", "4:5", "1:1", "16:9"] = "original"
+    seed: Optional[int] = None
+
+class CelebrityRequest(BaseModel):
+    image_url: AnyHttpUrl
+    celebrity_style: Literal["movie_star", "royal", "vintage_glamour", "modern_celebrity"] = "movie_star"
+    quality_target: Literal["standard", "premium"] = "standard"
+    output_format: Literal["png", "webp", "jpg"] = "png"
+    aspect_ratio: Literal["original", "4:5", "1:1", "16:9"] = "original"
+    seed: Optional[int] = None
+
+class ReuniteRequest(BaseModel):
+    image_a_url: AnyHttpUrl
+    image_b_url: AnyHttpUrl
+    background_prompt: Optional[str] = None
+    quality_target: Literal["standard", "premium"] = "standard"
+    output_format: Literal["png", "webp", "jpg"] = "png"
+    aspect_ratio: Literal["original", "4:5", "1:1", "16:9"] = "original"
+    seed: Optional[int] = None
+
+class FamilyRequest(BaseModel):
+    images: list[str]  # List of image URLs
+    style: Literal["collage", "composite", "enhanced"] = "enhanced"
+    quality_target: Literal["standard", "premium"] = "standard"
+    output_format: Literal["png", "webp", "jpg"] = "png"
+    aspect_ratio: Literal["original", "4:5", "1:1", "16:9"] = "original"
+    seed: Optional[int] = None
+
 # Processed Image Schemas
 class ProcessedImageCreate(BaseModel):
-    image_type: Literal["restore", "together"]
+    image_type: Literal["restore", "together", "timeline", "celebrity", "reunite", "family"]
     original_image_url: Optional[str] = None
     processed_image_url: str
     thumbnail_url: Optional[str] = None

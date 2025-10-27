@@ -8,6 +8,10 @@ import SwiftUI
 enum NavigationDestination: Hashable {
     case restore
     case together
+    case timeline
+    case celebrity
+    case reunite
+    case family
     case settings
     case myCreations
     case premium
@@ -20,227 +24,133 @@ struct HomeView: View {
     @State private var navigationPath = NavigationPath()
     @State private var animateElements = false
     @State private var headerScale: CGFloat = 0.9
-    @State private var welcomeCardOpacity: Double = 0
-    @State private var restoreButtonScale: CGFloat = 0.9
-    @State private var togetherButtonScale: CGFloat = 0.9
+    @State private var cardOpacity: Double = 0
     @State private var buttonPressedRestore: Bool = false
     @State private var buttonPressedTogether: Bool = false
     @State private var recentImages: [ProcessedImage] = []
     @State private var isLoadingHistory = false
     @StateObject private var imageProcessingService = ImageProcessingService.shared
+    @State private var carouselOffset: CGFloat = 0
+    @State private var galleryTimer: Timer?
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
             GeometryReader { geometry in
                 ZStack {
-                    // Clean White Background with Subtle Gradient Band
+                    // Clean White Background
                     CleanWhiteBackground()
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .ignoresSafeArea(.all, edges: .all)
                 
                 VStack(spacing: 0) {
-                    // Fixed Header (outside scroll view)
-                    ModernHomeHeader(user: user, geometry: geometry)
-                        .scaleEffect(headerScale)
-                        .opacity(animateElements ? 1 : 0)
-                        .background(Color.clear)
-                    
                     // Scrollable Content
                     ScrollView {
-                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
-                            // Welcome Message
-                            WelcomeMessageCard(geometry: geometry)
-                                .padding(.horizontal, adaptivePadding(for: geometry))
-                                .opacity(welcomeCardOpacity)
-                                .offset(y: animateElements ? 0 : 20)
-                                .padding(.top, adaptiveSpacing(16, for: geometry))
+                        VStack(spacing: 0) {
+                            // Header with Trust Bar
+                            ModernHomeHeader3(user: user, geometry: geometry)
+                                .scaleEffect(headerScale)
+                                .opacity(animateElements ? 1 : 0)
+                                .padding(.top, adaptiveSpacing(8, for: geometry))
                             
-                            // Simple Action Buttons
-                            VStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                                // Restore Photo Button
-                                Button(action: {
+                            // Section: Get Started
+                            VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                                Text("Get Started")
+                                    .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
+                                    .foregroundColor(.deepPlum)
+                                    .padding(.horizontal, adaptivePadding(for: geometry))
+                                
+                                Text("Choose how you'd like to transform your memories")
+                                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                    .foregroundColor(.softPlum)
+                                    .padding(.horizontal, adaptivePadding(for: geometry))
+                            }
+                            .padding(.top, adaptiveSpacing(24, for: geometry))
+                            .opacity(cardOpacity)
+                            
+                            // Main Feature Cards
+                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                                    // Photo Restore Card
+                                    FeatureCard3(
+                                        title: "Photo Restore",
+                                        subtitle: "Make old photos HD again",
+                                        icon: "photo.badge.plus",
+                                        imageName: "restore_image",
+                                        isPressed: buttonPressedRestore,
+                                        geometry: geometry,
+                                        action: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                         buttonPressedRestore = true
                                     }
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                         navigationPath.append(NavigationDestination.restore)
                                         buttonPressedRestore = false
-                                    }
-                                }) {
-                                    HStack(spacing: 0) {
-                                        // Image Preview
-                                        Image("restore_image")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
-                                            .clipped()
-                                            .cornerRadius(adaptiveCornerRadius(20, for: geometry), corners: [.topLeft, .bottomLeft])
-                                        
-                                        // Content Section
-                                        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
-                                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
-                                                Image(systemName: "photo.badge.plus")
-                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                                    .foregroundStyle(LinearGradient.primaryBrand)
-                                                
-                                                Text("Photo Restore")
-                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
-                                                    .foregroundStyle(LinearGradient.primaryBrand)
-                                                    .lineLimit(1)
-                                                    .minimumScaleFactor(0.8)
-                                            }
-                                            
-                                            Text("Make old photos HD again")
-                                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                                                .foregroundColor(.softPlum)
-                                                .lineLimit(2)
-                                                .minimumScaleFactor(0.9)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                            
-                                            Spacer()
-                                            
-                                            HStack {
-                                                Spacer()
-                                                Image(systemName: "arrow.right")
-                                                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                                    .foregroundStyle(LinearGradient.primaryBrand)
                                             }
                                         }
-                                        .padding(adaptiveSpacing(16, for: geometry))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                    .frame(height: adaptiveSize(120, for: geometry))
-                                    .background(
-                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                                            .fill(Color.pureWhite)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                                                    .stroke(LinearGradient.cardGlow, lineWidth: 1)
-                                            )
-                                            .shadow(
-                                                color: Color.cardShadow,
-                                                radius: buttonPressedRestore ? 8 : 12,
-                                                x: 0,
-                                                y: buttonPressedRestore ? 2 : 4
-                                            )
                                     )
-                                    .clipped()
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .scaleEffect(buttonPressedRestore ? 0.96 : restoreButtonScale)
-                                .opacity(animateElements ? 1 : 0)
-                                .offset(x: animateElements ? 0 : -20)
-                                
-                                // Memory Merge Button
-                                Button(action: {
+                                    
+                                    // Memory Merge Card
+                                    FeatureCard3(
+                                        title: "Memory Merge",
+                                        subtitle: "Bring old memories together",
+                                        icon: "heart.circle.fill",
+                                        imageName: "together_image",
+                                        isPressed: buttonPressedTogether,
+                                        geometry: geometry,
+                                        action: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                         buttonPressedTogether = true
                                     }
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                         navigationPath.append(NavigationDestination.together)
                                         buttonPressedTogether = false
-                                    }
-                                }) {
-                                    HStack(spacing: 0) {
-                                        // Image Preview
-                                        Image("together_image")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
-                                            .clipped()
-                                            .cornerRadius(adaptiveCornerRadius(20, for: geometry), corners: [.topLeft, .bottomLeft])
-                                        
-                                        // Content Section
-                                        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
-                                            HStack(spacing: adaptiveSpacing(8, for: geometry)) {
-                                                Image(systemName: "heart.circle.fill")
-                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
-                                                    .foregroundStyle(LinearGradient.primaryBrand)
-                                                
-                                                Text("Memory Merge")
-                                                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
-                                                    .foregroundStyle(LinearGradient.primaryBrand)
-                                                    .lineLimit(1)
-                                                    .minimumScaleFactor(0.8)
-                                            }
-                                            
-                                            Text("Bring old memories together")
-                                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                                                .foregroundColor(.softPlum)
-                                                .lineLimit(2)
-                                                .minimumScaleFactor(0.9)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                            
-                                            Spacer()
-                                            
-                                            HStack {
-                                                Spacer()
-                                                Image(systemName: "arrow.right")
-                                                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                                    .foregroundStyle(LinearGradient.primaryBrand)
                                             }
                                         }
-                                        .padding(adaptiveSpacing(16, for: geometry))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                    .frame(height: adaptiveSize(120, for: geometry))
-                                    .background(
-                                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                                            .fill(Color.pureWhite)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                                                    .stroke(LinearGradient.cardGlow, lineWidth: 1)
-                                            )
-                                            .shadow(
-                                                color: Color.cardShadow,
-                                                radius: buttonPressedTogether ? 8 : 12,
-                                                x: 0,
-                                                y: buttonPressedTogether ? 2 : 4
-                                            )
                                     )
-                                    .clipped()
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .scaleEffect(buttonPressedTogether ? 0.96 : togetherButtonScale)
-                                .opacity(animateElements ? 1 : 0)
-                                .offset(x: animateElements ? 0 : -20)
                             }
                             .padding(.horizontal, adaptivePadding(for: geometry))
-                            
-                            // Recent Creations Section
-                            if !recentImages.isEmpty {
-                                VStack(alignment: .leading, spacing: adaptiveSpacing(16, for: geometry)) {
-                                    Text("Recent Creations")
+                                .padding(.top, adaptiveSpacing(24, for: geometry))
+                                .opacity(cardOpacity)
+                                
+                                // Explore AI Magic Carousel
+                                ExploreAICarousel(geometry: geometry, navigationPath: $navigationPath)
+                                    .padding(.top, adaptiveSpacing(32, for: geometry))
+                                    .opacity(cardOpacity)
+                                
+                                // Community Stories Feed
+                                CommunityStoriesFeed(recentImages: recentImages, geometry: geometry)
+                                    .padding(.top, adaptiveSpacing(32, for: geometry))
+                                    .opacity(cardOpacity)
+                                
+                                // Section: Go Premium
+                                VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                                    Text("Go Premium")
                                         .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
                                         .foregroundColor(.deepPlum)
-                                        .padding(.horizontal, adaptivePadding(for: geometry))
                                     
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                                            ForEach(recentImages) { image in
-                                                RecentImageCard(image: image, geometry: geometry)
-                                            }
-                                        }
-                                        .padding(.horizontal, adaptivePadding(for: geometry))
-                                    }
+                                    Text("Get unlimited creations with premium features")
+                                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                        .foregroundColor(.softPlum)
                                 }
-                                .padding(.top, adaptiveSpacing(16, for: geometry))
-                                .opacity(animateElements ? 1 : 0)
+                                .padding(.horizontal, adaptivePadding(for: geometry))
+                                .padding(.top, adaptiveSpacing(32, for: geometry))
+                                .opacity(cardOpacity)
+                                
+                                // Premium Highlight Card
+                                PremiumHighlightCard(geometry: geometry)
+                                    .padding(.top, adaptiveSpacing(12, for: geometry))
+                                    .padding(.horizontal, adaptivePadding(for: geometry))
+                                    .opacity(cardOpacity)
+                                
+                                // Bottom Spacing
+                                Spacer()
+                                    .frame(height: adaptiveSpacing(32, for: geometry))
                             }
-                            
-                            // Bottom spacing
-                            Spacer()
-                                .frame(height: adaptiveSpacing(8, for: geometry))
-                        }
-                        .padding(.bottom, adaptiveSpacing(8, for: geometry))
                     }
                     .scrollIndicators(.hidden)
                     .frame(width: geometry.size.width)
                 }
             }
-                .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .ignoresSafeArea(.all, edges: .all)
             .navigationDestination(for: NavigationDestination.self) { destination in
                 switch destination {
                 case .restore:
@@ -248,6 +158,18 @@ struct HomeView: View {
                         .navigationBarBackButtonHidden(true)
                 case .together:
                     MemoryMergeFlow()
+                        .navigationBarBackButtonHidden(true)
+                case .timeline:
+                    TimelineComparisonFlow()
+                        .navigationBarBackButtonHidden(true)
+                case .celebrity:
+                    CelebrityFlow()
+                        .navigationBarBackButtonHidden(true)
+                case .reunite:
+                    ReuniteFlow()
+                        .navigationBarBackButtonHidden(true)
+                case .family:
+                    FamilyFlow()
                         .navigationBarBackButtonHidden(true)
                 case .settings:
                     SettingsView()
@@ -271,13 +193,7 @@ struct HomeView: View {
                 animateElements = true
             }
             withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
-                welcomeCardOpacity = 1.0
-            }
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.3)) {
-                restoreButtonScale = 1.0
-            }
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.4)) {
-                togetherButtonScale = 1.0
+                cardOpacity = 1.0
             }
             
             // Load recent images
@@ -295,9 +211,6 @@ struct HomeView: View {
                     recentImages = history.images
                     isLoadingHistory = false
                     print("🏠 HomeView: Loaded \(recentImages.count) images")
-                    for (index, image) in recentImages.enumerated() {
-                        print("🏠 Image \(index + 1): Type=\(image.imageType ?? "nil"), URL=\(image.processedImageUrl != nil ? "valid" : "nil")")
-                    }
                 }
             } catch {
                 print("❌ Failed to load image history: \(error)")
@@ -307,141 +220,10 @@ struct HomeView: View {
             }
         }
     }
-    
-    // MARK: - Adaptive Sizing Functions
-    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        // iPhone SE (375pt) = 12pt, iPhone 15 Pro (393pt) = 14pt, iPhone 15 Pro Max (430pt) = 16pt
-        return max(12, min(16, screenWidth * 0.04))
-    }
-    
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return base * scaleFactor
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0 // Base on iPhone SE
-        return base * scaleFactor
-    }
 }
 
-// MARK: - Modern Vibrant Background
-struct ModernVibrantBackground: View {
-    @State private var animateGradient = false
-    @State private var animateOrbs = false
-    @State private var animateColors = false
-    
-    var body: some View {
-        ZStack {
-            // Base vibrant gradient
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.blushPink.opacity(0.4),
-                    Color.roseMagenta.opacity(0.3),
-                    Color.memoryViolet.opacity(0.25),
-                    Color.lightBlush.opacity(0.2)
-                ]),
-                startPoint: animateGradient ? .topLeading : .bottomTrailing,
-                endPoint: animateGradient ? .bottomTrailing : .topLeading
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true), value: animateGradient)
-            
-            // Secondary animated gradient layer
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.roseMagenta.opacity(0.2),
-                    Color.blushPink.opacity(0.15),
-                    Color.memoryViolet.opacity(0.1),
-                    Color.lightBlush.opacity(0.15)
-                ]),
-                startPoint: animateGradient ? .bottomLeading : .topTrailing,
-                endPoint: animateGradient ? .topTrailing : .bottomLeading
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 6.0).repeatForever(autoreverses: true), value: animateGradient)
-            .opacity(0.7)
-            
-            // Dynamic floating orbs with more vibrant colors
-            ForEach(0..<6, id: \.self) { index in
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                [Color.blushPink, Color.roseMagenta, Color.memoryViolet, Color.lightBlush, Color.blushPink, Color.roseMagenta][index].opacity(animateColors ? 0.6 : 0.3),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 120
-                        )
-                    )
-                    .frame(width: CGFloat(80 + index * 80), height: CGFloat(80 + index * 80))
-                    .offset(
-                        x: animateOrbs ? CGFloat(-100 + index * 120) : CGFloat(100 + index * 100),
-                        y: animateOrbs ? CGFloat(-150 + index * 150) : CGFloat(-200 + index * 120)
-                    )
-                    .blur(radius: 30)
-                    .opacity(0.6)
-            }
-            
-            // Additional smaller animated particles
-            ForEach(0..<8, id: \.self) { index in
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                [Color.roseMagenta, Color.blushPink, Color.memoryViolet, Color.lightBlush][index % 4].opacity(0.4),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 40
-                        )
-                    )
-                    .frame(width: CGFloat(30 + index * 20), height: CGFloat(30 + index * 20))
-                    .offset(
-                        x: animateOrbs ? CGFloat(-200 + index * 80) : CGFloat(200 + index * 60),
-                        y: animateOrbs ? CGFloat(-300 + index * 100) : CGFloat(-400 + index * 80)
-                    )
-                    .blur(radius: 15)
-                    .opacity(0.5)
-            }
-            
-            // Subtle overlay for text readability (much less white)
-            Rectangle()
-                .fill(Color.black.opacity(0.05))
-                .ignoresSafeArea()
-        }
-        .onAppear {
-            animateGradient = true
-            withAnimation(.easeInOut(duration: 10.0).repeatForever(autoreverses: true).delay(Double.random(in: 0...3))) {
-                animateOrbs = true
-            }
-            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true).delay(Double.random(in: 0...2))) {
-                animateColors = true
-            }
-        }
-    }
-}
-
-// MARK: - Modern Home Header
-struct ModernHomeHeader: View {
+// MARK: - Modern Home Header 3.0
+struct ModernHomeHeader3: View {
     let user: User
     let geometry: GeometryProxy
     @StateObject private var monetizationManager = MonetizationManager.shared
@@ -450,38 +232,28 @@ struct ModernHomeHeader: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Main header content
+            // Main Greeting
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: adaptiveSpacing(6, for: geometry)) {
-                    // Welcome back row
-                    HStack(spacing: adaptiveSpacing(4, for: geometry)) {
-                        Text("Welcome back")
-                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                            .foregroundColor(.softPlum)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                        
-                        Image(systemName: "sparkles")
-                            .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .medium))
-                            .foregroundStyle(LinearGradient.primaryBrand)
-                            .layoutPriority(1)
-                    }
-                    
-                    // User name with maximum constraints
-                    Text(user.name)
-                        .font(.system(size: adaptiveFontSize(22, for: geometry), weight: .bold, design: .rounded))
+                VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
+                    Text("Welcome back, \(user.name)")
+                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold, design: .rounded))
                         .foregroundColor(.deepPlum)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.6)
-                        .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    
+                    Text("Bring your memories to life today")
+                        .font(.system(size: adaptiveFontSize(13, for: geometry), weight: .regular))
+                        .foregroundColor(.softPlum)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
-                // Credits Badge (top right)
+                // Credits Badge
                 CreditsBadge(credits: userCredits, isLoading: isLoadingCredits, geometry: geometry)
             }
             .padding(.horizontal, adaptivePadding(for: geometry))
-            .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 32 : 48)
+            .padding(.top, adaptiveSpacing(16, for: geometry))
             .padding(.bottom, adaptiveSpacing(20, for: geometry))
         }
         .onAppear {
@@ -498,29 +270,38 @@ struct ModernHomeHeader: View {
             isLoadingCredits = false
         }
     }
+}
+
+// MARK: - Trust Bar
+struct TrustBar: View {
+    let geometry: GeometryProxy
     
-    // MARK: - Adaptive Functions
-    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return max(12, min(16, screenWidth * 0.04))
+    var body: some View {
+        HStack(spacing: adaptiveSpacing(20, for: geometry)) {
+            TrustItem(icon: "lock.shield.fill", text: "Your photos are private", geometry: geometry)
+            TrustItem(icon: "star.fill", text: "Rated 4.9★", geometry: geometry)
+            TrustItem(icon: "photo.on.rectangle.angled", text: "54k+ memories", geometry: geometry)
+        }
+        .font(.system(size: adaptiveFontSize(11, for: geometry), weight: .medium))
+        .foregroundColor(.softPlum)
     }
+}
+
+// MARK: - Trust Item
+struct TrustItem: View {
+    let icon: String
+    let text: String
+    let geometry: GeometryProxy
     
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
+    var body: some View {
+        HStack(spacing: adaptiveSpacing(4, for: geometry)) {
+            Image(systemName: icon)
+                .font(.system(size: adaptiveFontSize(10, for: geometry)))
+                .foregroundColor(.blushPink)
+            Text(text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
     }
 }
 
@@ -533,262 +314,381 @@ struct CreditsBadge: View {
     var body: some View {
         HStack(spacing: adaptiveSpacing(6, for: geometry)) {
             Image(systemName: "diamond.fill")
-                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
                 .foregroundStyle(LinearGradient.primaryBrand)
             
             if isLoading {
                 ProgressView()
-                    .scaleEffect(0.8)
+                    .scaleEffect(0.7)
             } else {
                 Text("\(credits)")
-                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
                     .foregroundColor(.deepPlum)
             }
         }
-        .padding(.horizontal, adaptiveSpacing(12, for: geometry))
-        .padding(.vertical, adaptiveSpacing(8, for: geometry))
+        .padding(.horizontal, adaptiveSpacing(10, for: geometry))
+        .padding(.vertical, adaptiveSpacing(6, for: geometry))
         .background(
-            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.blushPink.opacity(0.15),
-                            Color.roseMagenta.opacity(0.10)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .background(.ultraThinMaterial)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: adaptiveCornerRadius(12, for: geometry))
-                .stroke(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.blushPink.opacity(0.4),
-                            Color.roseMagenta.opacity(0.3)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(
-            color: Color.blushPink.opacity(0.2),
-            radius: 8,
-            x: 0,
-            y: 2
+            RoundedRectangle(cornerRadius: adaptiveCornerRadius(10, for: geometry))
+                .fill(Color.pureWhite)
+                .shadow(color: Color.cardShadow, radius: 4, x: 0, y: 2)
         )
     }
 }
 
-// MARK: - Welcome Message Card
-struct WelcomeMessageCard: View {
+// MARK: - Feature Card 3.0
+struct FeatureCard3: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let imageName: String
+    let isPressed: Bool
+    let geometry: GeometryProxy
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 0) {
+                // Image Preview
+                Image(imageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
+                    .clipped()
+                    .cornerRadius(adaptiveCornerRadius(20, for: geometry), corners: [.topLeft, .bottomLeft])
+                
+                // Content
+                VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                        Image(systemName: icon)
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                            .foregroundStyle(LinearGradient.primaryBrand)
+                        
+                        Text(title)
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                            .foregroundStyle(LinearGradient.primaryBrand)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    }
+                
+                    Text(subtitle)
+                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                        .foregroundColor(.softPlum)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
+                        .fixedSize(horizontal: false, vertical: true)
+            
+            Spacer()
+                    
+                    HStack {
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                            .foregroundStyle(LinearGradient.primaryBrand)
+                    }
+        }
+        .padding(adaptiveSpacing(16, for: geometry))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: adaptiveSize(120, for: geometry))
+        .background(
+            RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
+                    .fill(Color.pureWhite)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
+                            .stroke(LinearGradient.cardGlow, lineWidth: 1)
+                    )
+                    .shadow(
+                        color: Color.cardShadow,
+                        radius: isPressed ? 8 : 12,
+                        x: 0,
+                        y: isPressed ? 2 : 4
+                    )
+            )
+            .clipped()
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Explore AI Grid
+struct ExploreAICarousel: View {
+    let geometry: GeometryProxy
+    @Binding var navigationPath: NavigationPath
+    
+    let aiCards = [
+        AICard(id: 0, emoji: "🩵", title: "Me Then vs Me Now", caption: "Tap to create your timeline", image: "best_friends_reunion_image", tone: "blush-white"),
+        AICard(id: 1, emoji: "🌸", title: "Childhood Smile", caption: "Restore your precious moments", image: "childhood_photo", tone: "peach-white"),
+        AICard(id: 2, emoji: "🪞", title: "Famous Frame", caption: "Get the celebrity treatment", image: "celebrity_image", tone: "violet-gray"),
+        AICard(id: 3, emoji: "🕊", title: "Lost Connection", caption: "Reunite with loved ones", image: "wedding_photo", tone: "gray-blush"),
+        AICard(id: 4, emoji: "🧬", title: "Family Legacy", caption: "Preserve family memories", image: "family_photo", tone: "beige-blush")
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: adaptiveSpacing(16, for: geometry)) {
+            VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                HStack {
+                    Text("Explore AI Magic")
+                        .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .bold, design: .rounded))
+                        .foregroundColor(.deepPlum)
+                    Spacer()
+                    Image(systemName: "sparkles")
+                        .font(.system(size: adaptiveFontSize(18, for: geometry)))
+                        .foregroundStyle(LinearGradient.primaryBrand)
+                }
+                
+                Text("Get inspired • Try these creative ideas")
+                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                    .foregroundColor(.softPlum)
+            }
+            .padding(.horizontal, adaptivePadding(for: geometry))
+            
+            // Fixed 2-column grid
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: adaptiveSpacing(12, for: geometry)),
+                GridItem(.flexible(), spacing: adaptiveSpacing(12, for: geometry))
+            ], spacing: adaptiveSpacing(12, for: geometry)) {
+                ForEach(aiCards) { card in
+                    AICarouselCard(card: card, geometry: geometry, navigationPath: $navigationPath)
+                }
+            }
+            .padding(.horizontal, adaptivePadding(for: geometry))
+        }
+    }
+}
+
+// MARK: - AI Card Model
+struct AICard: Identifiable {
+    let id: Int
+    let emoji: String
+    let title: String
+    let caption: String
+    let image: String
+    let tone: String
+}
+
+// MARK: - AI Carousel Card
+struct AICarouselCard: View {
+    let card: AICard
+    let geometry: GeometryProxy
+    @Binding var navigationPath: NavigationPath
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            // Navigate based on card ID
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                switch card.id {
+                case 0:
+                    navigationPath.append(NavigationDestination.timeline)
+                case 1:
+                    navigationPath.append(NavigationDestination.restore)
+                case 2:
+                    navigationPath.append(NavigationDestination.celebrity)
+                case 3:
+                    navigationPath.append(NavigationDestination.reunite)
+                case 4:
+                    navigationPath.append(NavigationDestination.family)
+                default:
+                    break
+                }
+            }
+        }) {
+            VStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                // Image - Flexible width for grid
+                Image(card.image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: adaptiveSize(140, for: geometry))
+                    .clipped()
+                    .cornerRadius(adaptiveCornerRadius(12, for: geometry))
+                
+                // Content
+                VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
+                    HStack(spacing: 4) {
+                        Text(card.emoji)
+                            .font(.system(size: adaptiveFontSize(14, for: geometry)))
+                        Text(card.title)
+                            .font(.system(size: adaptiveFontSize(11, for: geometry), weight: .semibold, design: .rounded))
+                            .foregroundColor(.deepPlum)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    
+                    Text(card.caption)
+                        .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .medium))
+                        .foregroundColor(.softPlum)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.spring(response: 0.2)) {
+                        isPressed = true
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.2)) {
+                        isPressed = false
+                    }
+                }
+        )
+    }
+}
+
+// MARK: - Community Stories Feed
+struct CommunityStoriesFeed: View {
+    let recentImages: [ProcessedImage]
     let geometry: GeometryProxy
     
     var body: some View {
-        HStack(spacing: adaptiveSpacing(16, for: geometry)) {
-            // Icon
-            ZStack {
-                Circle()
+        if !recentImages.isEmpty {
+            VStack(alignment: .leading, spacing: adaptiveSpacing(16, for: geometry)) {
+                VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
+                    HStack {
+                        Image(systemName: "photo.stack")
+                            .font(.system(size: adaptiveFontSize(18, for: geometry)))
+                            .foregroundStyle(LinearGradient.primaryBrand)
+                        Text("What people are creating today")
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .bold, design: .rounded))
+                            .foregroundColor(.deepPlum)
+                        Spacer()
+                    }
+                    
+                    Text("See how others are transforming their memories")
+                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                        .foregroundColor(.softPlum)
+                }
+                .padding(.horizontal, adaptivePadding(for: geometry))
+                
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: adaptiveSpacing(8, for: geometry)), count: 4), spacing: adaptiveSpacing(8, for: geometry)) {
+                    ForEach(recentImages.prefix(8)) { image in
+                        CommunityImageThumbnail(image: image, geometry: geometry)
+                    }
+                }
+                .padding(.horizontal, adaptivePadding(for: geometry))
+            }
+            .padding(.bottom, adaptiveSpacing(16, for: geometry))
+        }
+    }
+}
+
+// MARK: - Community Image Thumbnail
+struct CommunityImageThumbnail: View {
+    let image: ProcessedImage
+    let geometry: GeometryProxy
+    
+    var body: some View {
+            AsyncImage(url: image.processedImageUrl.flatMap { URL(string: $0) }) { phase in
+                switch phase {
+                case .empty:
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(8, for: geometry))
+                    .fill(Color.gray.opacity(0.15))
+                    .aspectRatio(1, contentMode: .fit)
+                case .success(let loadedImage):
+                    loadedImage
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: (geometry.size.width - adaptivePadding(for: geometry) * 2 - adaptiveSpacing(8, for: geometry) * 3) / 4)
+                        .clipped()
+                    .cornerRadius(adaptiveCornerRadius(8, for: geometry))
+            case .failure:
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(8, for: geometry))
+                        .fill(Color.red.opacity(0.1))
+                    .aspectRatio(1, contentMode: .fit)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+    }
+}
+
+// MARK: - Premium Highlight Card
+struct PremiumHighlightCard: View {
+    let geometry: GeometryProxy
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+        }) {
+            HStack(spacing: adaptiveSpacing(16, for: geometry)) {
+                VStack(alignment: .leading, spacing: adaptiveSpacing(12, for: geometry)) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold))
+                            .foregroundStyle(LinearGradient.primaryBrand)
+                        
+                        Text("Unlock Unlimited Creations")
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .bold, design: .rounded))
+                            .foregroundColor(.deepPlum)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
+                        PremiumFeatureItem(icon: "photo.badge.plus", text: "HD exports", geometry: geometry)
+                        PremiumFeatureItem(icon: "bolt.fill", text: "Instant results", geometry: geometry)
+                        PremiumFeatureItem(icon: "checkmark.shield.fill", text: "No watermark", geometry: geometry)
+                    }
+                    
+                    Text("Cancel anytime • Secure App Store billing")
+                    .font(.system(size: adaptiveFontSize(11, for: geometry), weight: .medium))
+                        .foregroundColor(.softPlum.opacity(0.7))
+                }
+                
+                Spacer()
+            }
+            .padding(adaptiveSpacing(20, for: geometry))
+            .background(
+                RoundedRectangle(cornerRadius: adaptiveCornerRadius(24, for: geometry))
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color.blushPink.opacity(0.2),
-                                Color.roseMagenta.opacity(0.15)
+                                Color.lightBlush.opacity(0.4),
+                                Color.pureWhite
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: adaptiveSize(50, for: geometry), height: adaptiveSize(50, for: geometry))
-                    .background(.ultraThinMaterial)
-                
-                Image(systemName: "heart.fill")
-                    .font(.system(size: adaptiveFontSize(20, for: geometry), weight: .medium))
-                    .foregroundColor(.blushPink)
-            }
-            
-            VStack(alignment: .leading, spacing: adaptiveSpacing(4, for: geometry)) {
-                Text("Ready to create?")
-                    .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold, design: .rounded))
-                    .foregroundColor(.deepPlum)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                
-                Text("Choose how you'd like to relive your memories")
-                    .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                    .foregroundColor(.deepPlum.opacity(0.7))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.9)
-            }
-            
-            Spacer()
-        }
-        .padding(adaptiveSpacing(16, for: geometry))
-        .background(
-            RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.blushPink.opacity(0.12),
-                            Color.roseMagenta.opacity(0.08),
-                            Color.lightBlush.opacity(0.06)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                    .overlay(
+                        RoundedRectangle(cornerRadius: adaptiveCornerRadius(24, for: geometry))
+                            .stroke(LinearGradient.primaryBrand.opacity(0.3), lineWidth: 1)
                     )
-                )
-                .background(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(20, for: geometry))
-                        .stroke(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.blushPink.opacity(0.25),
-                                    Color.roseMagenta.opacity(0.15)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-        )
-        .shadow(
-            color: Color.black.opacity(0.05),
-            radius: adaptiveSpacing(10, for: geometry),
-            x: 0,
-            y: adaptiveSpacing(4, for: geometry)
-        )
-    }
-    
-    // MARK: - Adaptive Functions
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
+                    .shadow(color: Color.cardShadow, radius: 8, x: 0, y: 4)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isPressed ? 0.98 : 1.0)
     }
 }
 
-// MARK: - Recent Image Card
-struct RecentImageCard: View {
-    let image: ProcessedImage
+// MARK: - Premium Feature Item
+struct PremiumFeatureItem: View {
+    let icon: String
+    let text: String
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
-            // Image Thumbnail
-            AsyncImage(url: image.processedImageUrl.flatMap { URL(string: $0) }) { phase in
-                switch phase {
-                case .empty:
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
-                        .overlay(
-                            ProgressView()
-                        )
-                case .success(let loadedImage):
-                    loadedImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
-                        .clipped()
-                case .failure(let error):
-                    Rectangle()
-                        .fill(Color.red.opacity(0.1))
-                        .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(180, for: geometry))
-                        .overlay(
-                            VStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.red)
-                                Text("Failed to load")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.red)
-                            }
-                        )
-                        .onAppear {
-                            print("❌ Image load failed: \(error)")
-                            print("❌ URL was: \(image.processedImageUrl ?? "nil")")
-                        }
-                @unknown default:
-                    EmptyView()
-                }
-            }
-            .cornerRadius(adaptiveCornerRadius(12, for: geometry))
-            
-            // Type Badge
-            HStack(spacing: adaptiveSpacing(4, for: geometry)) {
-                Image(systemName: image.icon)
-                    .font(.system(size: adaptiveFontSize(10, for: geometry), weight: .semibold))
-                Text(image.displayType)
-                    .font(.system(size: adaptiveFontSize(11, for: geometry), weight: .medium))
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, adaptiveSpacing(8, for: geometry))
-            .padding(.vertical, adaptiveSpacing(4, for: geometry))
-            .background(
-                Capsule()
-                    .fill(image.color)
-            )
-            
-            // Date
-            Text(formatDate(image.createdAt ?? Date()))
-                .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .regular))
-                .foregroundColor(.deepPlum.opacity(0.6))
+        HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+            Image(systemName: icon)
+                .font(.system(size: adaptiveFontSize(12, for: geometry), weight: .semibold))
+                .foregroundStyle(LinearGradient.primaryBrand)
+            Text(text)
+                .font(.system(size: adaptiveFontSize(13, for: geometry), weight: .medium))
+                .foregroundColor(.deepPlum)
         }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
-    }
-    
-    // MARK: - Adaptive Functions
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
-    }
-    
-    private func adaptiveSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
-    }
-    
-    private func adaptiveCornerRadius(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
     }
 }
 

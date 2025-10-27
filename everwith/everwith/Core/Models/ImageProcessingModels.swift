@@ -186,6 +186,131 @@ struct TogetherRequest: Codable {
     }
 }
 
+// MARK: - Timeline Request
+struct TimelineRequest: Codable {
+    let imageUrl: String
+    let targetAge: TimelineAge
+    let qualityTarget: ImageProcessingQuality
+    let outputFormat: ImageProcessingFormat
+    let aspectRatio: AspectRatio
+    let seed: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case imageUrl = "image_url"
+        case targetAge = "target_age"
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case seed
+    }
+}
+
+// MARK: - Celebrity Request
+struct CelebrityRequest: Codable {
+    let imageUrl: String
+    let celebrityStyle: CelebrityStyle
+    let qualityTarget: ImageProcessingQuality
+    let outputFormat: ImageProcessingFormat
+    let aspectRatio: AspectRatio
+    let seed: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case imageUrl = "image_url"
+        case celebrityStyle = "celebrity_style"
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case seed
+    }
+}
+
+// MARK: - Reunite Request
+struct ReuniteRequest: Codable {
+    let imageAUrl: String
+    let imageBUrl: String
+    let backgroundPrompt: String?
+    let qualityTarget: ImageProcessingQuality
+    let outputFormat: ImageProcessingFormat
+    let aspectRatio: AspectRatio
+    let seed: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case imageAUrl = "image_a_url"
+        case imageBUrl = "image_b_url"
+        case backgroundPrompt = "background_prompt"
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case seed
+    }
+}
+
+// MARK: - Family Request
+struct FamilyRequest: Codable {
+    let images: [String]
+    let style: FamilyStyle
+    let qualityTarget: ImageProcessingQuality
+    let outputFormat: ImageProcessingFormat
+    let aspectRatio: AspectRatio
+    let seed: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case images
+        case style
+        case qualityTarget = "quality_target"
+        case outputFormat = "output_format"
+        case aspectRatio = "aspect_ratio"
+        case seed
+    }
+}
+
+// MARK: - Timeline Age
+enum TimelineAge: String, CaseIterable, Codable {
+    case young = "young"
+    case current = "current"
+    case old = "old"
+    
+    var displayName: String {
+        switch self {
+        case .young: return "Young"
+        case .current: return "Current"
+        case .old: return "Elder"
+        }
+    }
+}
+
+// MARK: - Celebrity Style
+enum CelebrityStyle: String, CaseIterable, Codable {
+    case movieStar = "movie_star"
+    case royal = "royal"
+    case vintageGlamour = "vintage_glamour"
+    case modernCelebrity = "modern_celebrity"
+    
+    var displayName: String {
+        switch self {
+        case .movieStar: return "Movie Star"
+        case .royal: return "Royal"
+        case .vintageGlamour: return "Vintage Glamour"
+        case .modernCelebrity: return "Modern Celebrity"
+        }
+    }
+}
+
+// MARK: - Family Style
+enum FamilyStyle: String, CaseIterable, Codable {
+    case collage = "collage"
+    case composite = "composite"
+    case enhanced = "enhanced"
+    
+    var displayName: String {
+        switch self {
+        case .collage: return "Collage"
+        case .composite: return "Composite"
+        case .enhanced: return "Enhanced"
+        }
+    }
+}
+
 // MARK: - Job Result
 struct JobResult: Codable {
     let outputUrl: String

@@ -126,7 +126,9 @@ class RevenueCatService: NSObject, ObservableObject {
         do {
             let offerings = try await Purchases.shared.offerings()
             
+            print("📦 REVENUECAT DEBUG:")
             print("📦 Available offerings: \(offerings.all.keys)")
+            print("📦 Total offerings count: \(offerings.all.count)")
             print("📦 Current offering: \(offerings.current?.identifier ?? "none")")
             
             // Debug: Print all available offerings
@@ -148,11 +150,13 @@ class RevenueCatService: NSObject, ObservableObject {
             } else if let firstOffering = offerings.all.values.first {
                 offering = firstOffering
                 print("⚠️ Using first available offering: \(firstOffering.identifier)")
+            } else {
+                print("❌ No offerings available at all!")
             }
             
             guard let selectedOffering = offering else {
-                print("❌ No offerings available. Available offerings: \(offerings.all.keys)")
-                errorMessage = "No offerings available"
+                print("❌ No offerings found. Available: \(offerings.all.keys)")
+                errorMessage = "Subscription service is not configured. Please contact support."
                 isLoading = false
                 return false
             }

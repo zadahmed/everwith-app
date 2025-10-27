@@ -1,189 +1,183 @@
 {
-  "identifier" : "EVERWITH_CONFIG",
-  "nonRenewingSubscriptions" : [
-
-  ],
-  "products" : [
+  "identifier": "EVERWITH_CONFIG",
+  "nonRenewingSubscriptions": [],
+  "products": [
     {
-      "displayPrice" : "4.99",
-      "familyShareable" : false,
-      "internalID" : "1234567890",
-      "localizations" : [
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "1234567890",
+      "localizations": [
         {
-          "description" : "Monthly premium subscription",
-          "displayName" : "Premium Monthly",
-          "locale" : "en_US"
+          "description": "Monthly premium subscription",
+          "displayName": "Premium Monthly",
+          "locale": "en_US"
         }
       ],
-      "productID" : "com.everwith.premium.month",
-      "referenceName" : "Premium Monthly",
-      "recurringSubscriptionPeriod" : "P1M",
-      "subscriptionGroupIdentifier" : "21482456",
-      "type" : "RecurringSubscription"
+      "productID": "com.everwith.premium.month",
+      "referenceName": "Premium Monthly",
+      "recurringSubscriptionPeriod": "P1M",
+      "subscriptionGroupID": "21482456",
+      "subscriptionGroupIdentifier": "21482456",
+      "type": "RecurringSubscription"
     },
     {
-      "displayPrice" : "69.99",
-      "familyShareable" : false,
-      "internalID" : "1234567891",
-      "localizations" : [
+      "displayPrice": "69.99",
+      "familyShareable": false,
+      "internalID": "1234567891",
+      "localizations": [
         {
-          "description" : "Yearly premium subscription with 40% savings",
-          "displayName" : "Premium Yearly",
-          "locale" : "en_US"
+          "description": "Yearly premium subscription with 40% savings",
+          "displayName": "Premium Yearly",
+          "locale": "en_US"
         }
       ],
-      "productID" : "com.everwith.premium.yearly",
-      "referenceName" : "Premium Yearly",
-      "recurringSubscriptionPeriod" : "P1Y",
-      "subscriptionGroupIdentifier" : "21482456",
-      "type" : "RecurringSubscription"
+      "productID": "com.everwith.premium.yearly",
+      "referenceName": "Premium Yearly",
+      "recurringSubscriptionPeriod": "P1Y",
+      "subscriptionGroupID": "21482456",
+      "subscriptionGroupIdentifier": "21482456",
+      "type": "RecurringSubscription"
     }
   ],
-  "currentOffering" : "everwith_offering",
-  "offerings" : [
+  "currentOffering": "everwith_offering",
+  "offerings": [
     {
-      "identifier" : "everwith_offering",
-      "localizations" : [
+      "identifier": "everwith_offering",
+      "localizations": [
         {
-          "description" : "Premium subscription offering",
-          "displayName" : "EverWith Premium",
-          "locale" : "en_US"
+          "description": "Premium subscription offering",
+          "displayName": "EverWith Premium",
+          "locale": "en_US"
         }
       ],
-      "packages" : [
+      "packages": [
         {
-          "identifier" : "monthly",
-          "platformProductIdentifier" : "com.everwith.premium.month"
+          "identifier": "monthly",
+          "platformProductIdentifier": "com.everwith.premium.month"
         },
         {
-          "identifier" : "yearly",
-          "platformProductIdentifier" : "com.everwith.premium.yearly"
+          "identifier": "yearly",
+          "platformProductIdentifier": "com.everwith.premium.yearly"
         }
       ]
     }
   ],
-  "settings" : {
-    "_applicationInternalID" : "1234567890",
-    "_developerTeamID" : "YOUR_TEAM_ID",
-    "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 738864000.0,
-    "_locale" : "en_US",
-    "_storefront" : "USA",
-    "_storeKitErrors" : [
+  "settings": {
+    "_applicationInternalID": "1234567890",
+    "_developerTeamID": "YOUR_TEAM_ID",
+    "_failTransactionsEnabled": false,
+    "_lastSynchronizedDate": 738864000.0,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": [
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Load Products"
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Purchase"
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Verification"
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Store Sync"
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Subscription Status"
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Transaction"
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Manage Subscriptions Sheet"
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Refund Request Sheet"
+        "current": null,
+        "enabled": false,
+        "name": "Refund Request Sheet"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Offer Code Redeem Sheet"
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
       }
     ]
   },
-  "subscriptionGroups" : [
+  "subscriptionGroups": [
     {
-      "id" : "21482456",
-      "localizations" : [
+      "id": "21482456",
+      "localizations": [
         {
-          "description" : "Premium subscription for unlimited photo restoration and merging",
-          "displayName" : "EverWith Premium",
-          "locale" : "en_US"
+          "description": "Premium subscription for unlimited photo restoration and merging",
+          "displayName": "EverWith Premium",
+          "locale": "en_US"
         }
       ],
-      "name" : "Premium",
-      "subscriptions" : [
+      "name": "Premium",
+      "subscriptions": [
         {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "4.99",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "1234567890",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "1234567890",
+          "introductoryOffer": null,
+          "localizations": [
             {
-              "description" : "Monthly premium subscription",
-              "displayName" : "Premium Monthly",
-              "locale" : "en_US"
+              "description": "Monthly premium subscription",
+              "displayName": "Premium Monthly",
+              "locale": "en_US"
             }
           ],
-          "productID" : "com.everwith.premium.month",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Premium Monthly",
-          "subscriptionGroupID" : "21482456",
-          "type" : "RecurringSubscription"
+          "productID": "com.everwith.premium.month",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly",
+          "subscriptionGroupID": "21482456",
+          "subscriptionGroupIdentifier": "21482456",
+          "type": "RecurringSubscription"
         },
         {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "69.99",
-          "familyShareable" : false,
-          "groupNumber" : 2,
-          "internalID" : "1234567891",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "69.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "1234567891",
+          "introductoryOffer": null,
+          "localizations": [
             {
-              "description" : "Yearly premium subscription with 40% savings",
-              "displayName" : "Premium Yearly",
-              "locale" : "en_US"
+              "description": "Yearly premium subscription with 40% savings",
+              "displayName": "Premium Yearly",
+              "locale": "en_US"
             }
           ],
-          "productID" : "com.everwith.premium.yearly",
-          "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "Premium Yearly",
-          "subscriptionGroupID" : "21482456",
-          "type" : "RecurringSubscription"
+          "productID": "com.everwith.premium.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Yearly",
+          "subscriptionGroupID": "21482456",
+          "subscriptionGroupIdentifier": "21482456",
+          "type": "RecurringSubscription"
         }
       ]
     }
   ],
-  "version" : {
-    "major" : 3,
-    "minor" : 0
+  "version": {
+    "major": 3,
+    "minor": 0
   }
 }

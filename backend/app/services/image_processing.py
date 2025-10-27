@@ -9,7 +9,7 @@ from PIL import Image, ImageFilter, ImageOps, ImageEnhance
 import numpy as np
 import boto3
 from botocore.exceptions import ClientError
-from app.models.schemas import RestoreRequest, TogetherRequest, JobResult, LookControls
+from app.models.schemas import RestoreRequest, TogetherRequest, JobResult, LookControls, TimelineRequest, CelebrityRequest, ReuniteRequest, FamilyRequest
 
 # Configuration
 BFL_API_KEY = os.getenv("BFL_API_KEY")
@@ -568,3 +568,258 @@ class ImageProcessingService:
             "steps": ["remove_bg", "composite", "blend", "finish"]
         }
         return JobResult(output_url=final_url, meta=meta)
+
+    @staticmethod
+    def timeline_pipeline(req: TimelineRequest) -> JobResult:
+        """Process timeline transformation request"""
+        print(f"\n{'='*60}")
+        print(f"🎯 TIMELINE PIPELINE STARTED")
+        print(f"📥 Input image URL: {req.image_url}")
+        print(f"🎂 Target age: {req.target_age}")
+        print(f"{'='*60}\n")
+        
+        image_url = str(req.image_url)
+        
+        # Age-specific prompts
+        age_prompts = {
+            "young": "Make this person look younger, as they would have appeared 20-30 years ago. Show them with vibrant skin, fewer wrinkles, and youthful energy while keeping their identity.",
+            "current": "Enhance this photo with professional lighting and clarity while maintaining their current age and appearance.",
+            "old": "Show how this person might look with age, adding gentle wisdom lines and silver hair, while preserving their core features and personality."
+        }
+        
+        prompt = age_prompts.get(req.target_age, age_prompts["current"])
+        
+        out_url = ImageProcessingService.flux_kontext_edit(
+            image_url=image_url,
+            prompt=prompt,
+            strength=0.7,
+            seed=req.seed,
+            out_format=req.output_format
+        )
+        
+        # Apply aspect ratio and finishing
+        try:
+            img = ImageProcessingService._download_image(out_url)
+            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+            final_url = ImageProcessingService._save_image(img, req.output_format)
+        except Exception:
+            final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+        
+        meta = {
+            "target_age": req.target_age,
+            "aspect_ratio": req.aspect_ratio,
+            "steps": ["timeline_transform", "finish"]
+        }
+        return JobResult(output_url=final_url, meta=meta)
+
+    @staticmethod
+    def celebrity_pipeline(req: CelebrityRequest) -> JobResult:
+        """Process celebrity transformation request"""
+        print(f"\n{'='*60}")
+        print(f"🎯 CELEBRITY PIPELINE STARTED")
+        print(f"📥 Input image URL: {req.image_url}")
+        print(f"⭐ Celebrity style: {req.celebrity_style}")
+        print(f"{'='*60}\n")
+        
+        image_url = str(req.image_url)
+        
+        # Celebrity style prompts
+        style_prompts = {
+            "movie_star": "Transform this into a glamorous movie star photo with professional lighting, perfect skin, glamorous makeup, and Hollywood-quality polish while preserving the person's features.",
+            "royal": "Give this photo a royal elegance treatment with refined lighting, sophisticated styling, and regal composition while maintaining the person's appearance.",
+            "vintage_glamour": "Apply a vintage Hollywood glamour treatment with soft focus, classic black and white or sepia tones, and timeless elegance.",
+            "modern_celebrity": "Create a modern celebrity look with high-fashion lighting, editorial styling, and magazine-quality polish."
+        }
+        
+        prompt = style_prompts.get(req.celebrity_style, style_prompts["movie_star"])
+        
+        out_url = ImageProcessingService.flux_kontext_edit(
+            image_url=image_url,
+            prompt=prompt,
+            strength=0.75,
+            seed=req.seed,
+            out_format=req.output_format
+        )
+        
+        # Apply aspect ratio and finishing
+        try:
+            img = ImageProcessingService._download_image(out_url)
+            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+            controls = LookControls(warmth=0.1, shadows=0.1, grain=0.01)
+            img = ImageProcessingService._finish_look(img, controls)
+            final_url = ImageProcessingService._save_image(img, req.output_format)
+        except Exception:
+            final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+        
+        meta = {
+            "celebrity_style": req.celebrity_style,
+            "aspect_ratio": req.aspect_ratio,
+            "steps": ["celebrity_transform", "finish"]
+        }
+        return JobResult(output_url=final_url, meta=meta)
+
+    @staticmethod
+    def reunite_pipeline(req: ReuniteRequest) -> JobResult:
+        """Process reunite photo request - simplified together flow"""
+        print(f"\n{'='*60}")
+        print(f"🎯 REUNITE PIPELINE STARTED")
+        print(f"{'='*60}\n")
+        
+        # This is similar to together_pipeline but with emotional context
+        # Download and process subjects
+        subject_a = ImageProcessingService._download_image(str(req.image_a_url))
+        subject_b = ImageProcessingService._download_image(str(req.image_b_url))
+        
+        # Remove backgrounds
+        try:
+            import rembg
+            subject_a_nobg = rembg.remove(subject_a)
+            subject_b_nobg = rembg.remove(subject_b)
+        except Exception:
+            subject_a_nobg = subject_a
+            subject_b_nobg = subject_b
+        
+        # Save subjects
+        subject_a_url = ImageProcessingService._save_image(subject_a_nobg, "png")
+        subject_b_url = ImageProcessingService._save_image(subject_b_nobg, "png")
+        
+        # Generate reunite background
+        background_prompt = req.background_prompt or "warm emotional background with soft lighting perfect for a reunification moment"
+        background_url = ImageProcessingService.flux_ultra_background(
+            prompt=background_prompt,
+            seed=req.seed,
+            aspect_ratio=req.aspect_ratio
+        )
+        
+        # Composite
+        background = ImageProcessingService._download_image(background_url)
+        bg_w, bg_h = background.size
+        max_height = int(bg_h * 0.6)
+        
+        # Resize and position subjects
+        a_new_h = max_height
+        a_new_w = int(a_new_h * (subject_a_nobg.size[0] / subject_a_nobg.size[1]))
+        subject_a_resized = subject_a_nobg.resize((a_new_w, a_new_h), Image.Resampling.LANCZOS)
+        
+        b_new_h = max_height
+        b_new_w = int(b_new_h * (subject_b_nobg.size[0] / subject_b_nobg.size[1]))
+        subject_b_resized = subject_b_nobg.resize((b_new_w, b_new_h), Image.Resampling.LANCZOS)
+        
+        # Position subjects together
+        gap = 30
+        total_width = a_new_w + b_new_w + gap
+        start_x = (bg_w - total_width) // 2
+        start_y = (bg_h - max_height) // 2
+        
+        composite = background.copy().convert('RGBA')
+        composite.paste(subject_a_resized, (start_x, start_y), subject_a_resized)
+        composite.paste(subject_b_resized, (start_x + a_new_w + gap, start_y), subject_b_resized)
+        
+        composite_url = ImageProcessingService._save_image(composite, "png")
+        
+        # Blend harmoniously
+        blend_prompt = "Create a touching reunion moment with warm lighting. Make it look natural as if they've always been together, with emotional depth and warmth."
+        
+        try:
+            final_url = ImageProcessingService.flux_kontext_edit(
+                image_url=composite_url,
+                prompt=blend_prompt,
+                strength=0.35,
+                seed=req.seed,
+                out_format="png"
+            )
+        except Exception:
+            final_url = composite_url
+        
+        # Finish
+        try:
+            img = ImageProcessingService._download_image(final_url)
+            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+            final_url = ImageProcessingService._save_image(img, req.output_format)
+        except Exception:
+            if final_url and "bfl.ai" in final_url:
+                final_url = ImageProcessingService.migrate_bfl_url_to_spaces(final_url, req.output_format)
+        
+        meta = {
+            "background_prompt": background_prompt,
+            "aspect_ratio": req.aspect_ratio,
+            "steps": ["reunite", "composite", "blend", "finish"]
+        }
+        return JobResult(output_url=final_url, meta=meta)
+
+    @staticmethod
+    def family_pipeline(req: FamilyRequest) -> JobResult:
+        """Process family photo request"""
+        print(f"\n{'='*60}")
+        print(f"🎯 FAMILY PIPELINE STARTED")
+        print(f"📥 Images count: {len(req.images)}")
+        print(f"🎨 Style: {req.style}")
+        print(f"{'='*60}\n")
+        
+        if len(req.images) == 0:
+            raise HTTPException(status_code=400, detail="At least one image required")
+        
+        # For single image, just enhance it
+        if len(req.images) == 1:
+            image_url = req.images[0]
+            
+            if req.style == "enhanced":
+                prompt = "Enhance this family photo with professional lighting, clarity, and warmth. Make it look polished and timeless while preserving authentic moments and emotions."
+            else:
+                prompt = "Restore and enhance this family photo with professional quality, keeping it natural and authentic."
+            
+            out_url = ImageProcessingService.flux_kontext_edit(
+                image_url=image_url,
+                prompt=prompt,
+                strength=0.7,
+                seed=req.seed,
+                out_format=req.output_format
+            )
+            
+            try:
+                img = ImageProcessingService._download_image(out_url)
+                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                final_url = ImageProcessingService._save_image(img, req.output_format)
+            except Exception:
+                final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+            
+            meta = {
+                "style": req.style,
+                "aspect_ratio": req.aspect_ratio,
+                "steps": ["enhance", "finish"]
+            }
+            return JobResult(output_url=final_url, meta=meta)
+        
+        # For multiple images, create a composite
+        elif req.style == "collage":
+            # Download all images
+            images = [ImageProcessingService._download_image(img_url) for img_url in req.images]
+            
+            # Resize to similar size
+            target_size = min(min(img.size for img in images))
+            resized_images = [img.resize((target_size, target_size), Image.Resampling.LANCZOS) for img in images]
+            
+            # Create grid layout
+            cols = 2 if len(resized_images) <= 4 else 3
+            rows = (len(resized_images) + cols - 1) // cols
+            composite = Image.new('RGB', (cols * target_size, rows * target_size), 'white')
+            
+            for i, img in enumerate(resized_images):
+                row = i // cols
+                col = i % cols
+                x = col * target_size
+                y = row * target_size
+                composite.paste(img.convert('RGB'), (x, y))
+            
+            final_url = ImageProcessingService._save_image(composite, req.output_format)
+            
+            meta = {
+                "style": "collage",
+                "image_count": len(req.images),
+                "aspect_ratio": req.aspect_ratio,
+                "steps": ["collage", "finish"]
+            }
+            return JobResult(output_url=final_url, meta=meta)
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported style for multiple images: {req.style}")

@@ -390,9 +390,9 @@ class ImageProcessingService:
         
         # Send directly to BFL Kontext for restoration
         prompt = (
-            "Restore and recreate this photo in the same composition and style. "
+            "Restore and enhance this photo in the same composition and style. "
             "Preserve identity, clothing and lighting. Remove noise, banding and stains. "
-            "Keep natural skin texture. Avoid plastic skin and avoid AI artifacts."
+            "Keep natural appearance and texture. Avoid plastic look and avoid AI artifacts."
         )
         print(f"📝 Prompt: {prompt}")
         
@@ -408,18 +408,33 @@ class ImageProcessingService:
         
         print(f"✅ BFL returned restored image URL: {out_url}")
 
-        # 3) Optional local finishing and aspect
-        try:
+        # Always migrate BFL URL to permanent storage first
+        if "bfl.ai" in out_url:
+            print(f"🔗 Detected BFL URL, migrating to Spaces...")
+            # Download and migrate
             img = ImageProcessingService._download_image(out_url)
-            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
-            # gentle finishing
-            controls = LookControls(warmth=0.05, shadows=0.05, grain=0.02)
-            img = ImageProcessingService._finish_look(img, controls)
-            final_url = ImageProcessingService._save_image(img, req.output_format)
-        except Exception:
-            # If finishing fails, migrate BFL URL to Spaces
-            print(f"⚠️ Finishing failed, migrating BFL URL to Spaces...")
             final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+            
+            # Then apply finishing touches if needed
+            try:
+                img_processed = ImageProcessingService._download_image(final_url)
+                img_processed = ImageProcessingService._apply_aspect(img_processed, req.aspect_ratio)
+                controls = LookControls(warmth=0.05, shadows=0.05, grain=0.02)
+                img_processed = ImageProcessingService._finish_look(img_processed, controls)
+                final_url = ImageProcessingService._save_image(img_processed, req.output_format)
+            except Exception as e:
+                print(f"⚠️ Finishing touches skipped: {e}")
+        else:
+            # Already a Spaces URL, just apply finishing
+            try:
+                img = ImageProcessingService._download_image(out_url)
+                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                controls = LookControls(warmth=0.05, shadows=0.05, grain=0.02)
+                img = ImageProcessingService._finish_look(img, controls)
+                final_url = ImageProcessingService._save_image(img, req.output_format)
+            except Exception as e:
+                print(f"⚠️ Finishing failed: {e}")
+                final_url = out_url
 
         meta = {
             "steps": ["preclean", "flux_kontext", "finish"],
@@ -527,7 +542,7 @@ class ImageProcessingService:
             "Seamlessly blend the subjects into the background. "
             "Match lighting and perspective. Add subtle shadows and reflections. "
             "Make it look natural like they were always there together. "
-            "Preserve facial features and clothing details."
+            "Preserve facial details and clothing."
         )
         
         try:
@@ -547,17 +562,18 @@ class ImageProcessingService:
         
         # Step 6: Apply aspect ratio and finishing touches
         print("🎨 Step 6: Applying finishing touches...")
-        try:
-            img = ImageProcessingService._download_image(final_url)
-            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
-            img = ImageProcessingService._finish_look(img, req.look_controls or LookControls())
-            final_url = ImageProcessingService._save_image(img, "png")
-        except Exception as e:
-            print(f"⚠️ Finishing failed: {e}")
-            # If final_url is a BFL URL, migrate it to Spaces
-            if final_url and "bfl.ai" in final_url:
-                print(f"🔄 Migrating BFL URL to Spaces...")
-                final_url = ImageProcessingService.migrate_bfl_url_to_spaces(final_url, "png")
+        # Always migrate BFL URLs first
+        if final_url and "bfl.ai" in final_url:
+            print(f"🔗 Detected BFL URL, migrating to Spaces...")
+            final_url = ImageProcessingService.migrate_bfl_url_to_spaces(final_url, "png")
+        else:
+            try:
+                img = ImageProcessingService._download_image(final_url)
+                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                img = ImageProcessingService._finish_look(img, req.look_controls or LookControls())
+                final_url = ImageProcessingService._save_image(img, "png")
+            except Exception as e:
+                print(f"⚠️ Finishing failed: {e}, using: {final_url}")
         
         meta = {
             "background_src": background_url,
@@ -582,7 +598,7 @@ class ImageProcessingService:
         
         # Age-specific prompts
         age_prompts = {
-            "young": "Make this person look younger, as they would have appeared 20-30 years ago. Show them with vibrant skin, fewer wrinkles, and youthful energy while keeping their identity.",
+            "young": "Make this person look younger, as they would have appeared 20-30 years ago. Show them with vibrant appearance, fewer wrinkles, and youthful energy while keeping their identity.",
             "current": "Enhance this photo with professional lighting and clarity while maintaining their current age and appearance.",
             "old": "Show how this person might look with age, adding gentle wisdom lines and silver hair, while preserving their core features and personality."
         }
@@ -597,13 +613,19 @@ class ImageProcessingService:
             out_format=req.output_format
         )
         
-        # Apply aspect ratio and finishing
-        try:
-            img = ImageProcessingService._download_image(out_url)
-            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
-            final_url = ImageProcessingService._save_image(img, req.output_format)
-        except Exception:
+        # Always migrate BFL URL to permanent storage
+        if "bfl.ai" in out_url:
+            print(f"🔗 Detected BFL URL, migrating to Spaces...")
             final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+        else:
+            # Apply aspect ratio and finishing if not already from Spaces
+            try:
+                img = ImageProcessingService._download_image(out_url)
+                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                final_url = ImageProcessingService._save_image(img, req.output_format)
+            except Exception:
+                print(f"⚠️ Failed to process URL, using directly: {out_url}")
+                final_url = out_url
         
         meta = {
             "target_age": req.target_age,
@@ -625,7 +647,7 @@ class ImageProcessingService:
         
         # Celebrity style prompts
         style_prompts = {
-            "movie_star": "Transform this into a glamorous movie star photo with professional lighting, perfect skin, glamorous makeup, and Hollywood-quality polish while preserving the person's features.",
+            "movie_star": "Transform this into a glamorous movie star photo with professional lighting, smooth appearance, elegant styling, and Hollywood-quality polish while preserving the person's features.",
             "royal": "Give this photo a royal elegance treatment with refined lighting, sophisticated styling, and regal composition while maintaining the person's appearance.",
             "vintage_glamour": "Apply a vintage Hollywood glamour treatment with soft focus, classic black and white or sepia tones, and timeless elegance.",
             "modern_celebrity": "Create a modern celebrity look with high-fashion lighting, editorial styling, and magazine-quality polish."
@@ -641,15 +663,21 @@ class ImageProcessingService:
             out_format=req.output_format
         )
         
-        # Apply aspect ratio and finishing
-        try:
-            img = ImageProcessingService._download_image(out_url)
-            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
-            controls = LookControls(warmth=0.1, shadows=0.1, grain=0.01)
-            img = ImageProcessingService._finish_look(img, controls)
-            final_url = ImageProcessingService._save_image(img, req.output_format)
-        except Exception:
+        # Always migrate BFL URL to permanent storage
+        if "bfl.ai" in out_url:
+            print(f"🔗 Detected BFL URL, migrating to Spaces...")
             final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+        else:
+            # Apply aspect ratio and finishing if not already from Spaces
+            try:
+                img = ImageProcessingService._download_image(out_url)
+                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                controls = LookControls(warmth=0.1, shadows=0.1, grain=0.01)
+                img = ImageProcessingService._finish_look(img, controls)
+                final_url = ImageProcessingService._save_image(img, req.output_format)
+            except Exception as e:
+                print(f"⚠️ Failed to process URL: {e}, using directly: {out_url}")
+                final_url = out_url
         
         meta = {
             "celebrity_style": req.celebrity_style,
@@ -731,14 +759,18 @@ class ImageProcessingService:
         except Exception:
             final_url = composite_url
         
-        # Finish
-        try:
-            img = ImageProcessingService._download_image(final_url)
-            img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
-            final_url = ImageProcessingService._save_image(img, req.output_format)
-        except Exception:
-            if final_url and "bfl.ai" in final_url:
-                final_url = ImageProcessingService.migrate_bfl_url_to_spaces(final_url, req.output_format)
+        # Finish - always migrate BFL URLs
+        if final_url and "bfl.ai" in final_url:
+            print(f"🔗 Detected BFL URL in final step, migrating to Spaces...")
+            final_url = ImageProcessingService.migrate_bfl_url_to_spaces(final_url, req.output_format)
+        else:
+            try:
+                img = ImageProcessingService._download_image(final_url)
+                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                final_url = ImageProcessingService._save_image(img, req.output_format)
+            except Exception as e:
+                print(f"⚠️ Failed to finish processing: {e}, using: {final_url}")
+                # final_url already set
         
         meta = {
             "background_prompt": background_prompt,
@@ -764,7 +796,7 @@ class ImageProcessingService:
             image_url = req.images[0]
             
             if req.style == "enhanced":
-                prompt = "Enhance this family photo with professional lighting, clarity, and warmth. Make it look polished and timeless while preserving authentic moments and emotions."
+                prompt = "Enhance this family photo with professional lighting, clarity, and warmth. Make it look polished and timeless while preserving authentic moments and genuine emotions."
             else:
                 prompt = "Restore and enhance this family photo with professional quality, keeping it natural and authentic."
             
@@ -776,12 +808,18 @@ class ImageProcessingService:
                 out_format=req.output_format
             )
             
-            try:
-                img = ImageProcessingService._download_image(out_url)
-                img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
-                final_url = ImageProcessingService._save_image(img, req.output_format)
-            except Exception:
+            # Always migrate BFL URL to permanent storage
+            if "bfl.ai" in out_url:
+                print(f"🔗 Detected BFL URL, migrating to Spaces...")
                 final_url = ImageProcessingService.migrate_bfl_url_to_spaces(out_url, req.output_format)
+            else:
+                try:
+                    img = ImageProcessingService._download_image(out_url)
+                    img = ImageProcessingService._apply_aspect(img, req.aspect_ratio)
+                    final_url = ImageProcessingService._save_image(img, req.output_format)
+                except Exception as e:
+                    print(f"⚠️ Failed to process URL: {e}, using directly: {out_url}")
+                    final_url = out_url
             
             meta = {
                 "style": req.style,

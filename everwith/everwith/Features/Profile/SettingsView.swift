@@ -115,6 +115,9 @@ struct SettingsView: View {
                 animateElements = true
             }
         }
+        .refreshable {
+            await loadSubscriptionData()
+        }
     }
     
     // MARK: - Private Methods

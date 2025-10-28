@@ -255,6 +255,18 @@ async def use_credit(request: CreditUsageRequest, current_user: DBUser = Depends
                 used_free_use=False  # No free uses in credit-driven system
             )
             await usage_log.insert()
+            
+            # Log credit transaction if credit was used
+            if used_credit and credits_used > 0:
+                import uuid
+                credit_transaction = CreditTransaction(
+                    user_id=current_user,
+                    credits=-credits_used,
+                    transaction_type="usage",
+                    description=f"Used for {request.mode} processing",
+                    transaction_id=request.transaction_id if hasattr(request, 'transaction_id') else str(uuid.uuid4())
+                )
+                await credit_transaction.insert()
         
         await current_user.save()
         
@@ -572,18 +584,23 @@ async def get_user_credits(
 ):
     """Get user's credit balance and history"""
     
-    # Calculate credits
+    # Use the user's credits field as the source of truth
+    # This is maintained by the system when credits are added/deducted
+    user_credits = current_user.credits
+    
+    # Also calculate from transactions for history transparency
     purchases = await CreditTransaction.find(
         CreditTransaction.user_id == current_user,
         CreditTransaction.transaction_type == "purchase"
     ).to_list()
+    
+    total_purchased = sum(t.credits for t in purchases)
     
     usage = await CreditTransaction.find(
         CreditTransaction.user_id == current_user,
         CreditTransaction.transaction_type == "usage"
     ).to_list()
     
-    total_purchased = sum(t.credits for t in purchases)
     total_used = sum(abs(t.credits) for t in usage)
     
     last_purchase = max(
@@ -592,7 +609,7 @@ async def get_user_credits(
     )
     
     return UserCreditsResponse(
-        credits_remaining=total_purchased - total_used,
+        credits_remaining=user_credits,  # Use actual user.credits field
         total_purchased=total_purchased,
         total_used=total_used,
         last_purchase_date=last_purchase

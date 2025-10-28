@@ -261,8 +261,24 @@ struct ModernHomeHeader3: View {
     
     private func loadUserCredits() {
         Task {
-            userCredits = monetizationManager.userCredits
-            isLoadingCredits = false
+            isLoadingCredits = true
+            do {
+                // Fetch real credits from the API
+                let credits = try await SubscriptionService.shared.fetchUserCredits()
+                await MainActor.run {
+                    userCredits = credits.creditsRemaining
+                    monetizationManager.userCredits = credits.creditsRemaining
+                    isLoadingCredits = false
+                    print("✅ HomeView: Loaded real credits: \(userCredits)")
+                }
+            } catch {
+                print("❌ HomeView: Failed to load credits: \(error)")
+                // Fallback to monetizationManager value
+                await MainActor.run {
+                    userCredits = monetizationManager.userCredits
+                    isLoadingCredits = false
+                }
+            }
         }
     }
 }

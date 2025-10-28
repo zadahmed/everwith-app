@@ -98,6 +98,16 @@ struct ReuniteFlow: View {
                 return
             }
             
+            // Consume the credit
+            let accessUsed = await monetizationManager.requestAccess(for: .merge)
+            guard accessUsed else {
+                await MainActor.run {
+                    errorMessage = "Failed to use credit"
+                    showError = true
+                }
+                return
+            }
+            
             await MainActor.run {
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     currentStep = .processing

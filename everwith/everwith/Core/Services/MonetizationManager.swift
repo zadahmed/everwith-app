@@ -25,8 +25,8 @@ class MonetizationManager: ObservableObject {
     // MARK: - Testing Override
     #if DEBUG
     // Set to true to override credits to 0 for testing in simulator
-    var overrideTestingCredits: Bool = true
-    var testingCredits: Int = 1000000 // Set this value for testing (0 = no credits)
+    var overrideTestingCredits: Bool = false // Disabled to use real API credits
+    var testingCredits: Int = 0 // Set this value for testing (0 = no credits)
     #endif
     
     let revenueCatService = RevenueCatService.shared
@@ -34,16 +34,32 @@ class MonetizationManager: ObservableObject {
     private let subscriptionService = SubscriptionService.shared
     
     private init() {
+        Task {
+            await fetchCreditCosts()
+            await fetchRealCredits()
+        }
+    }
+    
+    // MARK: - Fetch Real Credits from API
+    
+    func fetchRealCredits() async {
         #if DEBUG
-        // Set initial credits for testing
+        // Skip real credits fetch if testing override is enabled
         if overrideTestingCredits {
             userCredits = testingCredits
             print("🧪 TESTING MODE: Credits set to \(testingCredits)")
+            return
         }
         #endif
         
-        Task {
-            await fetchCreditCosts()
+        do {
+            let credits = try await subscriptionService.fetchUserCredits()
+            await MainActor.run {
+                userCredits = credits.creditsRemaining
+                print("✅ Fetched real credits from API: \(userCredits)")
+            }
+        } catch {
+            print("❌ Failed to fetch credits: \(error)")
         }
     }
     
@@ -86,7 +102,9 @@ class MonetizationManager: ObservableObject {
         
         do {
             let response = try await apiService.checkAccess(mode: mode.rawValue)
-            userCredits = response.remainingCredits
+            await MainActor.run {
+                userCredits = response.remainingCredits
+            }
             return response.hasAccess
         } catch {
             print("❌ Failed to check access: \(error)")
@@ -97,7 +115,9 @@ class MonetizationManager: ObservableObject {
     func requestAccess(for mode: ProcessingMode) async -> Bool {
         do {
             let response = try await apiService.useCredit(mode: mode.rawValue)
-            userCredits = response.remainingCredits
+            await MainActor.run {
+                userCredits = response.remainingCredits
+            }
             return response.success
         } catch {
             print("❌ Failed to use credit: \(error)")

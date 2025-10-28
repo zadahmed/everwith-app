@@ -459,7 +459,20 @@ class AuthenticationService: ObservableObject {
                         throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(dateString)")
                     }
                     
+                    // Try to decode - with graceful error handling
                     let authResponse = try decoder.decode(AuthResponse.self, from: data)
+                    
+                    // Validate critical fields exist
+                    guard !authResponse.access_token.isEmpty else {
+                        print("❌ AUTH ERROR: Missing access token")
+                        return .failure(AuthenticationError.backendError("Invalid response: missing access token"))
+                    }
+                    
+                    guard !authResponse.user.id.isEmpty, !authResponse.user.email.isEmpty, !authResponse.user.name.isEmpty else {
+                        print("❌ AUTH ERROR: Missing required user fields")
+                        return .failure(AuthenticationError.backendError("Invalid response: missing user information"))
+                    }
+                    
                     print("✅ AUTH SUCCESS: Successfully decoded response")
                     print("👤 USER DATA: ID=\(authResponse.user.id), Email=\(authResponse.user.email), Name=\(authResponse.user.name)")
                     print("🎫 ACCESS TOKEN: \(authResponse.access_token.prefix(20))...")

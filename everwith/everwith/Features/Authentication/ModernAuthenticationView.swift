@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ModernAuthenticationView: View {
     @EnvironmentObject private var authService: AuthenticationService
+    @FocusState private var focusedField: FocusedField?
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
@@ -24,7 +25,7 @@ struct ModernAuthenticationView: View {
     @State private var buttonPressedGoogle: Bool = false
     @State private var contentOpacity: Double = 0
     @State private var logoScale: CGFloat = 0.8
-    @State private var focusedTextField: FocusedField? = nil
+    @State private var keyboardHeight: CGFloat = 0
     
     enum FocusedField {
         case name, email, password, confirmPassword

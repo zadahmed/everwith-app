@@ -87,17 +87,30 @@ struct OnboardingView: View {
                         .padding(.top, adaptiveSpacing(16, for: geometry))
                         .padding(.bottom, adaptiveSpacing(12, for: geometry))
                         
-                        // Single Card Content with fixed height - increased to fill more space
-                        if currentCardIndex < onboardingCards.count {
-                            SingleOnboardingCard(
-                                cardData: onboardingCards[currentCardIndex],
-                                geometry: geometry
-                            )
-                            .scaleEffect(showContent ? 1.0 : 0.8)
-                            .opacity(showContent ? 1.0 : 0.0)
-                            .animation(.spring(response: 0.8, dampingFraction: 0.8), value: showContent)
-                            .frame(height: geometry.size.height * 0.65) // Increased to 65% of screen height
+                        // Scrollable Cards
+                        ScrollViewReader { proxy in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 0) {
+                                    ForEach(0..<onboardingCards.count, id: \.self) { index in
+                                        SingleOnboardingCard(
+                                            cardData: onboardingCards[index],
+                                            geometry: geometry
+                                        )
+                                        .id(index)
+                                        .frame(width: geometry.size.width - (geometry.adaptivePadding() * 2))
+                                    }
+                                }
+                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentCardIndex)
+                            }
+                            .scrollTargetBehavior(.paging)
+                            .disabled(true)
+                            .onChange(of: currentCardIndex) { newIndex in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    proxy.scrollTo(newIndex, anchor: .center)
+                                }
+                            }
                         }
+                        .frame(height: geometry.size.height * 0.65) // Increased to 65% of screen height
                         
                         Spacer()
                             .frame(height: adaptiveSpacing(8, for: geometry))
@@ -112,6 +125,9 @@ struct OnboardingView: View {
                                             currentCardIndex += 1
                                         }
                                     }
+                                    // Haptic feedback
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                    impactFeedback.impactOccurred()
                                 }) {
                                     HStack(spacing: adaptiveSpacing(8, for: geometry)) {
                                         Text("Next")

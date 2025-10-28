@@ -400,58 +400,32 @@ struct ResultActionButtons: View {
     }
 }
 
-// MARK: - Before/After Slider Component
-struct BeforeAfterSlider: View {
+// MARK: - Before/After Toggle Button Component
+struct BeforeAfterToggleButton: View {
     let beforeImage: UIImage
     let afterImage: UIImage
     let geometry: GeometryProxy
     
-    @State private var sliderPosition: CGFloat = 0.5
+    @State private var showingBefore: Bool = false
     
     var body: some View {
-        GeometryReader { imageGeometry in
-            ZStack {
-                // After image (full)
-                Image(uiImage: afterImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: imageGeometry.size.width)
-                
-                // Before image (masked)
-                Image(uiImage: beforeImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: imageGeometry.size.width)
-                    .mask(
-                        Rectangle()
-                            .frame(width: imageGeometry.size.width * sliderPosition)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    )
-                
-                // Before label
-                if sliderPosition > 0.15 {
-                    VStack {
-                        HStack {
-                            Text("Before")
-                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.6))
-                                .cornerRadius(8)
-                                .padding(12)
-                            Spacer()
-                        }
-                        Spacer()
-                    }
-                }
-                
-                // After label
-                if sliderPosition < 0.85 {
+        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
+            // Image display
+            GeometryReader { imageGeometry in
+                ZStack {
+                    // Show appropriate image based on state
+                    Image(uiImage: showingBefore ? beforeImage : afterImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: imageGeometry.size.width)
+                        .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                        .clipped()
+                    
+                    // Label overlay
                     VStack {
                         HStack {
                             Spacer()
-                            Text("After")
+                            Text(showingBefore ? "Before" : "After")
                                 .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 12)
@@ -463,38 +437,32 @@ struct BeforeAfterSlider: View {
                         Spacer()
                     }
                 }
-                
-                // Slider handle
-                VStack {
-                    Rectangle()
-                        .fill(Color.white)
-                        .frame(width: 3)
-                        .overlay(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 44, height: 44)
-                                .shadow(color: .black.opacity(0.3), radius: 8)
-                                .overlay(
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "chevron.left")
-                                            .font(.system(size: 12, weight: .bold))
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 12, weight: .bold))
-                                    }
-                                    .foregroundColor(.deepPlum)
-                                )
-                        )
-                }
-                .frame(width: 44)
-                .offset(x: imageGeometry.size.width * sliderPosition - imageGeometry.size.width / 2)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            let newPosition = (value.location.x / imageGeometry.size.width)
-                            sliderPosition = min(max(newPosition, 0), 1)
-                        }
-                )
             }
+            .frame(maxHeight: .infinity)
+            
+            // Toggle button
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    showingBefore.toggle()
+                }
+            }) {
+                HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                    Image(systemName: showingBefore ? "eye.fill" : "eye.slash.fill")
+                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                    
+                    Text(showingBefore ? "Show After" : "Show Before")
+                        .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: adaptiveSize(50, for: geometry))
+                .background(
+                    RoundedRectangle(cornerRadius: adaptiveCornerRadius(14, for: geometry))
+                        .fill(LinearGradient.primaryBrand)
+                )
+                .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            .padding(.horizontal, adaptiveSpacing(20, for: geometry))
         }
     }
 }

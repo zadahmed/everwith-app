@@ -482,23 +482,16 @@ struct RestoreResultView: View {
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
-            // Before/After Slider
-            BeforeAfterSlider(
+            // Before/After Toggle
+            BeforeAfterToggleButton(
                 beforeImage: beforeImage,
                 afterImage: afterImage,
                 geometry: geometry
             )
-            .frame(height: geometry.size.height * 0.6)
+            .frame(height: geometry.size.height * 0.7)
             .padding(.horizontal, adaptiveSpacing(20, for: geometry))
             .opacity(animateElements ? 1 : 0)
             .scaleEffect(animateElements ? 1.0 : 0.95)
-            
-            // Swipe hint
-            Text("← Swipe to compare →")
-                .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
-                .foregroundColor(.softPlum)
-                .padding(.top, adaptiveSpacing(16, for: geometry))
-                .opacity(animateElements ? 1 : 0)
             
             Spacer()
             

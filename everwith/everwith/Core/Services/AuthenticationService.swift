@@ -402,50 +402,61 @@ class AuthenticationService: ObservableObject {
                 print("📤 REQUEST BODY: \(requestString)")
             }
             
-            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            // Configure URLSession with timeout
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 30
+            config.timeoutIntervalForResource = 60
+            
+            let session = URLSession(configuration: config)
+            let (data, response) = try await session.data(for: urlRequest)
             
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ AUTH ERROR: Invalid response type")
                 return .failure(AuthenticationError.networkError)
             }
             
             // Log the response for debugging
+            print("📥 AUTH RESPONSE: Status \(httpResponse.statusCode)")
+            print("📥 AUTH RESPONSE: Headers \(httpResponse.allHeaderFields)")
+            print("📥 AUTH RESPONSE: Data size \(data.count) bytes")
+            
             if let responseString = String(data: data, encoding: .utf8) {
-                print("📥 AUTH RESPONSE: Status \(httpResponse.statusCode)")
                 print("📄 RESPONSE BODY: \(responseString)")
+            } else {
+                print("❌ RESPONSE: Unable to convert to UTF-8 string")
+            }
+            
+            // Check for empty response
+            guard !data.isEmpty else {
+                print("❌ AUTH ERROR: Empty response from server")
+                return .failure(AuthenticationError.backendError("Empty response from server"))
             }
             
             if httpResponse.statusCode == 200 {
                 do {
-                    // Create a custom JSON decoder with flexible date formatting
+                    // Simple decoder - backend uses snake_case
                     let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    
+                    // Use flexible date handling
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
                     decoder.dateDecodingStrategy = .custom { decoder in
                         let container = try decoder.singleValueContainer()
                         let dateString = try container.decode(String.self)
                         
-                        // Try multiple date formats
-                        let formatters = [
-                            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // 2025-10-11T23:19:17.783000
-                            "yyyy-MM-dd'T'HH:mm:ss.SSS",      // 2025-10-11T23:19:17.783
-                            "yyyy-MM-dd'T'HH:mm:ss",          // 2025-10-11T23:19:17
-                            "yyyy-MM-dd'T'HH:mm:ssZ",         // 2025-10-11T23:19:17Z
-                            "yyyy-MM-dd'T'HH:mm:ss.SSSZ"      // 2025-10-11T23:19:17.783Z
-                        ]
-                        
-                        for formatter in formatters {
-                            let dateFormatter = DateFormatter()
-                            dateFormatter.dateFormat = formatter
-                            if let date = dateFormatter.date(from: dateString) {
-                                return date
-                            }
-                        }
-                        
-                        // Fallback to ISO8601
-                        let iso8601Formatter = ISO8601DateFormatter()
-                        if let date = iso8601Formatter.date(from: dateString) {
+                        // Try ISO8601 first
+                        if let date = formatter.date(from: dateString) {
                             return date
                         }
                         
-                        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
+                        // Try simple format
+                        let simpleFormatter = ISO8601DateFormatter()
+                        if let date = simpleFormatter.date(from: dateString) {
+                            return date
+                        }
+                        
+                        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(dateString)")
                     }
                     
                     let authResponse = try decoder.decode(AuthResponse.self, from: data)
@@ -457,9 +468,9 @@ class AuthenticationService: ObservableObject {
                         id: authResponse.user.id,
                         email: authResponse.user.email,
                         name: authResponse.user.name,
-                        profileImageURL: authResponse.user.profile_image_url,
+                        profileImageURL: authResponse.user.profileImageUrl,
                         provider: provider,
-                        createdAt: authResponse.user.created_at ?? Date()
+                        createdAt: authResponse.user.createdAt ?? Date()
                     )
                     
                     await signInUser(user, accessToken: authResponse.access_token)
@@ -468,18 +479,66 @@ class AuthenticationService: ObservableObject {
                 } catch {
                     print("❌ JSON DECODING ERROR: \(error)")
                     print("🔍 ERROR DETAILS: \(error.localizedDescription)")
+                    
+                    // Try to extract more info from the decoding error
+                    if let decodingError = error as? DecodingError {
+                        switch decodingError {
+                        case .dataCorrupted(let context):
+                            print("❌ DATA CORRUPTED: \(context.debugDescription)")
+                        case .keyNotFound(let key, let context):
+                            print("❌ KEY NOT FOUND: \(key.stringValue) - \(context.debugDescription)")
+                        case .typeMismatch(let type, let context):
+                            print("❌ TYPE MISMATCH: \(type) - \(context.debugDescription)")
+                        case .valueNotFound(let type, let context):
+                            print("❌ VALUE NOT FOUND: \(type) - \(context.debugDescription)")
+                        @unknown default:
+                            print("❌ UNKNOWN DECODING ERROR")
+                        }
+                    }
+                    
                     print("📄 RAW RESPONSE: \(String(data: data, encoding: .utf8) ?? "Unable to convert to string")")
+                    print("📄 RESPONSE FIRST 200 CHARS: \(String(data: data.prefix(200), encoding: .utf8) ?? "Unable to convert")")
+                    
                     return .failure(AuthenticationError.backendError("Invalid response format from server: \(error.localizedDescription)"))
                 }
             } else {
                 // Handle different error status codes
+                print("⚠️ AUTH ERROR: Non-200 status code: \(httpResponse.statusCode)")
+                
+                // Try to decode error response
                 let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
-                let errorMessage = errorResponse?.detail ?? "Authentication failed (Status: \(httpResponse.statusCode))"
+                var errorMessage = errorResponse?.detail ?? "Authentication failed (Status: \(httpResponse.statusCode))"
+                
+                // If decoding failed, try to get raw response
+                if errorResponse == nil, let rawResponse = String(data: data, encoding: .utf8) {
+                    errorMessage = rawResponse.isEmpty ? "Server returned error \(httpResponse.statusCode)" : rawResponse
+                }
                 
                 return .failure(AuthenticationError.backendError(errorMessage))
             }
+        } catch let error as URLError {
+            // Handle URL-specific errors
+            print("❌ URL ERROR: \(error.localizedDescription)")
+            print("❌ CODE: \(error.code.rawValue)")
+            
+            var errorMessage = "Network error: \(error.localizedDescription)"
+            switch error.code {
+            case .timedOut:
+                errorMessage = "Request timed out. Please check your connection and try again."
+            case .notConnectedToInternet:
+                errorMessage = "No internet connection. Please check your network."
+            case .cannotFindHost:
+                errorMessage = "Cannot reach server. Please try again later."
+            case .cannotConnectToHost:
+                errorMessage = "Cannot connect to server. Please check your network."
+            default:
+                errorMessage = "Network error: \(error.localizedDescription)"
+            }
+            
+            return .failure(AuthenticationError.backendError(errorMessage))
         } catch {
-            return .failure(error)
+            print("❌ UNKNOWN ERROR: \(error)")
+            return .failure(AuthenticationError.backendError("Unexpected error: \(error.localizedDescription)"))
         }
     }
     

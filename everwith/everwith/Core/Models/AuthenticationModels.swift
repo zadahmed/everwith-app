@@ -95,17 +95,35 @@ struct AuthResponse: Codable {
     let user: BackendUser
     let access_token: String
     let token_type: String
+    
+    enum CodingKeys: String, CodingKey {
+        case message
+        case user
+        case access_token
+        case token_type
+    }
 }
 
 struct BackendUser: Codable {
     let id: String
     let email: String
     let name: String
-    let profile_image_url: String?
-    let is_google_user: Bool
-    let is_active: Bool
-    let created_at: Date?
-    let updated_at: Date?
+    let profileImageUrl: String?
+    let isGoogleUser: Bool
+    let isActive: Bool
+    let createdAt: Date?
+    let updatedAt: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case email
+        case name
+        case profileImageUrl = "profile_image_url"
+        case isGoogleUser = "is_google_user"
+        case isActive = "is_active"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
 }
 
 struct ErrorResponse: Codable {

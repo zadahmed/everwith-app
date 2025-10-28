@@ -17,6 +17,8 @@ struct CelebrityFlow: View {
     @State private var currentStep: CelebrityStep = .upload
     @State private var selectedImage: UIImage?
     @State private var processedImage: UIImage?
+    @State private var processedImageUrl: String?
+    @State private var originalImageUrl: String?
     @State private var isProcessing = false
     @State private var processingProgress: Double = 0.0
     @State private var errorMessage: String?
@@ -110,6 +112,28 @@ struct CelebrityFlow: View {
                     celebrityStyle: celebrityStyle
                 )
                 
+                // Get the processed image URL from the API result
+                if case .completed(let jobResult) = imageProcessingService.processingState {
+                    processedImageUrl = jobResult.outputUrl
+                    
+                    // Save to history
+                    Task {
+                        do {
+                            let _ = try await imageProcessingService.saveToHistory(
+                                imageType: "celebrity",
+                                originalImageUrl: originalImageUrl,
+                                processedImageUrl: jobResult.outputUrl,
+                                qualityTarget: "standard",
+                                outputFormat: "png",
+                                aspectRatio: "original"
+                            )
+                            print("✅ Saved celebrity image to history")
+                        } catch {
+                            print("❌ Failed to save to history: \(error)")
+                        }
+                    }
+                }
+                
                 await MainActor.run {
                     processedImage = result
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
@@ -147,6 +171,8 @@ struct CelebrityFlow: View {
     private func resetFlow() {
         selectedImage = nil
         processedImage = nil
+        processedImageUrl = nil
+        originalImageUrl = nil
         processingProgress = 0.0
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
             currentStep = .upload

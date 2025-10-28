@@ -17,6 +17,8 @@ struct TimelineComparisonFlow: View {
     @State private var currentStep: TimelineStep = .upload
     @State private var selectedImage: UIImage?
     @State private var processedImage: UIImage?
+    @State private var processedImageUrl: String?
+    @State private var originalImageUrl: String?
     @State private var isProcessing = false
     @State private var processingProgress: Double = 0.0
     @State private var errorMessage: String?
@@ -110,6 +112,25 @@ struct TimelineComparisonFlow: View {
                     targetAge: targetAge
                 )
                 
+                // Save to history
+                if case .completed(let jobResult) = imageProcessingService.processingState {
+                    Task {
+                        do {
+                            let _ = try await imageProcessingService.saveToHistory(
+                                imageType: "timeline",
+                                originalImageUrl: nil,
+                                processedImageUrl: jobResult.outputUrl,
+                                qualityTarget: "standard",
+                                outputFormat: "png",
+                                aspectRatio: "original"
+                            )
+                            print("✅ Saved timeline image to history")
+                        } catch {
+                            print("❌ Failed to save to history: \(error)")
+                        }
+                    }
+                }
+                
                 await MainActor.run {
                     processedImage = result
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
@@ -147,6 +168,8 @@ struct TimelineComparisonFlow: View {
     private func resetFlow() {
         selectedImage = nil
         processedImage = nil
+        processedImageUrl = nil
+        originalImageUrl = nil
         processingProgress = 0.0
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
             currentStep = .upload

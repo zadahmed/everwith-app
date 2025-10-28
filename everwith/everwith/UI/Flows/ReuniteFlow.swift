@@ -17,6 +17,7 @@ struct ReuniteFlow: View {
     @State private var currentStep: ReuniteStep = .upload
     @State private var selectedImages: [UIImage] = []
     @State private var processedImage: UIImage?
+    @State private var processedImageUrl: String?
     @State private var isProcessing = false
     @State private var processingProgress: Double = 0.0
     @State private var errorMessage: String?
@@ -110,6 +111,26 @@ struct ReuniteFlow: View {
                     backgroundPrompt: backgroundPrompt.isEmpty ? nil : backgroundPrompt
                 )
                 
+                // Save to history
+                if case .completed(let jobResult) = imageProcessingService.processingState {
+                    Task {
+                        do {
+                            let _ = try await imageProcessingService.saveToHistory(
+                                imageType: "reunite",
+                                originalImageUrl: nil,
+                                processedImageUrl: jobResult.outputUrl,
+                                qualityTarget: "standard",
+                                outputFormat: "png",
+                                aspectRatio: "4:5",
+                                backgroundPrompt: backgroundPrompt.isEmpty ? nil : backgroundPrompt
+                            )
+                            print("✅ Saved reunite image to history")
+                        } catch {
+                            print("❌ Failed to save to history: \(error)")
+                        }
+                    }
+                }
+                
                 await MainActor.run {
                     processedImage = result
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
@@ -147,6 +168,7 @@ struct ReuniteFlow: View {
     private func resetFlow() {
         selectedImages = []
         processedImage = nil
+        processedImageUrl = nil
         processingProgress = 0.0
         backgroundPrompt = "warm emotional background"
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {

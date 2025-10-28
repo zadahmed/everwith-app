@@ -1,6 +1,65 @@
 {
   "identifier": "EVERWITH_CONFIG",
   "nonRenewingSubscriptions": [],
+  "subscriptionGroups": [
+    {
+      "id": "21818516",
+      "localizations": [
+        {
+          "description": "Premium subscription for unlimited photo restoration and merging",
+          "displayName": "EverWith Premium",
+          "locale": "en_US"
+        }
+      ],
+      "name": "Premium",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "1234567890",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Monthly premium subscription",
+              "displayName": "Premium Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.matrix.everwith.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly",
+          "subscriptionGroupID": "21818516",
+          "subscriptionGroupIdentifier": "21818516",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "69.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "1234567891",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Yearly premium subscription with 40% savings",
+              "displayName": "Premium Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.matrix.everwith.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Yearly",
+          "subscriptionGroupID": "21818516",
+          "subscriptionGroupIdentifier": "21818516",
+          "type": "RecurringSubscription"
+        }
+      ]
+    }
+  ],
   "products": [
     {
       "displayPrice": "4.99",
@@ -13,11 +72,10 @@
           "locale": "en_US"
         }
       ],
-      "productID": "com.everwith.premium.month",
+      "productID": "com.matrix.everwith.monthly",
       "referenceName": "Premium Monthly",
       "recurringSubscriptionPeriod": "P1M",
-      "subscriptionGroupID": "21482456",
-      "subscriptionGroupIdentifier": "21482456",
+      "subscriptionGroupIdentifier": "21818516",
       "type": "RecurringSubscription"
     },
     {
@@ -31,12 +89,56 @@
           "locale": "en_US"
         }
       ],
-      "productID": "com.everwith.premium.yearly",
+      "productID": "com.matrix.everwith.yearly",
       "referenceName": "Premium Yearly",
       "recurringSubscriptionPeriod": "P1Y",
-      "subscriptionGroupID": "21482456",
-      "subscriptionGroupIdentifier": "21482456",
+      "subscriptionGroupIdentifier": "21818516",
       "type": "RecurringSubscription"
+    },
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "1234567892",
+      "localizations": [
+        {
+          "description": "5 credits for photo processing",
+          "displayName": "5 Credits",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.everwith.credits.5",
+      "referenceName": "5 Credits Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "1234567893",
+      "localizations": [
+        {
+          "description": "15 credits for photo processing (Save 33%)",
+          "displayName": "15 Credits",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.everwith.credits.15",
+      "referenceName": "15 Credits Pack",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "24.99",
+      "familyShareable": false,
+      "internalID": "1234567894",
+      "localizations": [
+        {
+          "description": "50 credits for photo processing (Save 50%)",
+          "displayName": "50 Credits",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.everwith.credits.50",
+      "referenceName": "50 Credits Pack",
+      "type": "Consumable"
     }
   ],
   "currentOffering": "everwith_offering",
@@ -53,11 +155,23 @@
       "packages": [
         {
           "identifier": "monthly",
-          "platformProductIdentifier": "com.everwith.premium.month"
+          "platformProductIdentifier": "com.matrix.everwith.monthly"
         },
         {
           "identifier": "yearly",
-          "platformProductIdentifier": "com.everwith.premium.yearly"
+          "platformProductIdentifier": "com.matrix.everwith.yearly"
+        },
+        {
+          "identifier": "credits_5",
+          "platformProductIdentifier": "com.everwith.credits.5"
+        },
+        {
+          "identifier": "credits_15",
+          "platformProductIdentifier": "com.everwith.credits.15"
+        },
+        {
+          "identifier": "credits_50",
+          "platformProductIdentifier": "com.everwith.credits.50"
         }
       ]
     }
@@ -117,65 +231,6 @@
       }
     ]
   },
-  "subscriptionGroups": [
-    {
-      "id": "21482456",
-      "localizations": [
-        {
-          "description": "Premium subscription for unlimited photo restoration and merging",
-          "displayName": "EverWith Premium",
-          "locale": "en_US"
-        }
-      ],
-      "name": "Premium",
-      "subscriptions": [
-        {
-          "adHocOffers": [],
-          "codeOffers": [],
-          "displayPrice": "4.99",
-          "familyShareable": false,
-          "groupNumber": 1,
-          "internalID": "1234567890",
-          "introductoryOffer": null,
-          "localizations": [
-            {
-              "description": "Monthly premium subscription",
-              "displayName": "Premium Monthly",
-              "locale": "en_US"
-            }
-          ],
-          "productID": "com.everwith.premium.month",
-          "recurringSubscriptionPeriod": "P1M",
-          "referenceName": "Premium Monthly",
-          "subscriptionGroupID": "21482456",
-          "subscriptionGroupIdentifier": "21482456",
-          "type": "RecurringSubscription"
-        },
-        {
-          "adHocOffers": [],
-          "codeOffers": [],
-          "displayPrice": "69.99",
-          "familyShareable": false,
-          "groupNumber": 2,
-          "internalID": "1234567891",
-          "introductoryOffer": null,
-          "localizations": [
-            {
-              "description": "Yearly premium subscription with 40% savings",
-              "displayName": "Premium Yearly",
-              "locale": "en_US"
-            }
-          ],
-          "productID": "com.everwith.premium.yearly",
-          "recurringSubscriptionPeriod": "P1Y",
-          "referenceName": "Premium Yearly",
-          "subscriptionGroupID": "21482456",
-          "subscriptionGroupIdentifier": "21482456",
-          "type": "RecurringSubscription"
-        }
-      ]
-    }
-  ],
   "version": {
     "major": 3,
     "minor": 0

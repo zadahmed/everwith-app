@@ -23,8 +23,7 @@ struct PaywallView: View {
     let trigger: PaywallTrigger
     @Environment(\.dismiss) private var dismiss
     @StateObject private var revenueCatService = RevenueCatService.shared
-    @State private var selectedTier: SubscriptionTier = .premiumMonthly
-    @State private var selectedCreditPack: CreditPack?
+    @State private var selectedPackage: RevenueCat.Package?
     @State private var showingCreditPacks = false
     @State private var animateElements = false
     @State private var contentOpacity: Double = 0
@@ -59,8 +58,8 @@ struct PaywallView: View {
                             
                             // Pricing section
                             PricingSection(
-                                selectedTier: $selectedTier,
-                                selectedCreditPack: $selectedCreditPack,
+                                selectedPackage: $selectedPackage,
+                                availablePackages: revenueCatService.availablePackages,
                                 showingCreditPacks: $showingCreditPacks,
                                 geometry: geometry
                             )
@@ -68,16 +67,9 @@ struct PaywallView: View {
                             .offset(y: animateElements ? 0 : 30)
                             .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: animateElements)
                             
-                            // Trial information
-                            TrialInfoCard(geometry: geometry)
-                                .opacity(contentOpacity)
-                                .offset(y: animateElements ? 0 : 30)
-                                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: animateElements)
-                            
                             // Action buttons
                             ActionButtons(
-                                selectedTier: selectedTier,
-                                selectedCreditPack: selectedCreditPack,
+                                selectedPackage: selectedPackage,
                                 showingCreditPacks: showingCreditPacks,
                                 isLoading: revenueCatService.isLoading,
                                 geometry: geometry
@@ -88,7 +80,7 @@ struct PaywallView: View {
                             }
                             .opacity(contentOpacity)
                             .offset(y: animateElements ? 0 : 30)
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4), value: animateElements)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: animateElements)
                             
                             // Footer with legal links
                             PaywallFooter(geometry: geometry) {
@@ -98,7 +90,7 @@ struct PaywallView: View {
                             }
                             .opacity(contentOpacity)
                             .offset(y: animateElements ? 0 : 30)
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5), value: animateElements)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4), value: animateElements)
                             
                             // Bottom spacing
                             Spacer()
@@ -114,6 +106,14 @@ struct PaywallView: View {
         .onAppear {
             Task {
                 await revenueCatService.updateSubscriptionStatus()
+            }
+            
+            // Auto-select first subscription package if available
+            if selectedPackage == nil {
+                selectedPackage = revenueCatService.availablePackages.first { package in
+                    package.storeProduct.productIdentifier.contains("monthly") || 
+                    package.storeProduct.productIdentifier.contains("yearly")
+                } ?? revenueCatService.availablePackages.first
             }
             
             // Staggered entrance animations
@@ -137,26 +137,50 @@ struct PaywallView: View {
     // MARK: - Purchase Handling
     private func handlePurchase(geometry: GeometryProxy) {
         Task {
-            do {
-                let success: Bool
-                
-                if showingCreditPacks, let pack = selectedCreditPack {
-                    success = await revenueCatService.purchaseCreditPack(pack)
-                } else {
-                    success = await revenueCatService.purchaseSubscription(tier: selectedTier)
+            guard let package = selectedPackage else {
+                errorMessage = "Please select a subscription plan"
+                showingError = true
+                return
+            }
+            
+            // Use the service's purchase methods
+            let success: Bool
+            
+            if showingCreditPacks {
+                // For credit packs, convert package to CreditPack
+                let credits = extractCreditsFromProductId(package.storeProduct.productIdentifier)
+                let pack = CreditPack(
+                    credits: credits,
+                    price: package.storeProduct.localizedPriceString ?? "",
+                    productId: package.storeProduct.productIdentifier,
+                    savings: nil
+                )
+                success = await revenueCatService.purchaseCreditPack(pack)
+            } else {
+                // For subscriptions, determine tier
+                let tier: SubscriptionTier = package.storeProduct.productIdentifier.contains("yearly") ? .premiumYearly : .premiumMonthly
+                success = await revenueCatService.purchaseSubscription(tier: tier)
+            }
+            
+            if success {
+                purchaseSuccess = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    dismiss()
                 }
-                
-                if success {
-                    purchaseSuccess = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        dismiss()
-                    }
-                } else if let error = revenueCatService.errorMessage {
-                    errorMessage = error
-                    showingError = true
-                }
+            } else if let error = revenueCatService.errorMessage {
+                errorMessage = error
+                showingError = true
             }
         }
+    }
+    
+    private func extractCreditsFromProductId(_ productId: String) -> Int {
+        // Extract credit count from product ID like "com.everwith.credits.15"
+        if productId.contains("credits.50") { return 50 }
+        if productId.contains("credits.15") { return 15 }
+        if productId.contains("credits.10") { return 10 }
+        if productId.contains("credits.5") { return 5 }
+        return 0
     }
 }
 
@@ -377,8 +401,8 @@ struct FeatureRow: View {
 
 // MARK: - Pricing Section
 struct PricingSection: View {
-    @Binding var selectedTier: SubscriptionTier
-    @Binding var selectedCreditPack: CreditPack?
+    @Binding var selectedPackage: RevenueCat.Package?
+    let availablePackages: [RevenueCat.Package]
     @Binding var showingCreditPacks: Bool
     let geometry: GeometryProxy
     
@@ -388,11 +412,19 @@ struct PricingSection: View {
             PricingToggle(showingCreditPacks: $showingCreditPacks, geometry: geometry)
             
             if showingCreditPacks {
-                CreditPacksView(selectedPack: $selectedCreditPack, geometry: geometry)
+                CreditPacksView(selectedPackage: $selectedPackage, packages: creditPackages, geometry: geometry)
             } else {
-                SubscriptionPlansView(selectedTier: $selectedTier, geometry: geometry)
+                SubscriptionPlansView(selectedPackage: $selectedPackage, packages: subscriptionPackages, geometry: geometry)
             }
         }
+    }
+    
+    private var subscriptionPackages: [RevenueCat.Package] {
+        availablePackages.filter { $0.storeProduct.productIdentifier.contains("monthly") || $0.storeProduct.productIdentifier.contains("yearly") }
+    }
+    
+    private var creditPackages: [RevenueCat.Package] {
+        availablePackages.filter { $0.storeProduct.productIdentifier.contains("credits") }
     }
 }
 
@@ -441,27 +473,28 @@ struct PricingToggle: View {
 
 // MARK: - Subscription Plans View
 struct SubscriptionPlansView: View {
-    @Binding var selectedTier: SubscriptionTier
+    @Binding var selectedPackage: RevenueCat.Package?
+    let packages: [RevenueCat.Package]
     let geometry: GeometryProxy
     
     var body: some View {
         VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
-            ForEach(SubscriptionTier.allCases.filter { $0 != .free }, id: \.self) { tier in
-                SubscriptionPlanCard(
-                    tier: tier,
-                    isSelected: selectedTier == tier,
+            ForEach(Array(packages.enumerated()), id: \.element.identifier) { index, package in
+                PackageCard(
+                    package: package,
+                    isSelected: selectedPackage?.identifier == package.identifier,
                     geometry: geometry
                 ) {
-                    selectedTier = tier
+                    selectedPackage = package
                 }
             }
         }
     }
 }
 
-// MARK: - Subscription Plan Card
-struct SubscriptionPlanCard: View {
-    let tier: SubscriptionTier
+// MARK: - Package Card
+struct PackageCard: View {
+    let package: RevenueCat.Package
     let isSelected: Bool
     let geometry: GeometryProxy
     let onTap: () -> Void
@@ -471,14 +504,14 @@ struct SubscriptionPlanCard: View {
             VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
                 HStack {
                     VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry)) {
-                        Text(tier.displayName)
+                        Text(packageDisplayName)
                             .font(.system(size: geometry.adaptiveFontSize(18), weight: .semibold))
                             .foregroundColor(.deepPlum)
                             .lineLimit(2)
                             .minimumScaleFactor(0.8)
                         
                         HStack(alignment: .bottom, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry)) {
-                            Text(priceText)
+                            Text(package.storeProduct.localizedPriceString ?? "")
                                 .font(.system(size: geometry.adaptiveFontSize(24), weight: .bold))
                                 .foregroundStyle(LinearGradient.primaryBrand)
                             
@@ -490,7 +523,7 @@ struct SubscriptionPlanCard: View {
                     
                     Spacer()
                     
-                    if tier == .premiumYearly {
+                    if isAnnual {
                         Text("BEST VALUE")
                             .font(.system(size: geometry.adaptiveFontSize(10), weight: .bold))
                             .foregroundColor(.deepPlum)
@@ -508,7 +541,7 @@ struct SubscriptionPlanCard: View {
                 }
                 
                 VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
-                    ForEach(features.prefix(3), id: \.self) { feature in
+                    ForEach(displayFeatures.prefix(3), id: \.self) { feature in
                         HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
                             Image(systemName: "checkmark")
                                 .font(.system(size: geometry.adaptiveFontSize(12), weight: .semibold))
@@ -548,54 +581,52 @@ struct SubscriptionPlanCard: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
     
-    private var priceText: String {
-        switch tier {
-        case .premiumMonthly:
-            return "£4.99"
-        case .premiumYearly:
-            return "£69.99"
-        case .free:
-            return "Free"
+    private var packageDisplayName: String {
+        if package.storeProduct.productIdentifier.contains("monthly") {
+            return "Premium Monthly"
+        } else if package.storeProduct.productIdentifier.contains("yearly") {
+            return "Premium Yearly"
         }
+        return package.storeProduct.localizedTitle
     }
     
     private var periodText: String {
-        switch tier {
-        case .premiumMonthly:
-            return "per month"
-        case .premiumYearly:
+        if package.storeProduct.productIdentifier.contains("yearly") {
             return "per year"
-        case .free:
-            return ""
+        } else if package.storeProduct.productIdentifier.contains("monthly") {
+            return "per month"
         }
+        return ""
     }
     
-    private var features: [String] {
-        switch tier {
-        case .premiumMonthly:
+    private var isAnnual: Bool {
+        package.storeProduct.productIdentifier.contains("yearly")
+    }
+    
+    private var displayFeatures: [String] {
+        if isAnnual {
+            return ["Unlimited processing", "4K HD export", "Instant results", "All filters", "Best value"]
+        } else {
             return ["Unlimited processing", "4K HD export", "Instant results", "All filters"]
-        case .premiumYearly:
-            return ["Everything in Monthly", "40% discount", "Save £50/year", "Best value"]
-        case .free:
-            return []
         }
     }
 }
 
 // MARK: - Credit Packs View
 struct CreditPacksView: View {
-    @Binding var selectedPack: CreditPack?
+    @Binding var selectedPackage: RevenueCat.Package?
+    let packages: [RevenueCat.Package]
     let geometry: GeometryProxy
     
     var body: some View {
         VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
-            ForEach(CreditPack.packs) { pack in
+            ForEach(Array(packages.enumerated()), id: \.element.identifier) { index, package in
                 CreditPackCard(
-                    pack: pack,
-                    isSelected: selectedPack?.id == pack.id,
+                    package: package,
+                    isSelected: selectedPackage?.identifier == package.identifier,
                     geometry: geometry
                 ) {
-                    selectedPack = pack
+                    selectedPackage = package
                 }
             }
         }
@@ -604,7 +635,7 @@ struct CreditPacksView: View {
 
 // MARK: - Credit Pack Card
 struct CreditPackCard: View {
-    let pack: CreditPack
+    let package: RevenueCat.Package
     let isSelected: Bool
     let geometry: GeometryProxy
     let onTap: () -> Void
@@ -613,14 +644,15 @@ struct CreditPackCard: View {
         Button(action: onTap) {
             HStack {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
-                    Text("\(pack.credits) Credits")
+                    Text(package.storeProduct.localizedTitle)
                         .font(.system(size: geometry.adaptiveFontSize(20), weight: .semibold))
                         .foregroundColor(.deepPlum)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     
-                    if let savings = pack.savings {
-                        Text(savings)
+                    let description = package.storeProduct.localizedDescription
+                    if !description.isEmpty {
+                        Text(description)
                             .font(.system(size: geometry.adaptiveFontSize(14), weight: .medium))
                             .foregroundStyle(LinearGradient.primaryBrand)
                             .lineLimit(1)
@@ -630,7 +662,7 @@ struct CreditPackCard: View {
                 
                 Spacer()
                 
-                Text(pack.price)
+                Text(package.storeProduct.localizedPriceString ?? "")
                     .font(.system(size: geometry.adaptiveFontSize(24), weight: .bold))
                     .foregroundStyle(LinearGradient.primaryBrand)
                     .lineLimit(1)
@@ -662,43 +694,9 @@ struct CreditPackCard: View {
     }
 }
 
-// MARK: - Trial Info Card
-struct TrialInfoCard: View {
-    let geometry: GeometryProxy
-    
-    var body: some View {
-        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
-            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 8, for: geometry)) {
-                Image(systemName: "gift.fill")
-                    .font(.system(size: geometry.adaptiveFontSize(16), weight: .medium))
-                    .foregroundStyle(LinearGradient.primaryBrand)
-                
-                Text("Try Premium free for 3 days")
-                    .font(.system(size: geometry.adaptiveFontSize(16), weight: .semibold))
-                    .foregroundColor(.deepPlum)
-            }
-            
-            Text("Cancel anytime. No commitment.")
-                .font(.system(size: geometry.adaptiveFontSize(14), weight: .medium))
-                .foregroundColor(.deepPlum.opacity(0.7))
-        }
-        .padding(ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry))
-        .background(
-            RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 12, for: geometry))
-                .fill(Color.pureWhite.opacity(0.8))
-                .background(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 12, for: geometry))
-                        .stroke(LinearGradient.cardGlow, lineWidth: 1)
-                )
-        )
-    }
-}
-
 // MARK: - Action Buttons
 struct ActionButtons: View {
-    let selectedTier: SubscriptionTier
-    let selectedCreditPack: CreditPack?
+    let selectedPackage: RevenueCat.Package?
     let showingCreditPacks: Bool
     let isLoading: Bool
     let geometry: GeometryProxy
@@ -756,14 +754,7 @@ struct ActionButtons: View {
         if showingCreditPacks {
             return "Buy Credits"
         } else {
-            switch selectedTier {
-            case .premiumMonthly:
-                return "Start Free Trial"
-            case .premiumYearly:
-                return "Start Free Trial"
-            case .free:
-                return "Upgrade"
-            }
+            return "Upgrade Now"
         }
     }
 }

@@ -315,7 +315,8 @@ async def purchase_notification(
         if request.purchase_type == "subscription":
             was_free_user = current_user.subscription_tier == "free"
             
-            if "premium_monthly" in request.product_id:
+            # Check for monthly subscription (new product IDs: com.matrix.everwith.monthly)
+            if "monthly" in request.product_id or "premium_monthly" in request.product_id:
                 current_user.subscription_tier = "premium_monthly"
                 # Set expiration date (30 days from now)
                 current_user.subscription_expires_at = datetime.utcnow() + timedelta(days=30)
@@ -335,7 +336,8 @@ async def purchase_notification(
                     )
                     await credit_transaction.insert()
                 
-            elif "premium_yearly" in request.product_id:
+            # Check for yearly subscription (new product IDs: com.matrix.everwith.yearly)
+            elif "yearly" in request.product_id or "premium_yearly" in request.product_id:
                 current_user.subscription_tier = "premium_yearly"
                 # Set expiration date (365 days from now)
                 current_user.subscription_expires_at = datetime.utcnow() + timedelta(days=365)
@@ -372,8 +374,15 @@ async def purchase_notification(
             credit_amounts = {
                 "credits_5": 5,
                 "credits_10": 10,
+                "credits_15": 15,
                 "credits_25": 25,
-                "credits_50": 50
+                "credits_50": 50,
+                # Support dot-separated product IDs as well
+                "com.everwith.credits.5": 5,
+                "com.everwith.credits.10": 10,
+                "com.everwith.credits.15": 15,
+                "com.everwith.credits.25": 25,
+                "com.everwith.credits.50": 50
             }
             credits_to_add = credit_amounts.get(request.product_id, 0)
             current_user.credits += credits_to_add

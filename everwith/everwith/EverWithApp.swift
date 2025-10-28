@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Foundation
+import RevenueCat
 
 @main
 struct EverWithApp: App {
@@ -47,7 +48,6 @@ struct EverWithApp: App {
                 do {
                     let customerInfo = try await Purchases.shared.logIn(userId)
                     print("✅ RevenueCat: User identified as \(userId)")
-                    print("✅ RevenueCat: Customer ID: \(customerInfo.originalAppUserId)")
                     
                     // Update subscription status
                     await RevenueCatService.shared.updateSubscriptionStatus()

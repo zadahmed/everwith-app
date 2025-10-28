@@ -9,6 +9,7 @@ import Foundation
 import RevenueCat
 import SwiftUI
 import Combine
+import StoreKit
 
 // MARK: - Subscription Tiers
 enum SubscriptionTier: String, CaseIterable {
@@ -48,9 +49,9 @@ struct CreditPack: Identifiable {
     let savings: String?
     
     static let packs = [
-        CreditPack(credits: 5, price: "£4.99", productId: "credits_5", savings: nil),
-        CreditPack(credits: 15, price: "£9.99", productId: "credits_15", savings: "Save 33%"),
-        CreditPack(credits: 50, price: "£24.99", productId: "credits_50", savings: "Save 50%")
+        CreditPack(credits: 5, price: "£4.99", productId: "com.everwith.credits.5", savings: nil),
+        CreditPack(credits: 15, price: "£9.99", productId: "com.everwith.credits.15", savings: "Save 33%"),
+        CreditPack(credits: 50, price: "£24.99", productId: "com.everwith.credits.50", savings: "Save 50%")
     ]
 }
 
@@ -93,6 +94,8 @@ class RevenueCatService: NSObject, ObservableObject {
     
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var currentOfferings: Offerings?
+    @Published var availablePackages: [Package] = []
     
     private override init() {
         super.init()
@@ -112,11 +115,82 @@ class RevenueCatService: NSObject, ObservableObject {
                     print("RevenueCat login successful")
                     Task {
                         await self.updateSubscriptionStatus()
+                        await self.loadOfferings()
                     }
                 }
             }
         }
     }
+    
+    // MARK: - Load Offerings
+    func loadOfferings() async {
+        do {
+            let offerings = try await Purchases.shared.offerings()
+            currentOfferings = offerings
+            
+            // Get available packages from the current offering
+            if let currentOffering = offerings.current {
+                availablePackages = currentOffering.availablePackages
+                print("✅ Loaded \(availablePackages.count) packages")
+                for package in availablePackages {
+                    print("📦 Package: \(package.identifier) - Product: \(package.storeProduct.productIdentifier) - Price: \(package.storeProduct.localizedPriceString ?? "N/A")")
+                }
+            } else {
+                print("⚠️ No current offering found")
+                print("📦 Available offerings: \(offerings.all.keys)")
+                
+                // Try to get ANY offering as fallback
+                if let anyOffering = offerings.all.values.first {
+                    availablePackages = anyOffering.availablePackages
+                    print("✅ Using fallback offering: \(anyOffering.identifier)")
+                }
+            }
+        } catch {
+            print("❌ Error loading offerings: \(error.localizedDescription)")
+            print("⚠️ This usually means products haven't been approved in App Store Connect yet")
+            print("ℹ️ For testing: Products must be approved before working in production")
+            
+            // In debug mode, try to use StoreKit configuration
+            #if DEBUG
+            print("📱 DEBUG MODE: Attempting to use StoreKit configuration file")
+            await loadStoreKitOfferings()
+            #endif
+        }
+    }
+    
+    #if DEBUG
+    private func loadStoreKitOfferings() async {
+        // Try to load products directly from StoreKit for testing
+        print("🛠️ DEBUG: Loading from StoreKit configuration file")
+        
+        // Get all products from StoreKit
+        let productIds = [
+            "com.matrix.everwith.monthly",
+            "com.matrix.everwith.yearly",
+            "com.everwith.credits.5",
+            "com.everwith.credits.15",
+            "com.everwith.credits.50"
+        ]
+        
+        do {
+            let products = try await Product.products(for: productIds)
+            print("📦 DEBUG: Loaded \(products.count) products from StoreKit")
+            
+            // Clear available packages
+            await MainActor.run {
+                availablePackages = []
+            }
+            
+            // For each product, we need to create a mock offering
+            // Since RevenueCat can't use these directly, we'll just log them
+            for product in products {
+                print("📦 DEBUG Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
+            }
+        } catch {
+            print("❌ DEBUG: Failed to load StoreKit products: \(error)")
+        }
+    }
+    #endif
     
     // MARK: - Subscription Management
     func purchaseSubscription(tier: SubscriptionTier) async -> Bool {
@@ -154,8 +228,22 @@ class RevenueCatService: NSObject, ObservableObject {
                 print("❌ No offerings available at all!")
             }
             
-            guard let selectedOffering = offering else {
-                print("❌ No offerings found. Available: \(offerings.all.keys)")
+            // Try to use the specific offering, fallback to current, then to first available
+            var chosenOffering: Offering?
+            
+            if let everwithOffering = offerings.all["everwith_offering"] {
+                chosenOffering = everwithOffering
+                print("✅ Using offering: everwith_offering")
+            } else if let currentOffering = offerings.current {
+                chosenOffering = currentOffering
+                print("⚠️ Using current offering: \(currentOffering.identifier)")
+            } else if let firstOffering = offerings.all.values.first {
+                chosenOffering = firstOffering
+                print("⚠️ Using first available offering: \(firstOffering.identifier)")
+            }
+            
+            guard let selectedOffering = chosenOffering else {
+                print("❌ No offerings available at all!")
                 errorMessage = "Subscription service is not configured. Please contact support."
                 isLoading = false
                 return false
@@ -169,13 +257,13 @@ class RevenueCatService: NSObject, ObservableObject {
             switch tier {
             case .premiumMonthly:
                 // Try to find monthly package by product ID
-                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.month" }
+                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.matrix.everwith.monthly" }
                 if package == nil {
                     package = selectedOffering.monthly // Fallback to monthly package type
                 }
             case .premiumYearly:
                 // Try to find yearly package by product ID
-                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.everwith.premium.yearly" }
+                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.matrix.everwith.yearly" }
                 if package == nil {
                     package = selectedOffering.annual // Fallback to annual package type
                 }
@@ -209,7 +297,12 @@ class RevenueCatService: NSObject, ObservableObject {
             return false
             
         } catch {
-            errorMessage = error.localizedDescription
+            print("❌ Subscription purchase error: \(error.localizedDescription)")
+            if error.localizedDescription.contains("offerings") {
+                errorMessage = "Unable to load subscription options. Please check your connection and try again."
+            } else {
+                errorMessage = error.localizedDescription
+            }
             isLoading = false
             return false
         }
@@ -246,7 +339,12 @@ class RevenueCatService: NSObject, ObservableObject {
             return false
             
         } catch {
-            errorMessage = error.localizedDescription
+            print("❌ Credit pack purchase error: \(error.localizedDescription)")
+            if error.localizedDescription.contains("offerings") {
+                errorMessage = "Unable to load credit packs. Please check your connection and try again."
+            } else {
+                errorMessage = error.localizedDescription
+            }
             isLoading = false
             return false
         }
@@ -283,6 +381,9 @@ class RevenueCatService: NSObject, ObservableObject {
     func updateSubscriptionStatus() async {
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
+            
+            // Load offerings while we're updating
+            await loadOfferings()
             
             // Determine subscription tier
             let tier: SubscriptionTier
@@ -359,10 +460,10 @@ class RevenueCatService: NSObject, ObservableObject {
         var purchaseType = ""
         
         if customerInfo.entitlements["premium_monthly"]?.isActive == true {
-            productId = "com.everwith.premium.month"
+            productId = "com.matrix.everwith.monthly"
             purchaseType = "subscription"
         } else if customerInfo.entitlements["premium_yearly"]?.isActive == true {
-            productId = "com.everwith.premium.yearly"
+            productId = "com.matrix.everwith.yearly"
             purchaseType = "subscription"
         } else {
             print("⚠️ No active entitlement found")
@@ -370,9 +471,12 @@ class RevenueCatService: NSObject, ObservableObject {
         }
         
         // Get transaction information
-        let transactionId = customerInfo.entitlements.values
-            .compactMap { $0.latestPurchaseDate != nil ? $0.productIdentifier : nil }
-            .first ?? ""
+        let transactionId = customerInfo.entitlements.all.values
+            .compactMap { entitlement -> String? in
+                guard entitlement.isActive, let latestDate = entitlement.latestPurchaseDate else { return nil }
+                return entitlement.productIdentifier
+            }
+            .first ?? UUID().uuidString
         
         // Prepare RevenueCat data
         let revenueCatData: [String: Any] = [
@@ -470,9 +574,10 @@ class RevenueCatService: NSObject, ObservableObject {
     /// Identify user with RevenueCat after authentication
     func identifyUser(userId: String) async {
         do {
-            let customerInfo = try await Purchases.shared.logIn(userId)
+            let (customerInfo, created) = try await Purchases.shared.logIn(userId)
             print("✅ RevenueCat: User identified as \(userId)")
             print("✅ RevenueCat: Customer ID: \(customerInfo.originalAppUserId)")
+            print("✅ RevenueCat: New user: \(created)")
             
             // Update subscription status after identification
             await updateSubscriptionStatus()
@@ -484,7 +589,7 @@ class RevenueCatService: NSObject, ObservableObject {
     /// Log out from RevenueCat (returns to anonymous user)
     func logOut() async {
         do {
-            let (customerInfo, _) = try await Purchases.shared.logOut()
+            let customerInfo = try await Purchases.shared.logOut()
             print("✅ RevenueCat: Logged out user")
             print("✅ RevenueCat: Back to anonymous user: \(customerInfo.originalAppUserId)")
             

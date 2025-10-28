@@ -128,7 +128,7 @@ struct ModernAuthenticationView: View {
                     // Scrollable Form Content with keyboard handling
                     ScrollViewReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
-                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 18, for: geometry)) {
+                            VStack(spacing: 14) {
                             // Modern Segmented Control - Sign In / Sign Up
                             HStack(spacing: 0) {
                                 Button(action: {
@@ -139,24 +139,18 @@ struct ModernAuthenticationView: View {
                                 }) {
                                     Text("Sign In")
                                         .font(.system(
-                                            size: geometry.adaptiveFontSize(16),
-                                            weight: .bold
+                                            size: geometry.adaptiveFontSize(14),
+                                            weight: .semibold
                                         ))
                                         .foregroundColor(isSignUp ? .softPlum : .white)
-                                        .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 52, for: geometry))
+                                        .frame(height: 42)
                                         .frame(maxWidth: .infinity)
                                         .background(
                                             ZStack {
                                                 if !isSignUp {
-                                                    RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                                                    RoundedRectangle(cornerRadius: 12)
                                                         .fill(
                                                             LinearGradient.primaryBrand
-                                                        )
-                                                        .shadow(
-                                                            color: Color.blushPink.opacity(0.4),
-                                                            radius: 8,
-                                                            x: 0,
-                                                            y: 4
                                                         )
                                                         .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                                                 }
@@ -172,24 +166,18 @@ struct ModernAuthenticationView: View {
                                 }) {
                                     Text("Sign Up")
                                         .font(.system(
-                                            size: geometry.adaptiveFontSize(16),
-                                            weight: .bold
+                                            size: geometry.adaptiveFontSize(14),
+                                            weight: .semibold
                                         ))
                                         .foregroundColor(isSignUp ? .white : .softPlum)
-                                        .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 52, for: geometry))
+                                        .frame(height: 42)
                                         .frame(maxWidth: .infinity)
                                         .background(
                                             ZStack {
                                                 if isSignUp {
-                                                    RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                                                    RoundedRectangle(cornerRadius: 12)
                                                         .fill(
                                                             LinearGradient.primaryBrand
-                                                        )
-                                                        .shadow(
-                                                            color: Color.blushPink.opacity(0.4),
-                                                            radius: 8,
-                                                            x: 0,
-                                                            y: 4
                                                         )
                                                         .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                                                 }
@@ -197,15 +185,15 @@ struct ModernAuthenticationView: View {
                                         )
                                 }
                             }
-                            .padding(4)
+                            .padding(3)
                             .background(
-                                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(18))
+                                RoundedRectangle(cornerRadius: 14)
                                     .fill(Color.white)
-                                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+                                    .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
                             )
                             
                             // Form Fields
-                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
+                            VStack(spacing: 12) {
                                 // Name field (only for sign up)
                                 if isSignUp {
                                     ModernTextField(
@@ -278,40 +266,40 @@ struct ModernAuthenticationView: View {
                                     buttonPressedEmail = false
                                 }
                             }) {
-                                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry)) {
+                                HStack(spacing: 8) {
                                     if isLoading {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(0.9)
+                                            .scaleEffect(0.8)
                                     } else {
                                         Image(systemName: isSignUp ? "person.badge.plus.fill" : "arrow.right.circle.fill")
                                             .font(.system(
-                                                size: geometry.adaptiveFontSize(18),
-                                                weight: .semibold
+                                                size: 16,
+                                                weight: .medium
                                             ))
                                     }
                                     
                                     Text(isSignUp ? "Create Account" : "Sign In")
                                         .font(.system(
-                                            size: geometry.adaptiveFontSize(16),
-                                            weight: .bold
+                                            size: 15,
+                                            weight: .semibold
                                         ))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                 }
                                 .foregroundColor(.white)
-                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
+                                .frame(height: 48)
                                 .frame(maxWidth: .infinity)
                                 .background(
                                     ZStack {
                                         // Gradient background
-                                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                                        RoundedRectangle(cornerRadius: 12)
                                             .fill(
                                                 LinearGradient.primaryBrand
                                             )
                                         
                                         // Shimmer overlay effect
-                                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                                        RoundedRectangle(cornerRadius: 12)
                                             .fill(
                                                 LinearGradient(
                                                     gradient: Gradient(colors: [
@@ -326,10 +314,10 @@ struct ModernAuthenticationView: View {
                                     }
                                 )
                                 .shadow(
-                                    color: Color.blushPink.opacity(0.4),
-                                    radius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry),
+                                    color: Color.blushPink.opacity(0.3),
+                                    radius: 8,
                                     x: 0,
-                                    y: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)
+                                    y: 4
                                 )
                             }
                             .scaleEffect(buttonPressedEmail ? 0.96 : 1.0)
@@ -369,16 +357,16 @@ struct ModernAuthenticationView: View {
                                     buttonPressedGoogle = false
                                 }
                             }) {
-                                HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry)) {
+                                HStack(spacing: 10) {
                                     // Google logo
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 4)
                                             .fill(Color.white)
-                                            .frame(width: geometry.adaptiveSize(22), height: geometry.adaptiveSize(22))
+                                            .frame(width: 20, height: 20)
                                         
                                         // Google "G" icon
                                         Text("G")
-                                            .font(.system(size: geometry.adaptiveFontSize(14), weight: .bold))
+                                            .font(.system(size: 12, weight: .bold))
                                             .foregroundStyle(
                                                 LinearGradient(
                                                     colors: [Color.blue, Color.green, Color.yellow, Color.orange],
@@ -390,27 +378,27 @@ struct ModernAuthenticationView: View {
                                     
                                     Text("Continue with Google")
                                         .font(.system(
-                                            size: geometry.adaptiveFontSize(15),
-                                            weight: .semibold
+                                            size: 15,
+                                            weight: .medium
                                         ))
                                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                 }
-                                .frame(height: ResponsiveDesign.adaptiveButtonHeight(baseHeight: 56, for: geometry))
+                                .frame(height: 48)
                                 .frame(maxWidth: .infinity)
                                 .background(
-                                    RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                                    RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.white)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                                            RoundedRectangle(cornerRadius: 12)
                                                 .stroke(
                                                     LinearGradient.cardGlow,
-                                                    lineWidth: 2
+                                                    lineWidth: 1.5
                                                 )
                                         )
                                 )
-                                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+                                .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
                             }
                             .scaleEffect(buttonPressedGoogle ? 0.96 : 1.0)
                             .disabled(isLoading)
@@ -493,34 +481,34 @@ struct ModernAuthenticationView: View {
                         .background(
                             ZStack {
                                 // Base white background
-                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
+                                RoundedRectangle(cornerRadius: 14)
                                     .fill(Color.white)
                                 
                                 // Subtle gradient overlay
-                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
+                                RoundedRectangle(cornerRadius: 14)
                                     .fill(
                                         LinearGradient.subtleHighlight
                                     )
                                 
                                 // Border with gradient
-                                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 20, for: geometry))
+                                RoundedRectangle(cornerRadius: 14)
                                     .stroke(
                                         LinearGradient.cardGlow,
-                                        lineWidth: 1.5
+                                        lineWidth: 1
                                     )
                             }
                         )
                         .shadow(
                             color: Color.cardShadow,
-                            radius: ResponsiveDesign.adaptiveSpacing(baseSpacing: 12, for: geometry),
+                            radius: 8,
                             x: 0,
-                            y: ResponsiveDesign.adaptiveSpacing(baseSpacing: 4, for: geometry)
+                            y: 3
                         )
                         .opacity(contentOpacity)
                         .offset(y: animateElements ? 0 : 30)
                     }
                     .padding(.horizontal, geometry.adaptivePadding())
-                    .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
+                    .padding(.bottom, 16)
                     .onChange(of: focusedTextField) { field in
                         if let field = field {
                             withAnimation(.easeOut(duration: 0.3)) {
@@ -704,30 +692,30 @@ struct ModernTextField: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.system(
-                    size: geometry.adaptiveFontSize(13),
-                    weight: .semibold
+                    size: 12,
+                    weight: .medium
                 ))
                 .foregroundColor(.softPlum)
                 .lineLimit(1)
             
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(
-                        size: 18,
-                        weight: .semibold
+                        size: 16,
+                        weight: .medium
                     ))
                     .foregroundStyle(
                         LinearGradient.primaryBrand
                     )
-                    .frame(width: 24)
+                    .frame(width: 20)
                 
                 TextField(title, text: $text)
                     .font(.system(
-                        size: 16,
-                        weight: .medium
+                        size: 15,
+                        weight: .regular
                     ))
                     .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                     .keyboardType(keyboardType)
@@ -737,16 +725,16 @@ struct ModernTextField: View {
                         focusedTextField = fieldType
                     }
             }
-            .frame(height: 56)
-            .padding(.horizontal, 16)
+            .frame(height: 48)
+            .padding(.horizontal, 14)
             .background(
-                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                        RoundedRectangle(cornerRadius: 12)
                             .strokeBorder(
                                 focusedTextField == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
-                                lineWidth: focusedTextField == fieldType ? 2 : 1.5
+                                lineWidth: focusedTextField == fieldType ? 2 : 1
                             )
                     )
             )
@@ -765,31 +753,31 @@ struct ModernPasswordField: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.system(
-                    size: geometry.adaptiveFontSize(13),
-                    weight: .semibold
+                    size: 12,
+                    weight: .medium
                 ))
                 .foregroundColor(.softPlum)
                 .lineLimit(1)
             
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: "lock.fill")
                     .font(.system(
-                        size: 18,
-                        weight: .semibold
+                        size: 16,
+                        weight: .medium
                     ))
                     .foregroundStyle(
                         LinearGradient.primaryBrand
                     )
-                    .frame(width: 24)
+                    .frame(width: 20)
                 
                 if showPassword {
                     TextField(title, text: $text)
                         .font(.system(
-                            size: 16,
-                            weight: .medium
+                            size: 15,
+                            weight: .regular
                         ))
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
@@ -800,8 +788,8 @@ struct ModernPasswordField: View {
                 } else {
                     SecureField(title, text: $text)
                         .font(.system(
-                            size: 16,
-                            weight: .medium
+                            size: 15,
+                            weight: .regular
                         ))
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
@@ -816,23 +804,23 @@ struct ModernPasswordField: View {
                 }) {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
                         .font(.system(
-                            size: 18,
+                            size: 16,
                             weight: .medium
                         ))
                         .foregroundColor(.softPlum)
-                        .frame(width: 24)
+                        .frame(width: 20)
                 }
             }
-            .frame(height: 56)
-            .padding(.horizontal, 16)
+            .frame(height: 48)
+            .padding(.horizontal, 14)
             .background(
-                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                        RoundedRectangle(cornerRadius: 12)
                             .strokeBorder(
                                 focusedTextField == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
-                                lineWidth: focusedTextField == fieldType ? 2 : 1.5
+                                lineWidth: focusedTextField == fieldType ? 2 : 1
                             )
                     )
             )

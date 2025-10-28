@@ -6,8 +6,20 @@
 //
 
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct AppConfiguration {
+    
+    // MARK: - Simulator Detection
+    static var isRunningOnSimulator: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
     
     // MARK: - Environment
     enum Environment: String, CaseIterable {
@@ -32,12 +44,10 @@ struct AppConfiguration {
     // MARK: - API Configuration
     struct API {
         static var baseURL: String {
-            switch AppConfiguration.currentEnvironment {
-            case .development:
+            // Use localhost ONLY for simulator, otherwise use Heroku URL
+            if AppConfiguration.isRunningOnSimulator {
                 return "http://localhost:8000"
-            case .staging:
-                return "https://everwith-backend-421b30a963d9.herokuapp.com"
-            case .production:
+            } else {
                 return "https://everwith-backend-421b30a963d9.herokuapp.com"
             }
         }
@@ -87,6 +97,7 @@ struct AppConfiguration {
         return """
         App Configuration:
         - Environment: \(currentEnvironment.displayName)
+        - Running on Simulator: \(isRunningOnSimulator)
         - Base URL: \(API.baseURL)
         - Timeout: \(API.timeout)s
         """

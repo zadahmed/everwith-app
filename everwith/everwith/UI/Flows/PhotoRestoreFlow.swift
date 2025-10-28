@@ -315,39 +315,45 @@ struct RestoreProcessingView: View {
     @State private var queueTimeRemaining = 12
     @State private var queueTimer: Timer?
     @State private var showContent = false
+    @State private var currentStageIndex = 0
+    
+    let loadingStages = [
+        ("Uploading photo", "arrow.up.circle.fill"),
+        ("Analyzing details", "magnifyingglass"),
+        ("Enhancing quality", "wand.and.rays"),
+        ("Finalizing result", "sparkles")
+    ]
     
     var body: some View {
         ZStack {
             ProgressAnimation(
-                title: "Bringing your photo back to life…",
-                subtitle: "This might take a few seconds — we're restoring every detail.",
+                title: "Restoring Your Memory",
+                subtitle: currentStageIndex < loadingStages.count ? loadingStages[currentStageIndex].0 : "Processing...",
                 progress: progress,
-                geometry: geometry
+                geometry: geometry,
+                isQueueMode: monetizationManager.revenueCatService.subscriptionStatus.tier == .free && queueTimeRemaining > 0,
+                queueTimeRemaining: queueTimeRemaining,
+                onPremiumTap: {
+                    MonetizationManager.shared.triggerQueuePriorityUpsell()
+                }
             )
             .opacity(showContent ? 1 : 0)
             .scaleEffect(showContent ? 1 : 0.9)
-            
-            // Queue status for free users
-            VStack {
-                Spacer()
-                
-                if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
-                    QueueStatusView(queueTimeRemaining: $queueTimeRemaining)
-                        .onAppear {
-                            startQueueTimer()
-                        }
-                        .onDisappear {
-                            queueTimer?.invalidate()
-                        }
-                        .padding(.bottom, adaptiveSpacing(60, for: geometry))
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
         }
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 showContent = true
             }
+            
+            if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
+                startQueueTimer()
+            }
+        }
+        .onDisappear {
+            queueTimer?.invalidate()
+        }
+        .onChange(of: progress) { newProgress in
+            updateStage(for: newProgress)
         }
     }
     
@@ -360,73 +366,12 @@ struct RestoreProcessingView: View {
             }
         }
     }
-}
-
-// MARK: - Queue Status View
-struct QueueStatusView: View {
-    @Binding var queueTimeRemaining: Int
-    @State private var pulseScale: CGFloat = 1.0
     
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "clock.fill")
-                    .foregroundColor(.orange)
-                    .font(.system(size: 16, weight: .semibold))
-                    .scaleEffect(pulseScale)
-                
-                Text("Processing in queue...")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.deepPlum)
-            }
-            
-            Text("Estimated time: \(queueTimeRemaining)s")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.softPlum)
-            
-            Button(action: {
-                MonetizationManager.shared.triggerQueuePriorityUpsell()
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Skip the wait with Premium")
-                        .font(.system(size: 13, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.orange.opacity(0.08))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.orange.opacity(0.3), Color.orange.opacity(0.1)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-        )
-        .padding(.horizontal, 20)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                pulseScale = 1.15
+    private func updateStage(for progress: Double) {
+        let newStage = min(Int(progress * Double(loadingStages.count)), loadingStages.count - 1)
+        if newStage != currentStageIndex {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentStageIndex = newStage
             }
         }
     }

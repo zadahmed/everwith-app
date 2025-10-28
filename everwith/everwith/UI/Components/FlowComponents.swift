@@ -99,6 +99,9 @@ struct ProgressAnimation: View {
     let subtitle: String
     let progress: Double
     let geometry: GeometryProxy
+    let isQueueMode: Bool
+    let queueTimeRemaining: Int
+    let onPremiumTap: () -> Void
     
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
@@ -106,20 +109,12 @@ struct ProgressAnimation: View {
     @State private var dotOffset1: Double = 0
     @State private var dotOffset2: Double = 0
     @State private var dotOffset3: Double = 0
-    @State private var currentStage = 0
-    
-    let loadingStages = [
-        "Analyzing your photo…",
-        "Detecting facial features…",
-        "Applying AI enhancement…",
-        "Adding final touches…"
-    ]
     
     var body: some View {
         ZStack {
             // Background gradient
             LinearGradient(
-                gradient: Gradient(colors: [Color.white, Color.warmLinen.opacity(0.5)]),
+                gradient: Gradient(colors: [Color.white, Color.warmLinen.opacity(0.3)]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -129,7 +124,7 @@ struct ProgressAnimation: View {
                 Spacer()
                 
                 // Main Animation Container
-                VStack(spacing: adaptiveSpacing(40, for: geometry)) {
+                VStack(spacing: adaptiveSpacing(32, for: geometry)) {
                     // Enhanced Animated Logo Container
                     ZStack {
                         // Outer rotating gradient ring
@@ -142,140 +137,163 @@ struct ProgressAnimation: View {
                                     startAngle: .degrees(0),
                                     endAngle: .degrees(360)
                                 ),
-                                style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+                                style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
                             )
-                            .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(140, for: geometry))
+                            .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
                             .rotationEffect(.degrees(rotationAngle))
-                            .blur(radius: 2)
-                            .shadow(color: .blushPink.opacity(0.3), radius: 10)
+                            .blur(radius: 1)
                         
-                        // Middle rotating circle (faster)
+                        // Middle rotating circle
                         Circle()
-                            .trim(from: 0.5, to: 1.0)
+                            .trim(from: 0.0, to: 0.5)
                             .stroke(
                                 LinearGradient.primaryBrand,
-                                style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                style: StrokeStyle(lineWidth: 2, lineCap: .round)
                             )
-                            .frame(width: adaptiveSize(110, for: geometry), height: adaptiveSize(110, for: geometry))
-                            .rotationEffect(.degrees(rotationAngle * 1.5))
+                            .frame(width: adaptiveSize(95, for: geometry), height: adaptiveSize(95, for: geometry))
+                            .rotationEffect(.degrees(-rotationAngle * 1.2))
                         
                         // Inner pulsing circle with gradient
                         Circle()
                             .fill(
                                 RadialGradient(
                                     gradient: Gradient(colors: [
-                                        Color.blushPink,
-                                        Color.roseMagenta
+                                        Color.blushPink.opacity(0.6),
+                                        Color.roseMagenta.opacity(0.3)
                                     ]),
                                     center: .center,
-                                    startRadius: 20,
-                                    endRadius: 50
+                                    startRadius: 15,
+                                    endRadius: 45
                                 )
                             )
-                            .frame(width: adaptiveSize(100, for: geometry), height: adaptiveSize(100, for: geometry))
+                            .frame(width: adaptiveSize(90, for: geometry), height: adaptiveSize(90, for: geometry))
                             .scaleEffect(pulseScale)
-                            .opacity(0.8)
-                            .blur(radius: 8)
+                            .blur(radius: 6)
                         
                         // App logo with shadow
                         Image("AppLogo")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: adaptiveSize(60, for: geometry), height: adaptiveSize(60, for: geometry))
-                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                            .frame(width: adaptiveSize(52, for: geometry), height: adaptiveSize(52, for: geometry))
+                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     }
-                    .frame(height: adaptiveSize(180, for: geometry))
+                    .frame(height: adaptiveSize(160, for: geometry))
                     
                     // Dynamic Loading Text
-                    VStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                    VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                         Text(title)
-                            .font(.system(size: adaptiveFontSize(26, for: geometry), weight: .bold, design: .rounded))
+                            .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
                             .foregroundColor(.deepPlum)
                             .multilineTextAlignment(.center)
-                            .id("title-\(currentStage)")
                         
-                        HStack(spacing: 4) {
-                            // Animated dots
+                        // Stage indicator with icon
+                        HStack(spacing: 8) {
+                            Image(systemName: isQueueMode ? "clock.fill" : "checkmark.circle.fill")
+                                .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
+                                .foregroundColor(isQueueMode ? .orange : .blushPink)
+                            
+                            Text(subtitle)
+                                .font(.system(size: adaptiveFontSize(17, for: geometry), weight: .medium))
+                                .foregroundColor(isQueueMode ? .deepPlum : .softPlum)
+                        }
+                        .transition(.opacity.combined(with: .scale))
+                        
+                        // Animated dots (always visible for feedback)
+                        HStack(spacing: 6) {
                             Circle()
                                 .fill(Color.blushPink)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 6, height: 6)
                                 .offset(y: dotOffset1)
                             Circle()
                                 .fill(Color.roseMagenta)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 6, height: 6)
                                 .offset(y: dotOffset2)
                             Circle()
                                 .fill(Color.blushPink)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 6, height: 6)
                                 .offset(y: dotOffset3)
                         }
                         .padding(.top, 4)
-                        
-                        // Subtle subtitle
-                        Text(subtitle)
-                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .regular))
-                            .foregroundColor(.softPlum.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, adaptiveSpacing(50, for: geometry))
-                            .lineSpacing(4)
                     }
                     
-                    // Modern Progress Bar
-                    if progress > 0 {
-                        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
-                            // Animated progress bar with gradient
-                            GeometryReader { progressGeometry in
-                                ZStack(alignment: .leading) {
-                                    // Background track
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray.opacity(0.15))
-                                        .frame(height: 8)
-                                    
-                                    // Progress fill with gradient
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
+                    // Progress Section
+                    VStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                        // Modern Progress Bar
+                        GeometryReader { progressGeometry in
+                            ZStack(alignment: .leading) {
+                                // Background track
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.12))
+                                    .frame(height: 6)
+                                
+                                // Progress fill with gradient
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
                                         )
-                                        .frame(width: progressGeometry.size.width * CGFloat(progress), height: 8)
-                                        .overlay(
-                                            // Shimmer effect
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(
-                                                    LinearGradient(
-                                                        gradient: Gradient(colors: [
-                                                            .clear,
-                                                            .white.opacity(0.4),
-                                                            .clear
-                                                        ]),
-                                                        startPoint: .leading,
-                                                        endPoint: .trailing
-                                                    )
+                                    )
+                                    .frame(width: progressGeometry.size.width * CGFloat(max(progress, 0.05)), height: 6)
+                                    .overlay(
+                                        // Shimmer effect
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [
+                                                        .clear,
+                                                        .white.opacity(0.5),
+                                                        .clear
+                                                    ]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
                                                 )
-                                                .offset(x: shimmerOffset)
-                                        )
-                                }
+                                            )
+                                            .offset(x: shimmerOffset)
+                                    )
                             }
-                            .frame(height: 8)
-                            .frame(width: adaptiveSize(280, for: geometry))
-                            
-                            // Progress percentage with animation
-                            Text("\(Int(progress * 100))%")
-                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                .foregroundColor(.blushPink)
                         }
-                        .padding(.top, adaptiveSpacing(8, for: geometry))
-                    } else {
-                        // Initial loading state
-                        VStack(spacing: 8) {
-                            Text("Preparing…")
+                        .frame(height: 6)
+                        .frame(width: adaptiveSize(280, for: geometry))
+                        
+                        // Progress info
+                        if !isQueueMode && progress > 0 {
+                            HStack(spacing: 8) {
+                                Text("\(Int(progress * 100))%")
+                                    .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .semibold))
+                                    .foregroundColor(.blushPink)
+                                
+                                Circle()
+                                    .fill(Color.blushPink.opacity(0.3))
+                                    .frame(width: 3, height: 3)
+                                
+                                Text("Processing")
+                                    .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
+                                    .foregroundColor(.softPlum.opacity(0.7))
+                            }
+                        }
+                    }
+                    
+                    // Queue Mode UI (subtle and inline)
+                    if isQueueMode {
+                        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            Text("Estimated time: \(queueTimeRemaining)s")
                                 .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                                .foregroundColor(.softPlum.opacity(0.6))
+                                .foregroundColor(.orange)
+                            
+                            // Subtle premium suggestion
+                            Button(action: onPremiumTap) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "bolt.fill")
+                                        .font(.system(size: 12, weight: .semibold))
+                                    Text("Skip the wait")
+                                        .font(.system(size: 13, weight: .semibold))
+                                }
+                                .foregroundColor(.orange)
+                            }
+                            .padding(.top, 4)
                         }
-                        .padding(.top, adaptiveSpacing(8, for: geometry))
                     }
                 }
                 .padding(.horizontal, adaptiveSpacing(30, for: geometry))
@@ -286,9 +304,6 @@ struct ProgressAnimation: View {
         .onAppear {
             startAnimations()
         }
-        .onChange(of: progress) { newProgress in
-            updateStage(for: newProgress)
-        }
     }
     
     private func startAnimations() {
@@ -298,11 +313,11 @@ struct ProgressAnimation: View {
         }
         
         // Pulse animation
-        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-            pulseScale = 1.15
+        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            pulseScale = 1.12
         }
         
-        // Shimmer animation - loop from -200 to 400 and reset
+        // Shimmer animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
                 shimmerOffset = 400
@@ -311,20 +326,13 @@ struct ProgressAnimation: View {
         
         // Dot bouncing animation
         withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.0)) {
-            dotOffset1 = -6
+            dotOffset1 = -4
         }
         withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.2)) {
-            dotOffset2 = -6
+            dotOffset2 = -4
         }
         withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.4)) {
-            dotOffset3 = -6
-        }
-    }
-    
-    private func updateStage(for progress: Double) {
-        let newStage = Int(progress * Double(loadingStages.count))
-        if newStage != currentStage && newStage < loadingStages.count {
-            currentStage = newStage
+            dotOffset3 = -4
         }
     }
 }

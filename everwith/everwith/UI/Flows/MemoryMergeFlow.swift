@@ -550,10 +550,13 @@ struct MergeProcessingView: View {
     
     var body: some View {
         ProgressAnimation(
-            title: "Creating your merged memory…",
-            subtitle: "Aligning faces, matching lighting, blending details…",
+            title: "Creating Your Memory",
+            subtitle: "Blending your photos seamlessly…",
             progress: progress,
-            geometry: geometry
+            geometry: geometry,
+            isQueueMode: false,
+            queueTimeRemaining: 0,
+            onPremiumTap: {}
         )
         .opacity(showContent ? 1 : 0)
         .scaleEffect(showContent ? 1 : 0.9)

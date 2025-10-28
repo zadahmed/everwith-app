@@ -409,31 +409,29 @@ struct BeforeAfterToggleButton: View {
     var body: some View {
         VStack(spacing: adaptiveSpacing(16, for: geometry)) {
             // Image display
-            GeometryReader { imageGeometry in
-                ZStack {
-                    // Show appropriate image based on state
-                    Image(uiImage: showingBefore ? beforeImage : afterImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: imageGeometry.size.width)
-                        .cornerRadius(adaptiveCornerRadius(16, for: geometry))
-                        .clipped()
-                    
-                    // Label overlay
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Text(showingBefore ? "Before" : "After")
-                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.6))
-                                .cornerRadius(8)
-                                .padding(12)
-                        }
+            ZStack {
+                // Show appropriate image based on state
+                Image(uiImage: showingBefore ? beforeImage : afterImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.gray.opacity(0.05))
+                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                
+                // Label overlay
+                VStack {
+                    HStack {
                         Spacer()
+                        Text(showingBefore ? "Before" : "After")
+                            .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(8)
+                            .padding(12)
                     }
+                    Spacer()
                 }
             }
             .frame(maxHeight: .infinity)

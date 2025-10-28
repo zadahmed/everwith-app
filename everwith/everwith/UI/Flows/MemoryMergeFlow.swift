@@ -579,7 +579,6 @@ struct MergeResultView: View {
     
     @State private var animateElements = false
     @State private var isSaved = false
-    @State private var imageScale: CGFloat = 1.0
     
     var body: some View {
         VStack(spacing: 0) {
@@ -606,30 +605,16 @@ struct MergeResultView: View {
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : -20)
             
-            // Merged Image with Zoom
-            ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                Image(uiImage: mergedImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: geometry.size.width - adaptiveSpacing(40, for: geometry))
-                    .scaleEffect(imageScale)
-                    .gesture(
-                        MagnificationGesture()
-                            .onChanged { scale in
-                                imageScale = min(max(scale, 1.0), 3.0)
-                            }
-                    )
-            }
-            .frame(height: geometry.size.height * 0.6)
-            .opacity(animateElements ? 1 : 0)
-            .scaleEffect(animateElements ? 1.0 : 0.95)
-            
-            // Pinch hint
-            Text("Pinch to zoom")
-                .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
-                .foregroundColor(.softPlum)
-                .padding(.top, adaptiveSpacing(16, for: geometry))
+            // Merged Image
+            Image(uiImage: mergedImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: geometry.size.width - adaptiveSpacing(40, for: geometry))
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                .frame(height: geometry.size.height * 0.6)
                 .opacity(animateElements ? 1 : 0)
+                .scaleEffect(animateElements ? 1.0 : 0.95)
             
             Spacer()
             

@@ -349,20 +349,104 @@ class RevenueCatService: NSObject, ObservableObject {
     
     // MARK: - Backend Communication
     private func notifyBackendOfPurchase(_ customerInfo: CustomerInfo) async {
-        // Send purchase info to your backend
-        // This would typically include the transaction details
-        print("Purchase completed, notifying backend...")
+        guard let userId = UserDefaults.standard.string(forKey: "user_id") else {
+            print("⚠️ Cannot notify backend: No user ID found")
+            return
+        }
+        
+        // Determine purchase type and product ID
+        var productId = ""
+        var purchaseType = ""
+        
+        if customerInfo.entitlements["premium_monthly"]?.isActive == true {
+            productId = "com.everwith.premium.month"
+            purchaseType = "subscription"
+        } else if customerInfo.entitlements["premium_yearly"]?.isActive == true {
+            productId = "com.everwith.premium.yearly"
+            purchaseType = "subscription"
+        } else {
+            print("⚠️ No active entitlement found")
+            return
+        }
+        
+        // Get transaction information
+        let transactionId = customerInfo.entitlements.values
+            .compactMap { $0.latestPurchaseDate != nil ? $0.productIdentifier : nil }
+            .first ?? ""
+        
+        // Prepare RevenueCat data
+        let revenueCatData: [String: Any] = [
+            "original_app_user_id": customerInfo.originalAppUserId,
+            "first_seen": customerInfo.firstSeen.formatted(),
+            "request_date": customerInfo.requestDate.formatted(),
+            "management_url": customerInfo.managementURL?.absoluteString ?? ""
+        ]
+        
+        print("📤 Notifying backend of purchase: \(productId)")
+        
+        do {
+            // Use the subscription API service to notify backend
+            let apiService = SubscriptionAPIService.shared
+            try await apiService.notifyPurchase(
+                userId: userId,
+                productId: productId,
+                transactionId: transactionId,
+                purchaseType: purchaseType,
+                revenueCatData: revenueCatData
+            )
+            print("✅ Backend notified successfully")
+        } catch {
+            print("❌ Failed to notify backend: \(error)")
+        }
     }
     
     private func notifyBackendOfCreditPurchase(_ pack: CreditPack, _ customerInfo: CustomerInfo) async {
-        // Send credit purchase info to your backend
-        print("Credit pack purchased, notifying backend...")
+        guard let userId = UserDefaults.standard.string(forKey: "user_id") else {
+            print("⚠️ Cannot notify backend: No user ID found")
+            return
+        }
+        
+        // Get transaction information
+        let transactionId = UUID().uuidString // Generate transaction ID
+        
+        // Prepare RevenueCat data
+        let revenueCatData: [String: Any] = [
+            "original_app_user_id": customerInfo.originalAppUserId,
+            "first_seen": customerInfo.firstSeen.formatted(),
+            "request_date": customerInfo.requestDate.formatted()
+        ]
+        
+        print("📤 Notifying backend of credit purchase: \(pack.productId)")
+        
+        do {
+            // Use the subscription API service to notify backend
+            let apiService = SubscriptionAPIService.shared
+            try await apiService.notifyPurchase(
+                userId: userId,
+                productId: pack.productId,
+                transactionId: transactionId,
+                purchaseType: "credit_pack",
+                revenueCatData: revenueCatData
+            )
+            print("✅ Backend notified of credit purchase successfully")
+        } catch {
+            print("❌ Failed to notify backend: \(error)")
+        }
     }
     
     private func fetchUserCredits() async -> Int {
-        // Fetch user credits from your backend
-        // For now, return 0
-        return 0
+        guard let userId = UserDefaults.standard.string(forKey: "user_id") else {
+            return 0
+        }
+        
+        do {
+            let subscriptionService = SubscriptionService.shared
+            let creditsResponse = try await subscriptionService.fetchUserCredits()
+            return creditsResponse.creditsRemaining
+        } catch {
+            print("❌ Failed to fetch user credits: \(error)")
+            return 0
+        }
     }
     
     // MARK: - Restore Purchases
@@ -378,6 +462,53 @@ class RevenueCatService: NSObject, ObservableObject {
             errorMessage = error.localizedDescription
             isLoading = false
             return false
+        }
+    }
+    
+    // MARK: - User Identification & Logout
+    
+    /// Identify user with RevenueCat after authentication
+    func identifyUser(userId: String) async {
+        do {
+            let customerInfo = try await Purchases.shared.logIn(userId)
+            print("✅ RevenueCat: User identified as \(userId)")
+            print("✅ RevenueCat: Customer ID: \(customerInfo.originalAppUserId)")
+            
+            // Update subscription status after identification
+            await updateSubscriptionStatus()
+        } catch {
+            print("⚠️ RevenueCat: Failed to identify user: \(error)")
+        }
+    }
+    
+    /// Log out from RevenueCat (returns to anonymous user)
+    func logOut() async {
+        do {
+            let (customerInfo, _) = try await Purchases.shared.logOut()
+            print("✅ RevenueCat: Logged out user")
+            print("✅ RevenueCat: Back to anonymous user: \(customerInfo.originalAppUserId)")
+            
+            // Reset subscription status to free tier
+            subscriptionStatus = UserSubscriptionStatus(
+                tier: .free,
+                credits: 0,
+                hasActiveSubscription: false,
+                subscriptionExpiryDate: nil,
+                freeUsesRemaining: 1,
+                lastFreeUseDate: nil
+            )
+        } catch {
+            print("⚠️ RevenueCat: Failed to log out: \(error)")
+        }
+    }
+    
+    /// Get current RevenueCat user ID
+    func getCurrentUserId() async -> String? {
+        do {
+            let customerInfo = try await Purchases.shared.customerInfo()
+            return customerInfo.originalAppUserId
+        } catch {
+            return nil
         }
     }
 }

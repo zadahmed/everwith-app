@@ -101,11 +101,14 @@ class SubscriptionAPIService: ObservableObject {
             revenueCatData: revenueCatData.mapValues { String(describing: $0) }
         )
         
+        // Use the correct endpoint path from the backend router
         let _: EmptyResponse = try await performRequest(
-            endpoint: "/subscription/purchase-notification",
+            endpoint: "/api/subscriptions/purchase-notification",
             method: "POST",
             body: request
         )
+        
+        print("✅ Purchase notification sent to backend for user: \(userId)")
     }
     
     // MARK: - User Credits

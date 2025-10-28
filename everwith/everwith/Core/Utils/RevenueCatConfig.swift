@@ -54,11 +54,18 @@ class RevenueCatConfig {
         // Set up delegate
         Purchases.shared.delegate = RevenueCatService.shared
         
+        // Enable automatic collection of attribution
+        Purchases.shared.collectDeviceIdentifiers()
+        
         // Configure offerings (may show warnings if not configured in dashboard)
         configureOfferings()
         
         print("✅ RevenueCat configuration completed")
         print("⚠️ Note: Configure offerings with packages in RevenueCat dashboard to enable purchases")
+        
+        // Log configuration status
+        print("📊 RevenueCat debug mode: \(Purchases.logLevel == .debug)")
+        print("📊 Using API Key: \(apiKey.prefix(20))...")
     }
     
     private func configureOfferings() {

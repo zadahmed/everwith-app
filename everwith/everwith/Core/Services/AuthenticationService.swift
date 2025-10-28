@@ -356,6 +356,9 @@ class AuthenticationService: ObservableObject {
             GIDSignIn.sharedInstance.signOut()
         }
         
+        // Log out from RevenueCat
+        await RevenueCatService.shared.logOut()
+        
         // Call backend logout endpoint
         await logoutFromBackend()
         

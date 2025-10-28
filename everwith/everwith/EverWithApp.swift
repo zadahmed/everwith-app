@@ -21,8 +21,9 @@ struct EverWithApp: App {
     }
     
     private func configureApp() {
-        // Configure RevenueCat first
-        RevenueCatConfig.shared.configure()
+        // IMPORTANT: Configure RevenueCat BEFORE anything else
+        // This ensures proper user identification and entitlements
+        configureRevenueCat()
         
         // Configure global app appearance
         GlobalAppearance.configure()
@@ -32,6 +33,31 @@ struct EverWithApp: App {
         
         // Configure any other app-wide settings
         configureAppearance()
+    }
+    
+    private func configureRevenueCat() {
+        // Configure RevenueCat
+        RevenueCatConfig.shared.configure()
+        
+        // Set up user after configuration
+        // Important: We need to identify the user AFTER authentication
+        // For now, if there's an existing user ID, log them in
+        if let userId = UserDefaults.standard.string(forKey: "user_id") {
+            Task {
+                do {
+                    let customerInfo = try await Purchases.shared.logIn(userId)
+                    print("✅ RevenueCat: User identified as \(userId)")
+                    print("✅ RevenueCat: Customer ID: \(customerInfo.originalAppUserId)")
+                    
+                    // Update subscription status
+                    await RevenueCatService.shared.updateSubscriptionStatus()
+                } catch {
+                    print("⚠️ RevenueCat: Failed to identify user: \(error)")
+                }
+            }
+        } else {
+            print("ℹ️ RevenueCat: No user ID yet, will identify after login")
+        }
     }
     
     private func configureAppearance() {

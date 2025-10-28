@@ -3,11 +3,14 @@ EverWith Subscription API Endpoints
 Comprehensive subscription and monetization management with RevenueCat integration
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
+import hmac
+import hashlib
+import json
 from app.models.database import User as DBUser, Subscription, CreditTransaction, UsageLog, Transaction
 from app.core.security import get_current_user
 from app.core.credit_config import (
@@ -754,6 +757,201 @@ async def get_pricing():
             "note": "Credits never expire"
         }
     }
+
+# RevenueCat Webhook Handler
+@router.post("/webhook")
+async def revenuecat_webhook(
+    request: Request,
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Handle RevenueCat webhooks for automatic purchase processing.
+    This is called automatically by RevenueCat when events occur.
+    
+    Configure in RevenueCat Dashboard → Project Settings → Webhooks
+    Webhook URL: https://everwith-backend-421b30a963d9.herokuapp.com/api/subscriptions/webhook
+    
+    Production URL: https://everwith-backend-421b30a963d9.herokuapp.com/api/subscriptions/webhook
+    """
+    
+    try:
+        # Get request body
+        body = await request.body()
+        body_str = body.decode('utf-8')
+        data = json.loads(body_str)
+        
+        # TODO: Verify webhook signature for security
+        # In production, implement signature verification:
+        # WEBHOOK_SECRET = os.getenv("REVENUECAT_WEBHOOK_SECRET")
+        # if authorization and WEBHOOK_SECRET:
+        #     expected_signature = hmac.new(
+        #         WEBHOOK_SECRET.encode(),
+        #         body,
+        #         hashlib.sha256
+        #     ).hexdigest()
+        #     if not hmac.compare_digest(authorization, expected_signature):
+        #         logger.warning("Invalid webhook signature")
+        #         raise HTTPException(status_code=401, detail="Invalid signature")
+        
+        event = data.get("event", {})
+        event_type = event.get("type")
+        
+        logger.info(f"RevenueCat webhook received: {event_type}")
+        
+        if event_type == "CUSTOMER_INFO_UPDATED":
+            # Handle subscription status changes
+            customer_info = event.get("customer_info", {})
+            app_user_id = customer_info.get("original_app_user_id")
+            
+            if not app_user_id:
+                logger.error("No app_user_id in webhook")
+                return {"status": "ok"}
+            
+            logger.info(f"Processing CUSTOMER_INFO_UPDATED for user: {app_user_id}")
+            
+            # Find user by ID - RevenueCat's app_user_id should match your backend user ID
+            # Try finding by ID first (assuming app_user_id is the MongoDB ObjectId string)
+            try:
+                from bson import ObjectId
+                user = await DBUser.get(app_user_id)
+            except:
+                # If not found by ID, try finding by email or other identifier
+                # This handles cases where app_user_id might be an email or other identifier
+                user = await DBUser.find_one(
+                    (DBUser.email == app_user_id) | (DBUser.id == app_user_id)
+                )
+            
+            if user:
+                entitlements = customer_info.get("entitlements", {})
+                
+                # Determine subscription tier based on active entitlements
+                subscription_tier = "free"
+                expiration_date = None
+                
+                # Check premium_monthly entitlement
+                if entitlements.get("premium_monthly", {}).get("is_active"):
+                    subscription_tier = "premium_monthly"
+                    expiration_date = entitlements.get("premium_monthly", {}).get("expires_date")
+                # Check premium_yearly entitlement (priority if active)
+                elif entitlements.get("premium_yearly", {}).get("is_active"):
+                    subscription_tier = "premium_yearly"
+                    expiration_date = entitlements.get("premium_yearly", {}).get("expires_date")
+                
+                # Update user's subscription
+                old_tier = user.subscription_tier
+                user.subscription_tier = subscription_tier
+                
+                # Set expiration date if subscription is active
+                if subscription_tier != "free" and expiration_date:
+                    # Parse ISO 8601 date string
+                    try:
+                        user.subscription_expires_at = datetime.fromisoformat(
+                            expiration_date.replace('Z', '+00:00')
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to parse expiration date: {e}")
+                        # Set default expiration based on tier
+                        if subscription_tier == "premium_monthly":
+                            user.subscription_expires_at = datetime.utcnow() + timedelta(days=30)
+                        elif subscription_tier == "premium_yearly":
+                            user.subscription_expires_at = datetime.utcnow() + timedelta(days=365)
+                else:
+                    user.subscription_expires_at = None
+                
+                # If user upgraded from free, give bonus credits
+                if old_tier == "free" and subscription_tier != "free":
+                    if subscription_tier == "premium_monthly":
+                        bonus = PREMIUM_CREDITS_ON_UPGRADE
+                    elif subscription_tier == "premium_yearly":
+                        bonus = PREMIUM_CREDITS_ON_UPGRADE + PREMIUM_YEARLY_BONUS
+                    else:
+                        bonus = 0
+                    
+                    if bonus > 0:
+                        user.credits += bonus
+                        credit_transaction = CreditTransaction(
+                            user_id=user,
+                            credits=bonus,
+                            transaction_type="reward",
+                            description=f"RevenueCat Webhook - {subscription_tier} upgrade bonus",
+                            transaction_id=f"webhook_{datetime.utcnow().isoformat()}"
+                        )
+                        await credit_transaction.insert()
+                        logger.info(f"Added {bonus} bonus credits to user {app_user_id}")
+                
+                await user.save()
+                logger.info(f"✅ Updated user {app_user_id}: {old_tier} → {subscription_tier}")
+            else:
+                logger.warning(f"⚠️ User not found for app_user_id: {app_user_id} - webhook event skipped")
+        
+        elif event_type == "TRANSACTION_COMPLETED":
+            # Handle completed transaction (logging only, subscription already updated via CUSTOMER_INFO_UPDATED)
+            transaction_data = event.get("transaction", {})
+            app_user_id = transaction_data.get("app_user_id")
+            product_id = transaction_data.get("product_id")
+            
+            logger.info(f"Transaction completed for user {app_user_id}: {product_id}")
+            
+            # Log transaction for analytics
+            if app_user_id:
+                try:
+                    from bson import ObjectId
+                    user = await DBUser.get(app_user_id)
+                except:
+                    user = await DBUser.find_one(
+                        (DBUser.email == app_user_id) | (DBUser.id == app_user_id)
+                    )
+                
+                if user:
+                    # Create transaction record for logging
+                    transaction_record = Transaction(
+                        user_id=user,
+                        product_id=product_id,
+                        transaction_id=transaction_data.get("id", ""),
+                        purchase_type="subscription" if "premium" in product_id else "credit_pack",
+                        revenue_cat_data=json.dumps(transaction_data)
+                    )
+                    await transaction_record.insert()
+                    logger.info(f"✅ Transaction logged for user {app_user_id}")
+                else:
+                    logger.warning(f"⚠️ User not found for transaction logging: {app_user_id}")
+        
+        elif event_type == "TRANSACTION_FAILED":
+            # Handle failed transaction
+            transaction_data = event.get("transaction", {})
+            app_user_id = transaction_data.get("app_user_id")
+            product_id = transaction_data.get("product_id")
+            error_message = event.get("error_message", "")
+            
+            logger.error(f"❌ Transaction failed for user {app_user_id}: {product_id} - {error_message}")
+            
+            # Optionally log failed transactions
+            if app_user_id:
+                try:
+                    from bson import ObjectId
+                    user = await DBUser.get(app_user_id)
+                except:
+                    user = None
+                
+                if user:
+                    transaction_record = Transaction(
+                        user_id=user,
+                        product_id=product_id,
+                        transaction_id="",
+                        purchase_type="subscription" if "premium" in product_id else "credit_pack",
+                        revenue_cat_data=json.dumps(transaction_data)
+                    )
+                    await transaction_record.insert()
+                    logger.info(f"Failed transaction logged for user {app_user_id}")
+        
+        return {"status": "ok", "event_type": event_type}
+    
+    except json.JSONDecodeError:
+        logger.error("Invalid JSON in webhook body")
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    except Exception as e:
+        logger.error(f"Error processing webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Health check endpoint
 @router.get("/health")

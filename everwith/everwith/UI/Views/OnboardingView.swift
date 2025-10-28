@@ -376,8 +376,8 @@ struct SingleOnboardingCard: View {
                     Image(cardData.imageName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: cardGeometry.size.width * 0.75, 
-                               height: cardGeometry.size.width * 0.75)
+                        .frame(width: cardGeometry.size.width * 0.95, 
+                               height: cardGeometry.size.width * 0.95)
                         .scaleEffect(imageScale)
                         .shadow(
                             color: Color.black.opacity(0.15),

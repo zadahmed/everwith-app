@@ -24,8 +24,7 @@ struct ModernAuthenticationView: View {
     @State private var buttonPressedGoogle: Bool = false
     @State private var contentOpacity: Double = 0
     @State private var logoScale: CGFloat = 0.8
-    @State private var focusedField: String? = nil
-    @FocusState private var focusedTextField: FocusedField?
+    @State private var focusedTextField: FocusedField? = nil
     
     enum FocusedField {
         case name, email, password, confirmPassword
@@ -700,7 +699,7 @@ struct ModernTextField: View {
     @Binding var text: String
     let icon: String
     var keyboardType: UIKeyboardType = .default
-    let focusedTextField: FocusState<ModernAuthenticationView.FocusedField?>.Binding
+    @Binding var focusedTextField: ModernAuthenticationView.FocusedField?
     let fieldType: ModernAuthenticationView.FocusedField
     let geometry: GeometryProxy
     
@@ -734,7 +733,9 @@ struct ModernTextField: View {
                     .keyboardType(keyboardType)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
-                    .focused($focusedTextField, equals: fieldType)
+                    .onTapGesture {
+                        focusedTextField = fieldType
+                    }
             }
             .frame(height: 56)
             .padding(.horizontal, 16)
@@ -743,8 +744,8 @@ struct ModernTextField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
-                            .stroke(
-                                focusedTextField == fieldType ? LinearGradient.primaryBrand : Color.subtleBorder,
+                            .strokeBorder(
+                                focusedTextField == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
                                 lineWidth: focusedTextField == fieldType ? 2 : 1.5
                             )
                     )
@@ -793,7 +794,9 @@ struct ModernPasswordField: View {
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                        .focused($focusedTextField, equals: fieldType)
+                        .onTapGesture {
+                            focusedTextField = fieldType
+                        }
                 } else {
                     SecureField(title, text: $text)
                         .font(.system(
@@ -803,7 +806,9 @@ struct ModernPasswordField: View {
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                        .focused($focusedTextField, equals: fieldType)
+                        .onTapGesture {
+                            focusedTextField = fieldType
+                        }
                 }
                 
                 Button(action: {
@@ -825,8 +830,8 @@ struct ModernPasswordField: View {
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
                         RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
-                            .stroke(
-                                focusedTextField == fieldType ? LinearGradient.primaryBrand : Color.subtleBorder,
+                            .strokeBorder(
+                                focusedTextField == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
                                 lineWidth: focusedTextField == fieldType ? 2 : 1.5
                             )
                     )

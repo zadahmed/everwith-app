@@ -299,9 +299,14 @@ struct OnboardingView: View {
     }
     
     private func completeOnboarding() {
-        // Mark onboarding as completed and navigate to main app
+        // Mark onboarding as completed
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
         onboardingState = .completed
+        
+        // Force authentication state to unauthenticated if not already authenticated
+        // This ensures that after onboarding, users go to the auth screen, not the main app
+        print("✅ ONBOARDING: Marked as completed")
+        print("🔐 ONBOARDING: Will show auth screen if not authenticated")
         
         // Post notification to update app state with delay to ensure UI is ready
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

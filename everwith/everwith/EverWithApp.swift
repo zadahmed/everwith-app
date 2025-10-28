@@ -62,6 +62,20 @@ struct AppCoordinator: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
                 hasCompletedOnboarding = true
+                // Force check authentication state after onboarding completes
+                // If user is not authenticated, they should see the auth screen
+                print("📱 ONBOARDING COMPLETED: Checking auth state")
+                Task {
+                    // Give it a moment for state to update
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                    // Force authentication check
+                    await MainActor.run {
+                        if case .loading = authService.authenticationState {
+                            print("⚠️ AUTH STATE: Still loading, setting to unauthenticated")
+                            authService.authenticationState = .unauthenticated
+                        }
+                    }
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .onboardingReset)) { _ in
                 hasCompletedOnboarding = false

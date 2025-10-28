@@ -662,6 +662,9 @@ struct ModernAuthenticationView: View {
             
             let result = await authService.signInWithGoogle()
             
+            // Wait for Google modal to fully dismiss
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            
             await MainActor.run {
                 isLoading = false
                 
@@ -670,8 +673,11 @@ struct ModernAuthenticationView: View {
                     print("User signed in with Google successfully: \(user.name) (\(user.email))")
                     // Success! The app will automatically navigate to HomeView via auth state change
                 case .failure(let error):
+                    // Delay error presentation to avoid conflicts
                     errorMessage = error.localizedDescription
-                    showErrorAlert = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showErrorAlert = true
+                    }
                 case .cancelled:
                     break
                 }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import UIKit
 
 // MARK: - Continue Button Component
 struct ContinueButton: View {
@@ -101,74 +102,230 @@ struct ProgressAnimation: View {
     
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
+    @State private var shimmerOffset: CGFloat = -200
+    @State private var dotOffset1: Double = 0
+    @State private var dotOffset2: Double = 0
+    @State private var dotOffset3: Double = 0
+    @State private var currentStage = 0
+    
+    let loadingStages = [
+        "Analyzing your photo…",
+        "Detecting facial features…",
+        "Applying AI enhancement…",
+        "Adding final touches…"
+    ]
     
     var body: some View {
-        VStack(spacing: adaptiveSpacing(32, for: geometry)) {
-            Spacer()
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                gradient: Gradient(colors: [Color.white, Color.warmLinen.opacity(0.5)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
-            // Animated circles
-            ZStack {
-                // Outer rotating circle
-                Circle()
-                    .stroke(
-                        LinearGradient.primaryBrand,
-                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                    )
-                    .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
-                    .rotationEffect(.degrees(rotationAngle))
-                    .opacity(0.6)
+            VStack(spacing: 0) {
+                Spacer()
                 
-                // Middle pulsing circle
-                Circle()
-                    .fill(LinearGradient.subtleHighlight)
-                    .frame(width: adaptiveSize(100, for: geometry), height: adaptiveSize(100, for: geometry))
-                    .scaleEffect(pulseScale)
-                
-                // App logo
-                Image("AppLogo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: adaptiveSize(50, for: geometry), height: adaptiveSize(50, for: geometry))
-            }
-            .onAppear {
-                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
-                    rotationAngle = 360
-                }
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    pulseScale = 1.1
-                }
-            }
-            
-            VStack(spacing: adaptiveSpacing(12, for: geometry)) {
-                Text(title)
-                    .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .bold, design: .rounded))
-                    .foregroundColor(.deepPlum)
-                    .multilineTextAlignment(.center)
-                
-                Text(subtitle)
-                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .medium))
-                    .foregroundColor(.softPlum)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, adaptiveSpacing(40, for: geometry))
-            }
-            
-            // Progress bar
-            if progress > 0 {
-                VStack(spacing: adaptiveSpacing(8, for: geometry)) {
-                    ProgressView(value: progress)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .blushPink))
-                        .frame(width: adaptiveSize(200, for: geometry))
+                // Main Animation Container
+                VStack(spacing: adaptiveSpacing(40, for: geometry)) {
+                    // Enhanced Animated Logo Container
+                    ZStack {
+                        // Outer rotating gradient ring
+                        Circle()
+                            .trim(from: 0.25, to: 1.0)
+                            .stroke(
+                                AngularGradient(
+                                    gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta, Color.blushPink]),
+                                    center: .center,
+                                    startAngle: .degrees(0),
+                                    endAngle: .degrees(360)
+                                ),
+                                style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+                            )
+                            .frame(width: adaptiveSize(140, for: geometry), height: adaptiveSize(140, for: geometry))
+                            .rotationEffect(.degrees(rotationAngle))
+                            .blur(radius: 2)
+                            .shadow(color: .blushPink.opacity(0.3), radius: 10)
+                        
+                        // Middle rotating circle (faster)
+                        Circle()
+                            .trim(from: 0.5, to: 1.0)
+                            .stroke(
+                                LinearGradient.primaryBrand,
+                                style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                            )
+                            .frame(width: adaptiveSize(110, for: geometry), height: adaptiveSize(110, for: geometry))
+                            .rotationEffect(.degrees(rotationAngle * 1.5))
+                        
+                        // Inner pulsing circle with gradient
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.blushPink,
+                                        Color.roseMagenta
+                                    ]),
+                                    center: .center,
+                                    startRadius: 20,
+                                    endRadius: 50
+                                )
+                            )
+                            .frame(width: adaptiveSize(100, for: geometry), height: adaptiveSize(100, for: geometry))
+                            .scaleEffect(pulseScale)
+                            .opacity(0.8)
+                            .blur(radius: 8)
+                        
+                        // App logo with shadow
+                        Image("AppLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: adaptiveSize(60, for: geometry), height: adaptiveSize(60, for: geometry))
+                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                    }
+                    .frame(height: adaptiveSize(180, for: geometry))
                     
-                    Text("\(Int(progress * 100))%")
-                        .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                        .foregroundColor(.softPlum)
+                    // Dynamic Loading Text
+                    VStack(spacing: adaptiveSpacing(12, for: geometry)) {
+                        Text(title)
+                            .font(.system(size: adaptiveFontSize(26, for: geometry), weight: .bold, design: .rounded))
+                            .foregroundColor(.deepPlum)
+                            .multilineTextAlignment(.center)
+                            .id("title-\(currentStage)")
+                        
+                        HStack(spacing: 4) {
+                            // Animated dots
+                            Circle()
+                                .fill(Color.blushPink)
+                                .frame(width: 8, height: 8)
+                                .offset(y: dotOffset1)
+                            Circle()
+                                .fill(Color.roseMagenta)
+                                .frame(width: 8, height: 8)
+                                .offset(y: dotOffset2)
+                            Circle()
+                                .fill(Color.blushPink)
+                                .frame(width: 8, height: 8)
+                                .offset(y: dotOffset3)
+                        }
+                        .padding(.top, 4)
+                        
+                        // Subtle subtitle
+                        Text(subtitle)
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .regular))
+                            .foregroundColor(.softPlum.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, adaptiveSpacing(50, for: geometry))
+                            .lineSpacing(4)
+                    }
+                    
+                    // Modern Progress Bar
+                    if progress > 0 {
+                        VStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                            // Animated progress bar with gradient
+                            GeometryReader { progressGeometry in
+                                ZStack(alignment: .leading) {
+                                    // Background track
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.gray.opacity(0.15))
+                                        .frame(height: 8)
+                                    
+                                    // Progress fill with gradient
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: progressGeometry.size.width * CGFloat(progress), height: 8)
+                                        .overlay(
+                                            // Shimmer effect
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [
+                                                            .clear,
+                                                            .white.opacity(0.4),
+                                                            .clear
+                                                        ]),
+                                                        startPoint: .leading,
+                                                        endPoint: .trailing
+                                                    )
+                                                )
+                                                .offset(x: shimmerOffset)
+                                        )
+                                }
+                            }
+                            .frame(height: 8)
+                            .frame(width: adaptiveSize(280, for: geometry))
+                            
+                            // Progress percentage with animation
+                            Text("\(Int(progress * 100))%")
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
+                                .foregroundColor(.blushPink)
+                        }
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
+                    } else {
+                        // Initial loading state
+                        VStack(spacing: 8) {
+                            Text("Preparing…")
+                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
+                                .foregroundColor(.softPlum.opacity(0.6))
+                        }
+                        .padding(.top, adaptiveSpacing(8, for: geometry))
+                    }
                 }
+                .padding(.horizontal, adaptiveSpacing(30, for: geometry))
+                
+                Spacer()
             }
-            
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CleanWhiteBackground())
+        .onAppear {
+            startAnimations()
+        }
+        .onChange(of: progress) { newProgress in
+            updateStage(for: newProgress)
+        }
+    }
+    
+    private func startAnimations() {
+        // Continuous rotation
+        withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+            rotationAngle = 360
+        }
+        
+        // Pulse animation
+        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            pulseScale = 1.15
+        }
+        
+        // Shimmer animation - loop from -200 to 400 and reset
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                shimmerOffset = 400
+            }
+        }
+        
+        // Dot bouncing animation
+        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.0)) {
+            dotOffset1 = -6
+        }
+        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.2)) {
+            dotOffset2 = -6
+        }
+        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(0.4)) {
+            dotOffset3 = -6
+        }
+    }
+    
+    private func updateStage(for progress: Double) {
+        let newStage = Int(progress * Double(loadingStages.count))
+        if newStage != currentStage && newStage < loadingStages.count {
+            currentStage = newStage
+        }
     }
 }
 

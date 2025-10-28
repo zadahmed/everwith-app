@@ -557,6 +557,7 @@ struct StyleCard: View {
 struct MergeProcessingView: View {
     let progress: Double
     let geometry: GeometryProxy
+    @State private var showContent = false
     
     var body: some View {
         ProgressAnimation(
@@ -565,6 +566,13 @@ struct MergeProcessingView: View {
             progress: progress,
             geometry: geometry
         )
+        .opacity(showContent ? 1 : 0)
+        .scaleEffect(showContent ? 1 : 0.9)
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                showContent = true
+            }
+        }
     }
 }
 

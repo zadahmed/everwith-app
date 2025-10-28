@@ -588,9 +588,15 @@ class ImageProcessingService: ObservableObject {
                 responseType: JobResult.self
             )
         } catch let error as NetworkError {
+            // Handle content moderation error
             if case .contentModerated(let message) = error {
-                throw ImageProcessingError.contentModerated
+                throw ImageProcessingError.processingFailed(message)
             }
+            // Handle HTTP errors with messages
+            if case .httpErrorWithMessage(_, let message) = error {
+                throw ImageProcessingError.processingFailed(message)
+            }
+            // For other errors, convert to network error
             throw ImageProcessingError.networkError(error)
         } catch {
             throw ImageProcessingError.networkError(error)
@@ -674,9 +680,15 @@ class ImageProcessingService: ObservableObject {
                 responseType: JobResult.self
             )
         } catch let error as NetworkError {
-            if case .contentModerated(_) = error {
-                throw ImageProcessingError.contentModerated
+            // Handle content moderation error
+            if case .contentModerated(let message) = error {
+                throw ImageProcessingError.processingFailed(message)
             }
+            // Handle HTTP errors with messages
+            if case .httpErrorWithMessage(_, let message) = error {
+                throw ImageProcessingError.processingFailed(message)
+            }
+            // For other errors, convert to network error
             throw ImageProcessingError.networkError(error)
         } catch {
             throw ImageProcessingError.networkError(error)
@@ -765,9 +777,15 @@ class ImageProcessingService: ObservableObject {
                 responseType: JobResult.self
             )
         } catch let error as NetworkError {
-            if case .contentModerated(_) = error {
-                throw ImageProcessingError.contentModerated
+            // Handle content moderation error
+            if case .contentModerated(let message) = error {
+                throw ImageProcessingError.processingFailed(message)
             }
+            // Handle HTTP errors with messages
+            if case .httpErrorWithMessage(_, let message) = error {
+                throw ImageProcessingError.processingFailed(message)
+            }
+            // For other errors, convert to network error
             throw ImageProcessingError.networkError(error)
         } catch {
             throw ImageProcessingError.networkError(error)
@@ -856,9 +874,15 @@ class ImageProcessingService: ObservableObject {
                 responseType: JobResult.self
             )
         } catch let error as NetworkError {
-            if case .contentModerated(_) = error {
-                throw ImageProcessingError.contentModerated
+            // Handle content moderation error
+            if case .contentModerated(let message) = error {
+                throw ImageProcessingError.processingFailed(message)
             }
+            // Handle HTTP errors with messages
+            if case .httpErrorWithMessage(_, let message) = error {
+                throw ImageProcessingError.processingFailed(message)
+            }
+            // For other errors, convert to network error
             throw ImageProcessingError.networkError(error)
         } catch {
             throw ImageProcessingError.networkError(error)

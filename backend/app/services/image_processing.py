@@ -51,6 +51,18 @@ class ImageProcessingService:
     """Service for handling image processing operations using Black Forest Labs APIs"""
     
     @staticmethod
+    def _normalize_format(format_str: str) -> str:
+        """Convert format string to BFL API expected format"""
+        if format_str.lower() == "jpg":
+            return "jpeg"
+        elif format_str.lower() in ["png", "jpeg"]:
+            return format_str.lower()
+        else:
+            # Default to PNG for unknown formats
+            print(f"⚠️ Unknown format '{format_str}', defaulting to PNG")
+            return "png"
+    
+    @staticmethod
     def _http_json(url: str, body: dict, timeout=180):
         """Make HTTP request to BFL API"""
         if not BFL_API_KEY:
@@ -224,13 +236,16 @@ class ImageProcessingService:
                 detail="Cannot use local file:// URLs with BFL API. Please configure DigitalOcean Spaces (DO_SPACES_KEY, DO_SPACES_SECRET, DO_SPACES_BUCKET in .env)"
             )
         
+        # Normalize format for BFL API (jpg -> jpeg)
+        normalized_format = ImageProcessingService._normalize_format(out_format)
+        
         # Step 1: Create the job
         url = f"{BFL_API_BASE}/flux-kontext-pro"
         body = {
             "prompt": prompt,
             "input_image": image_url,  # FIXED: BFL uses "input_image" not "image"
             "strength": strength,
-            "output_format": out_format
+            "output_format": normalized_format
         }
         if seed:
             body["seed"] = seed
@@ -300,6 +315,10 @@ class ImageProcessingService:
                     print(f"🚫 Content moderation triggered: {result}")
                     raise HTTPException(status_code=400, detail="Image content was flagged by moderation system. Please try a different image.")
                 
+                elif status == "Request Moderated":
+                    print(f"🚫 Request moderation triggered: {result}")
+                    raise HTTPException(status_code=400, detail="Request was flagged by moderation system. Please try again with a different image.")
+                
                 # Status is Pending/Processing - continue polling
                 
             except requests.exceptions.RequestException as e:
@@ -315,13 +334,16 @@ class ImageProcessingService:
     @staticmethod
     def flux_fill(image_url: str, prompt: str, mask_url: Optional[str] = None, seed: Optional[int] = None, out_format: str = "png") -> str:
         """Call BFL Flux Fill API for inpainting"""
+        # Normalize format for BFL API (jpg -> jpeg)
+        normalized_format = ImageProcessingService._normalize_format(out_format)
+        
         url = f"{BFL_API_BASE}/flux-pro-1.0-fill-finetuned"
         body = {
             "prompt": prompt,
             "input_image": image_url,  # FIXED: BFL uses "input_image"
             "mask": mask_url,
             "seed": seed,
-            "output_format": out_format
+            "output_format": normalized_format
         }
         data = ImageProcessingService._http_json(url, body)
         return data.get("output_url") or (data.get("output") or [None])[0]
@@ -401,7 +423,7 @@ class ImageProcessingService:
             prompt=prompt,
             strength=0.8 if req.quality_target == "standard" else 0.9,
             seed=req.seed,
-            out_format=req.output_format
+            out_format=ImageProcessingService._normalize_format(req.output_format)
         )
         if not out_url:
             raise HTTPException(status_code=502, detail="No output from Kontext")
@@ -437,7 +459,7 @@ class ImageProcessingService:
                 final_url = out_url
 
         meta = {
-            "steps": ["preclean", "flux_kontext", "finish"],
+            "steps": "preclean, flux_kontext, finish",
             "quality_target": req.quality_target,
             "aspect_ratio": req.aspect_ratio
         }
@@ -581,7 +603,7 @@ class ImageProcessingService:
             "subject_b_processed": subject_b_url,
             "composite_url": composite_url,
             "aspect_ratio": req.aspect_ratio,
-            "steps": ["remove_bg", "composite", "blend", "finish"]
+            "steps": "remove_bg, composite, blend, finish"
         }
         return JobResult(output_url=final_url, meta=meta)
 
@@ -610,7 +632,7 @@ class ImageProcessingService:
             prompt=prompt,
             strength=0.7,
             seed=req.seed,
-            out_format=req.output_format
+            out_format=ImageProcessingService._normalize_format(req.output_format)
         )
         
         # Always migrate BFL URL to permanent storage
@@ -630,7 +652,7 @@ class ImageProcessingService:
         meta = {
             "target_age": req.target_age,
             "aspect_ratio": req.aspect_ratio,
-            "steps": ["timeline_transform", "finish"]
+            "steps": "timeline_transform, finish"
         }
         return JobResult(output_url=final_url, meta=meta)
 
@@ -660,7 +682,7 @@ class ImageProcessingService:
             prompt=prompt,
             strength=0.75,
             seed=req.seed,
-            out_format=req.output_format
+            out_format=ImageProcessingService._normalize_format(req.output_format)
         )
         
         # Always migrate BFL URL to permanent storage
@@ -682,7 +704,7 @@ class ImageProcessingService:
         meta = {
             "celebrity_style": req.celebrity_style,
             "aspect_ratio": req.aspect_ratio,
-            "steps": ["celebrity_transform", "finish"]
+            "steps": "celebrity_transform, finish"
         }
         return JobResult(output_url=final_url, meta=meta)
 
@@ -711,17 +733,12 @@ class ImageProcessingService:
         subject_a_url = ImageProcessingService._save_image(subject_a_nobg, "png")
         subject_b_url = ImageProcessingService._save_image(subject_b_nobg, "png")
         
-        # Generate reunite background
-        background_prompt = req.background_prompt or "warm emotional background with soft lighting perfect for a reunification moment"
-        background_url = ImageProcessingService.flux_ultra_background(
-            prompt=background_prompt,
-            seed=req.seed,
-            aspect_ratio=req.aspect_ratio
-        )
+        # Create a simple warm background instead of generating
+        bg_w = 1024
+        bg_h = int(bg_w * (1.0 if req.aspect_ratio == "1:1" else (1.25 if req.aspect_ratio == "4:5" else (1.0 / 1.77 if req.aspect_ratio == "16:9" else 1.0))))
         
-        # Composite
-        background = ImageProcessingService._download_image(background_url)
-        bg_w, bg_h = background.size
+        # Create gradient background
+        background = Image.new('RGB', (bg_w, bg_h), color=(255, 245, 235))  # Warm cream background
         max_height = int(bg_h * 0.6)
         
         # Resize and position subjects
@@ -773,9 +790,8 @@ class ImageProcessingService:
                 # final_url already set
         
         meta = {
-            "background_prompt": background_prompt,
             "aspect_ratio": req.aspect_ratio,
-            "steps": ["reunite", "composite", "blend", "finish"]
+            "steps": "reunite, composite, blend, finish"
         }
         return JobResult(output_url=final_url, meta=meta)
 
@@ -805,7 +821,7 @@ class ImageProcessingService:
                 prompt=prompt,
                 strength=0.7,
                 seed=req.seed,
-                out_format=req.output_format
+                out_format=ImageProcessingService._normalize_format(req.output_format)
             )
             
             # Always migrate BFL URL to permanent storage
@@ -824,7 +840,7 @@ class ImageProcessingService:
             meta = {
                 "style": req.style,
                 "aspect_ratio": req.aspect_ratio,
-                "steps": ["enhance", "finish"]
+                "steps": "enhance, finish"
             }
             return JobResult(output_url=final_url, meta=meta)
         
@@ -853,9 +869,9 @@ class ImageProcessingService:
             
             meta = {
                 "style": "collage",
-                "image_count": len(req.images),
+                "image_count": str(len(req.images)),
                 "aspect_ratio": req.aspect_ratio,
-                "steps": ["collage", "finish"]
+                "steps": "collage, finish"
             }
             return JobResult(output_url=final_url, meta=meta)
         

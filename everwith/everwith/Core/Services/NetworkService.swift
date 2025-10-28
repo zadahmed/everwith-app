@@ -93,21 +93,26 @@ class NetworkService: ObservableObject {
                 throw NetworkError.sessionExpired
             }
             
-            // Handle content moderation (400 Bad Request)
-            if httpResponse.statusCode == 400 {
-                // Try to extract error message from response
+            // Handle error responses (400, 500, etc.)
+            guard httpResponse.statusCode == 200 else {
+                // Try to extract error message from response body
+                var errorMessage: String?
                 if let errorData = try? JSONDecoder().decode([String: String].self, from: data),
                    let detail = errorData["detail"] {
-                    if detail.contains("Content Moderated") || detail.contains("content was flagged") {
+                    errorMessage = detail
+                    
+                    // Check for content moderation specifically
+                    if detail.contains("Content Moderated") || detail.contains("Request Moderated") || detail.contains("flagged by moderation") {
                         throw NetworkError.contentModerated(detail)
                     }
+                }
+                
+                // Throw with extracted message if available
+                if let message = errorMessage {
+                    throw NetworkError.httpErrorWithMessage(statusCode: httpResponse.statusCode, message: message)
+                } else {
                     throw NetworkError.httpError(httpResponse.statusCode)
                 }
-                throw NetworkError.httpError(httpResponse.statusCode)
-            }
-            
-            guard httpResponse.statusCode == 200 else {
-                throw NetworkError.httpError(httpResponse.statusCode)
             }
             
             let decodedResponse = try createFlexibleDecoder().decode(responseType, from: data)
@@ -173,6 +178,7 @@ enum NetworkError: LocalizedError {
     case sessionExpired
     case invalidResponse
     case httpError(Int)
+    case httpErrorWithMessage(statusCode: Int, message: String)
     case networkError(Error)
     case decodingError(Error)
     case contentModerated(String)
@@ -185,6 +191,8 @@ enum NetworkError: LocalizedError {
             return "Invalid response from server"
         case .httpError(let code):
             return "HTTP error: \(code)"
+        case .httpErrorWithMessage(let statusCode, let message):
+            return message
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         case .decodingError(let error):

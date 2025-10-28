@@ -49,7 +49,6 @@ struct AppCoordinator: View {
     @StateObject private var authService = AuthenticationService()
     @StateObject private var sessionManager = SessionManager.shared
     @State private var hasCompletedOnboarding = false
-    @State private var showSessionExpiredAlert = false
     
     var body: some View {
         content
@@ -83,22 +82,6 @@ struct AppCoordinator: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .onboardingReset)) { _ in
                 hasCompletedOnboarding = false
-            }
-            .onReceive(sessionManager.$sessionExpired) { expired in
-                if expired {
-                    showSessionExpiredAlert = true
-                }
-            }
-            .alert("Session Expired", isPresented: $showSessionExpiredAlert) {
-                Button("OK") {
-                    sessionManager.clearSessionExpired()
-                    // Force logout
-                    Task {
-                        await authService.signOut()
-                    }
-                }
-            } message: {
-                Text("Your session has expired. Please sign in again.")
             }
     }
     

@@ -62,18 +62,22 @@ struct AppCoordinator: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .onboardingCompleted)) { _ in
                 hasCompletedOnboarding = true
-                // Force check authentication state after onboarding completes
-                // If user is not authenticated, they should see the auth screen
-                print("📱 ONBOARDING COMPLETED: Checking auth state")
+                print("📱 ONBOARDING COMPLETED: Routing to authentication")
+                
+                // CRITICAL: After onboarding, user MUST authenticate
+                // Force authentication state to unauthenticated to show login screen
+                // We don't want to check for existing sessions - user must sign in fresh
+                print("🔐 ONBOARDING COMPLETED: Forcing authentication screen")
+                print("🔐 ONBOARDING COMPLETED: Will NOT route to HomeView without authentication")
+                
                 Task {
-                    // Give it a moment for state to update
-                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                    // Force authentication check
+                    // Give it a moment for auth state to clear (from OnboardingView)
+                    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                    
                     await MainActor.run {
-                        if case .loading = authService.authenticationState {
-                            print("⚠️ AUTH STATE: Still loading, setting to unauthenticated")
-                            authService.authenticationState = .unauthenticated
-                        }
+                        // Always show authentication screen after onboarding
+                        print("🔐 SETTING AUTH STATE: unauthenticated (forcing login)")
+                        authService.authenticationState = .unauthenticated
                     }
                 }
             }

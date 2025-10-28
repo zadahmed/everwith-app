@@ -25,7 +25,6 @@ struct ModernAuthenticationView: View {
     @State private var buttonPressedGoogle: Bool = false
     @State private var contentOpacity: Double = 0
     @State private var logoScale: CGFloat = 0.8
-    @State private var keyboardHeight: CGFloat = 0
     
     enum FocusedField {
         case name, email, password, confirmPassword
@@ -34,10 +33,7 @@ struct ModernAuthenticationView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Clean White Background
-                CleanWhiteBackground()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .ignoresSafeArea(.all, edges: .all)
+                backgroundView(geometry: geometry)
                 
                 VStack(spacing: 0) {
                     // Header Section (fixed)
@@ -201,7 +197,7 @@ struct ModernAuthenticationView: View {
                                         title: "Full Name",
                                         text: $name,
                                         icon: "person.fill",
-                                        focusedTextField: $focusedTextField,
+                                        field: $focusedField,
                                         fieldType: .name,
                                         geometry: geometry
                                     )
@@ -216,7 +212,7 @@ struct ModernAuthenticationView: View {
                                     text: $email,
                                     icon: "envelope.fill",
                                     keyboardType: .emailAddress,
-                                    focusedTextField: $focusedTextField,
+                                    field: $focusedField,
                                     fieldType: .email,
                                     geometry: geometry
                                 )
@@ -229,7 +225,7 @@ struct ModernAuthenticationView: View {
                                     title: "Password",
                                     text: $password,
                                     showPassword: $showPassword,
-                                    focusedTextField: $focusedTextField,
+                                    field: $focusedField,
                                     fieldType: .password,
                                     geometry: geometry
                                 )
@@ -243,7 +239,7 @@ struct ModernAuthenticationView: View {
                                         title: "Confirm Password",
                                         text: $confirmPassword,
                                         showPassword: $showConfirmPassword,
-                                        focusedTextField: $focusedTextField,
+                                        field: $focusedField,
                                         fieldType: .confirmPassword,
                                         geometry: geometry
                                     )
@@ -477,6 +473,9 @@ struct ModernAuthenticationView: View {
                                     .padding(.horizontal, geometry.adaptivePadding())
                                     .opacity(contentOpacity)
                             }
+                            
+                            // Padding at bottom for keyboard spacing
+                            Color.clear.frame(height: 300)
                         }
                         .padding(.all, geometry.adaptivePadding())
                         .background(
@@ -510,14 +509,18 @@ struct ModernAuthenticationView: View {
                     }
                     .padding(.horizontal, geometry.adaptivePadding())
                     .padding(.bottom, 16)
-                    .onChange(of: focusedTextField) { field in
+                    .onChange(of: focusedField) { field in
                         if let field = field {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                proxy.scrollTo(field, anchor: .center)
+                            // Add small delay to ensure keyboard is shown
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    proxy.scrollTo(field, anchor: .center)
+                                }
                             }
                         }
                     }
                     }
+                    .scrollDismissesKeyboard(.interactively)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -545,6 +548,15 @@ struct ModernAuthenticationView: View {
         } message: {
             Text(errorMessage ?? "An error occurred during authentication. Please try again.")
         }
+    }
+    
+    // MARK: - View Builders
+    
+    @ViewBuilder
+    private func backgroundView(geometry: GeometryProxy) -> some View {
+        CleanWhiteBackground()
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .ignoresSafeArea(.all, edges: .all)
     }
     
     // MARK: - Computed Properties
@@ -694,7 +706,7 @@ struct ModernTextField: View {
     @Binding var text: String
     let icon: String
     var keyboardType: UIKeyboardType = .default
-    @Binding var focusedTextField: ModernAuthenticationView.FocusedField?
+    @FocusState.Binding var field: ModernAuthenticationView.FocusedField?
     let fieldType: ModernAuthenticationView.FocusedField
     let geometry: GeometryProxy
     
@@ -728,9 +740,8 @@ struct ModernTextField: View {
                     .keyboardType(keyboardType)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
-                    .onTapGesture {
-                        focusedTextField = fieldType
-                    }
+                    .focused($field, equals: fieldType)
+                    .submitLabel(fieldType == .password || fieldType == .confirmPassword ? .done : .next)
             }
             .frame(height: 48)
             .padding(.horizontal, 14)
@@ -740,8 +751,8 @@ struct ModernTextField: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .strokeBorder(
-                                focusedTextField == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
-                                lineWidth: focusedTextField == fieldType ? 2 : 1
+                                field == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
+                                lineWidth: field == fieldType ? 2 : 1
                             )
                     )
             )
@@ -755,7 +766,7 @@ struct ModernPasswordField: View {
     let title: String
     @Binding var text: String
     @Binding var showPassword: Bool
-    @Binding var focusedTextField: ModernAuthenticationView.FocusedField?
+    @FocusState.Binding var field: ModernAuthenticationView.FocusedField?
     let fieldType: ModernAuthenticationView.FocusedField
     let geometry: GeometryProxy
     
@@ -789,9 +800,8 @@ struct ModernPasswordField: View {
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                        .onTapGesture {
-                            focusedTextField = fieldType
-                        }
+                        .focused($field, equals: fieldType)
+                        .submitLabel(.done)
                 } else {
                     SecureField(title, text: $text)
                         .font(.system(
@@ -801,9 +811,8 @@ struct ModernPasswordField: View {
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                        .onTapGesture {
-                            focusedTextField = fieldType
-                        }
+                        .focused($field, equals: fieldType)
+                        .submitLabel(.done)
                 }
                 
                 Button(action: {
@@ -826,8 +835,8 @@ struct ModernPasswordField: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .strokeBorder(
-                                focusedTextField == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
-                                lineWidth: focusedTextField == fieldType ? 2 : 1
+                                field == fieldType ? AnyShapeStyle(LinearGradient.primaryBrand) : AnyShapeStyle(Color.subtleBorder),
+                                lineWidth: field == fieldType ? 2 : 1
                             )
                     )
             )

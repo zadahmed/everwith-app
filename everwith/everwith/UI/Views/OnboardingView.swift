@@ -319,17 +319,21 @@ struct OnboardingView: View {
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
         onboardingState = .completed
         
-        // Force authentication state to unauthenticated if not already authenticated
-        // This ensures that after onboarding, users go to the auth screen, not the main app
-        print("✅ ONBOARDING: Marked as completed")
-        print("🔐 ONBOARDING: Will show auth screen if not authenticated")
+
+        // Clear any existing authentication state to force re-authentication
+        // This ensures that even if there's a cached session, user goes through auth flow
+        UserDefaults.standard.removeObject(forKey: "current_user")
+        UserDefaults.standard.removeObject(forKey: "access_token")
+        UserDefaults.standard.removeObject(forKey: "token_expiry")
+        
+        print("🧹 ONBOARDING: Cleared any existing auth state")
         
         // Post notification to update app state with delay to ensure UI is ready
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             NotificationCenter.default.post(name: .onboardingCompleted, object: nil)
         }
         
-        print("Onboarding completed!")
+        print("✅ ONBOARDING: Completed and ready for authentication")
     }
     
     // MARK: - Adaptive Sizing Functions

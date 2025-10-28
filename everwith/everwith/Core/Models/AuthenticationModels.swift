@@ -91,17 +91,10 @@ struct GoogleAuthRequest: Codable {
 
 // MARK: - Backend Response Models
 struct AuthResponse: Codable {
-    let message: String
+    let message: String?
     let user: BackendUser
-    let access_token: String
-    let token_type: String
-    
-    enum CodingKeys: String, CodingKey {
-        case message
-        case user
-        case access_token
-        case token_type
-    }
+    let accessToken: String
+    let tokenType: String?
 }
 
 struct BackendUser: Codable {
@@ -109,21 +102,10 @@ struct BackendUser: Codable {
     let email: String
     let name: String
     let profileImageUrl: String?
-    let isGoogleUser: Bool
-    let isActive: Bool
+    let isGoogleUser: Bool?
+    let isActive: Bool?
     let createdAt: Date?
     let updatedAt: Date?
-    
-    enum CodingKeys: String, CodingKey {
-        case id
-        case email
-        case name
-        case profileImageUrl = "profile_image_url"
-        case isGoogleUser = "is_google_user"
-        case isActive = "is_active"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
 }
 
 struct ErrorResponse: Codable {

@@ -438,32 +438,55 @@ class AuthenticationService: ObservableObject {
                     let decoder = JSONDecoder()
                     decoder.keyDecodingStrategy = .convertFromSnakeCase
                     
-                    // Use flexible date handling
-                    let formatter = ISO8601DateFormatter()
-                    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    // Use flexible date handling - return nil if date can't be parsed
                     decoder.dateDecodingStrategy = .custom { decoder in
                         let container = try decoder.singleValueContainer()
                         let dateString = try container.decode(String.self)
                         
-                        // Try ISO8601 first
-                        if let date = formatter.date(from: dateString) {
+                        // Try multiple date formats in order of specificity
+                        let formats = [
+                            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // With microseconds (6 digits)
+                            "yyyy-MM-dd'T'HH:mm:ss.SSS",     // With milliseconds (3 digits)
+                            "yyyy-MM-dd'T'HH:mm:ss.SS",      // With centiseconds (2 digits)
+                            "yyyy-MM-dd'T'HH:mm:ss.S",       // With deciseconds (1 digit)
+                            "yyyy-MM-dd'T'HH:mm:ss",         // Without fractions
+                            "yyyy-MM-dd"                      // Just date
+                        ]
+                        
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                        dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
+                        
+                        for format in formats {
+                            dateFormatter.dateFormat = format
+                            if let date = dateFormatter.date(from: dateString) {
+                                return date
+                            }
+                        }
+                        
+                        // Try ISO8601 with fractional seconds
+                        let iso8601Formatter = ISO8601DateFormatter()
+                        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                        if let date = iso8601Formatter.date(from: dateString) {
                             return date
                         }
                         
-                        // Try simple format
-                        let simpleFormatter = ISO8601DateFormatter()
-                        if let date = simpleFormatter.date(from: dateString) {
+                        // Try ISO8601 without fractional seconds
+                        let simpleISO8601 = ISO8601DateFormatter()
+                        if let date = simpleISO8601.date(from: dateString) {
                             return date
                         }
                         
-                        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(dateString)")
+                        // If all fails, return current date as fallback
+                        print("⚠️ DATE DECODE: Could not parse date '\(dateString)', using current date")
+                        return Date()
                     }
                     
                     // Try to decode - with graceful error handling
                     let authResponse = try decoder.decode(AuthResponse.self, from: data)
                     
                     // Validate critical fields exist
-                    guard !authResponse.access_token.isEmpty else {
+                    guard !authResponse.accessToken.isEmpty else {
                         print("❌ AUTH ERROR: Missing access token")
                         return .failure(AuthenticationError.backendError("Invalid response: missing access token"))
                     }
@@ -475,18 +498,28 @@ class AuthenticationService: ObservableObject {
                     
                     print("✅ AUTH SUCCESS: Successfully decoded response")
                     print("👤 USER DATA: ID=\(authResponse.user.id), Email=\(authResponse.user.email), Name=\(authResponse.user.name)")
-                    print("🎫 ACCESS TOKEN: \(authResponse.access_token.prefix(20))...")
+                    print("🎫 ACCESS TOKEN: \(authResponse.accessToken.prefix(20))...")
+                    
+                    // Determine provider from response or use passed parameter
+                    let userProvider: User.AuthProvider
+                    if let isGoogle = authResponse.user.isGoogleUser, isGoogle {
+                        userProvider = .google
+                    } else if provider == .google {
+                        userProvider = .google
+                    } else {
+                        userProvider = provider
+                    }
                     
                     let user = User(
                         id: authResponse.user.id,
                         email: authResponse.user.email,
                         name: authResponse.user.name,
                         profileImageURL: authResponse.user.profileImageUrl,
-                        provider: provider,
+                        provider: userProvider,
                         createdAt: authResponse.user.createdAt ?? Date()
                     )
                     
-                    await signInUser(user, accessToken: authResponse.access_token)
+                    await signInUser(user, accessToken: authResponse.accessToken)
                     print("🎉 AUTH COMPLETE: User signed in successfully")
                     return .success(user)
                 } catch {

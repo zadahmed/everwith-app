@@ -188,6 +188,28 @@ class MonetizationManager: ObservableObject {
         }
     }
     
+    // MARK: - Centralized Export Functions
+    
+    /// Export and save image (applies watermark for free users)
+    func exportImageToPhotos(image: UIImage, completion: ((Bool) -> Void)? = nil) {
+        // Apply watermark if needed
+        let imageToSave = applyWatermarkIfNeeded(to: image)
+        
+        UIImageWriteToSavedPhotosAlbum(imageToSave, nil, nil, nil)
+        
+        // Provide haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        
+        completion?(true)
+    }
+    
+    /// Export and share image (applies watermark for free users)
+    func exportImageToShare(image: UIImage) -> Any {
+        // Apply watermark if needed
+        return applyWatermarkIfNeeded(to: image)
+    }
+    
     // MARK: - Save Flow with Quality Choice
     
     func saveImageWithQualityChoice(
@@ -253,32 +275,71 @@ class MonetizationManager: ObservableObject {
     }
     
     private func addWatermark(to image: UIImage) -> UIImage {
-        // Add watermark to free version
-        let renderer = UIGraphicsImageRenderer(size: image.size)
+        // Add professional watermark to the image
+        let scale: CGFloat = image.scale
+        let size = image.size
+        let renderer = UIGraphicsImageRenderer(size: size, format: UIGraphicsImageRendererFormat.default())
+        
         return renderer.image { context in
-            image.draw(at: .zero)
+            // Draw the original image
+            image.draw(in: CGRect(origin: .zero, size: size))
             
-            // Add watermark
-            let watermarkText = "Made with Everwith"
+            // Watermark configuration
+            let watermarkText = "Made with EverWith"
+            
+            // Calculate watermark size based on image size (responsive)
+            let baseFontSize = max(20, min(size.width * 0.025, 24))
+            let font = UIFont.systemFont(ofSize: baseFontSize, weight: .semibold)
+            
             let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 16, weight: .medium),
-                .foregroundColor: UIColor.white.withAlphaComponent(0.7)
+                .font: font,
+                .foregroundColor: UIColor.white.withAlphaComponent(0.95)
             ]
             
             let textSize = watermarkText.size(withAttributes: attributes)
+            
+            // Position in bottom right corner with padding
+            let padding: CGFloat = max(20, size.width * 0.02)
             let textRect = CGRect(
-                x: image.size.width - textSize.width - 20,
-                y: image.size.height - textSize.height - 20,
+                x: size.width - textSize.width - padding,
+                y: size.height - textSize.height - padding,
                 width: textSize.width,
                 height: textSize.height
             )
             
-            // Add background for watermark
-            UIColor.black.withAlphaComponent(0.3).setFill()
-            context.fill(textRect.insetBy(dx: -8, dy: -4))
+            // Draw background pill shape for watermark
+            let cornerRadius = textRect.height / 2
+            let backgroundRect = textRect.insetBy(dx: -padding * 0.4, dy: -padding * 0.2)
             
+            // Shadow
+            context.cgContext.setShadow(
+                offset: CGSize(width: 0, height: 2),
+                blur: 8,
+                color: UIColor.black.withAlphaComponent(0.3).cgColor
+            )
+            
+            // Background pill with gradient effect
+            let path = UIBezierPath(
+                roundedRect: backgroundRect,
+                cornerRadius: cornerRadius
+            )
+            
+            // Semi-transparent dark background
+            UIColor.black.withAlphaComponent(0.6).setFill()
+            context.cgContext.fillPath()
+            
+            // Draw the text
             watermarkText.draw(in: textRect, withAttributes: attributes)
         }
+    }
+    
+    // Apply watermark for free users on ALL saved images
+    func applyWatermarkIfNeeded(to image: UIImage) -> UIImage {
+        // Always add watermark for free users
+        if revenueCatService.subscriptionStatus.tier == .free {
+            return addWatermark(to: image)
+        }
+        return image
     }
     
     // MARK: - Viral Sharing Incentives

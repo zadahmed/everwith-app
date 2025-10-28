@@ -126,17 +126,14 @@ struct FamilyFlow: View {
     
     private func savePhoto() {
         guard let image = processedImage else { return }
-        monetizationManager.saveImageWithQualityChoice(image: image) { savedImage, isHD in
-            UIImageWriteToSavedPhotosAlbum(savedImage, nil, nil, nil)
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.success)
-        }
+        monetizationManager.exportImageToPhotos(image: image)
     }
     
     private func sharePhoto() {
         guard let image = processedImage else { return }
+        let imageToShare = monetizationManager.exportImageToShare(image: image)
         let activityVC = UIActivityViewController(
-            activityItems: [image],
+            activityItems: [imageToShare],
             applicationActivities: nil
         )
         

@@ -203,39 +203,28 @@ struct MemoryMergeFlow: View {
     private func savePhoto() {
         guard let image = processedImage else { return }
         
-        // Use monetization manager for save with quality choice
-        monetizationManager.saveImageWithQualityChoice(image: image) { savedImage, isHD in
-            // Save the image to photo library
-            UIImageWriteToSavedPhotosAlbum(savedImage, nil, nil, nil)
-            
-            // Track analytics
-            if isHD {
-                print("📊 HD export used")
-                print("📊 Watermark removed")
+        // Use centralized export function
+        monetizationManager.exportImageToPhotos(image: image) { success in
+            if success {
+                print("📊 Image saved successfully")
             }
-            
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.success)
         }
     }
     
     private func sharePhoto() {
         guard let image = processedImage else { return }
         
-        // Track share initiated
-        print("📊 Share initiated")
+        // Use centralized export function
+        let imageToShare = monetizationManager.exportImageToShare(image: image)
         
         let activityVC = UIActivityViewController(
-            activityItems: [image],
+            activityItems: [imageToShare],
             applicationActivities: nil
         )
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
             rootVC.present(activityVC, animated: true)
-            
-            // Track share completed
-            print("📊 Share completed")
         }
     }
     

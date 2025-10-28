@@ -44,12 +44,8 @@ struct AppConfiguration {
     // MARK: - API Configuration
     struct API {
         static var baseURL: String {
-            // Use localhost ONLY for simulator, otherwise use Heroku URL
-            if AppConfiguration.isRunningOnSimulator {
-                return "http://localhost:8000"
-            } else {
-                return "https://everwith-backend-421b30a963d9.herokuapp.com"
-            }
+            // Always use backend API
+            return "https://everwith-backend-421b30a963d9.herokuapp.com"
         }
         
         static var timeout: TimeInterval {

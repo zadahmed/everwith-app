@@ -73,20 +73,21 @@ struct OnboardingView: View {
                 VStack(spacing: 0) {
                     // Status bar spacer
                     Spacer()
-                        .frame(height: max(geometry.safeAreaInsets.top, 20) + adaptiveSpacing(40, for: geometry))
+                        .frame(height: max(geometry.safeAreaInsets.top, 20))
                     
                     // Main Content
                     VStack(spacing: 0) {
-                        // Progress Indicator
+                        // Progress Indicator with top padding
                         OnboardingProgressIndicator(
                             currentIndex: min(currentCardIndex, onboardingCards.count - 1),
                             totalCount: onboardingCards.count,
                             geometry: geometry
                         )
                         .padding(.horizontal, adaptivePadding(for: geometry))
-                        .padding(.bottom, adaptiveSpacing(24, for: geometry))
+                        .padding(.top, adaptiveSpacing(16, for: geometry))
+                        .padding(.bottom, adaptiveSpacing(12, for: geometry))
                         
-                        // Single Card Content
+                        // Single Card Content with fixed height - increased to fill more space
                         if currentCardIndex < onboardingCards.count {
                             SingleOnboardingCard(
                                 cardData: onboardingCards[currentCardIndex],
@@ -95,12 +96,14 @@ struct OnboardingView: View {
                             .scaleEffect(showContent ? 1.0 : 0.8)
                             .opacity(showContent ? 1.0 : 0.0)
                             .animation(.spring(response: 0.8, dampingFraction: 0.8), value: showContent)
+                            .frame(height: geometry.size.height * 0.65) // Increased to 65% of screen height
                         }
                         
                         Spacer()
+                            .frame(height: adaptiveSpacing(8, for: geometry))
                         
                         // Action Section
-                        VStack(spacing: adaptiveSpacing(24, for: geometry)) {
+                        VStack(spacing: adaptiveSpacing(16, for: geometry)) {
                             // Card Navigation
                             if currentCardIndex < onboardingCards.count - 1 {
                                 Button(action: {
@@ -346,12 +349,11 @@ struct SingleOnboardingCard: View {
     @State private var imageScale: CGFloat = 0.9
     @State private var imageOpacity: Double = 0
     @State private var textOpacity: Double = 0
-    @State private var featuresOpacity: Double = 0
     
     var body: some View {
-        VStack(spacing: adaptiveSpacing(20, for: geometry)) {
-            // Hero Image Section - Main Focus
-            VStack(spacing: adaptiveSpacing(12, for: geometry)) {
+        GeometryReader { cardGeometry in
+            VStack(spacing: 0) {
+                // Hero Image Section - Takes 65% of card space
                 ZStack {
                     // Background glow effect
                     Circle()
@@ -365,80 +367,56 @@ struct SingleOnboardingCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: adaptiveSize(200, for: geometry), height: adaptiveSize(200, for: geometry))
-                        .blur(radius: adaptiveSpacing(20, for: geometry))
+                        .frame(width: cardGeometry.size.width * 0.85, 
+                               height: cardGeometry.size.width * 0.85)
+                        .blur(radius: adaptiveSpacing(30, for: geometry))
                         .opacity(imageOpacity)
                     
-                    // Main product image
+                    // Main product image - Large and centered
                     Image(cardData.imageName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: adaptiveSize(160, for: geometry), height: adaptiveSize(160, for: geometry))
+                        .frame(width: cardGeometry.size.width * 0.75, 
+                               height: cardGeometry.size.width * 0.75)
                         .scaleEffect(imageScale)
                         .shadow(
                             color: Color.black.opacity(0.15),
-                            radius: adaptiveSpacing(20, for: geometry),
+                            radius: adaptiveSpacing(25, for: geometry),
                             x: 0,
-                            y: adaptiveSpacing(8, for: geometry)
+                            y: adaptiveSpacing(10, for: geometry)
                         )
                         .opacity(imageOpacity)
                 }
-            }
-            
-            // Content Section
-            VStack(spacing: adaptiveSpacing(16, for: geometry)) {
-                // Title and Subtitle
-                VStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                .frame(width: cardGeometry.size.width)
+                .frame(height: cardGeometry.size.height * 0.72)
+                
+                // Content Section - Takes only 28% of card space, super simple
+                VStack(spacing: adaptiveSpacing(4, for: geometry)) {
+                    // Title - Simple and short
                     Text(cardData.title)
-                        .font(.system(size: adaptiveFontSize(28, for: geometry), weight: .bold, design: .rounded))
+                        .font(.system(size: adaptiveFontSize(24, for: geometry), weight: .bold, design: .rounded))
                         .foregroundColor(.deepPlum)
                         .multilineTextAlignment(.center)
+                        .lineLimit(2)
                         .minimumScaleFactor(0.7)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: false)
                         .opacity(textOpacity)
+                        .padding(.horizontal, adaptiveSpacing(8, for: geometry))
                     
+                    // Subtitle - Short
                     Text(cardData.subtitle)
-                        .font(.system(size: adaptiveFontSize(18, for: geometry), weight: .semibold, design: .rounded))
+                        .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .medium))
                         .foregroundColor(.softPlum)
                         .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.8)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: false)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .opacity(textOpacity)
+                        .padding(.horizontal, adaptiveSpacing(8, for: geometry))
                 }
-                
-                // Description
-                Text(cardData.description)
-                    .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .regular))
-                    .foregroundColor(.deepPlum.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(adaptiveSpacing(4, for: geometry))
-                    .lineLimit(5)
-                    .minimumScaleFactor(0.85)
-                    .fixedSize(horizontal: false, vertical: false)
-                    .opacity(textOpacity)
-                
-                // Features List
-                VStack(spacing: adaptiveSpacing(8, for: geometry)) {
-                    ForEach(cardData.features, id: \.self) { feature in
-                        HStack(spacing: adaptiveSpacing(8, for: geometry)) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .semibold))
-                                .foregroundColor(.blushPink)
-                            
-                            Text(feature)
-                                .font(.system(size: adaptiveFontSize(14, for: geometry), weight: .medium))
-                                .foregroundColor(.deepPlum.opacity(0.8))
-                        }
-                        .opacity(featuresOpacity)
-                    }
-                }
-                .padding(.top, adaptiveSpacing(8, for: geometry))
+                .frame(width: cardGeometry.size.width)
+                .frame(height: cardGeometry.size.height * 0.28)
             }
-            .padding(.horizontal, adaptiveSpacing(24, for: geometry))
         }
-        .padding(adaptiveSpacing(24, for: geometry))
+        .padding(adaptiveSpacing(8, for: geometry))
         .background(
             RoundedRectangle(cornerRadius: adaptiveCornerRadius(24, for: geometry))
                 .fill(Color.pureWhite)
@@ -462,9 +440,6 @@ struct SingleOnboardingCard: View {
             }
             withAnimation(.easeOut(duration: 0.6).delay(0.3)) {
                 textOpacity = 1.0
-            }
-            withAnimation(.easeOut(duration: 0.5).delay(0.5)) {
-                featuresOpacity = 1.0
             }
         }
     }

@@ -24,6 +24,12 @@ struct ModernAuthenticationView: View {
     @State private var buttonPressedGoogle: Bool = false
     @State private var contentOpacity: Double = 0
     @State private var logoScale: CGFloat = 0.8
+    @State private var focusedField: String? = nil
+    @FocusState private var focusedTextField: FocusedField?
+    
+    enum FocusedField {
+        case name, email, password, confirmPassword
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -120,9 +126,10 @@ struct ModernAuthenticationView: View {
                         .offset(y: animateElements ? 0 : -20)
                     }
                     
-                    // Scrollable Form Content
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 18, for: geometry)) {
+                    // Scrollable Form Content with keyboard handling
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 18, for: geometry)) {
                             // Modern Segmented Control - Sign In / Sign Up
                             HStack(spacing: 0) {
                                 Button(action: {
@@ -199,15 +206,18 @@ struct ModernAuthenticationView: View {
                             )
                             
                             // Form Fields
-                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 14, for: geometry)) {
+                            VStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 16, for: geometry)) {
                                 // Name field (only for sign up)
                                 if isSignUp {
                                     ModernTextField(
                                         title: "Full Name",
                                         text: $name,
                                         icon: "person.fill",
+                                        focusedTextField: $focusedTextField,
+                                        fieldType: .name,
                                         geometry: geometry
                                     )
+                                    .id("name")
                                     .opacity(contentOpacity)
                                     .offset(x: animateElements ? 0 : -20)
                                 }
@@ -218,8 +228,11 @@ struct ModernAuthenticationView: View {
                                     text: $email,
                                     icon: "envelope.fill",
                                     keyboardType: .emailAddress,
+                                    focusedTextField: $focusedTextField,
+                                    fieldType: .email,
                                     geometry: geometry
                                 )
+                                .id("email")
                                 .opacity(contentOpacity)
                                 .offset(x: animateElements ? 0 : -20)
                                 
@@ -228,8 +241,11 @@ struct ModernAuthenticationView: View {
                                     title: "Password",
                                     text: $password,
                                     showPassword: $showPassword,
+                                    focusedTextField: $focusedTextField,
+                                    fieldType: .password,
                                     geometry: geometry
                                 )
+                                .id("password")
                                 .opacity(contentOpacity)
                                 .offset(x: animateElements ? 0 : -20)
                                 
@@ -239,8 +255,11 @@ struct ModernAuthenticationView: View {
                                         title: "Confirm Password",
                                         text: $confirmPassword,
                                         showPassword: $showConfirmPassword,
+                                        focusedTextField: $focusedTextField,
+                                        fieldType: .confirmPassword,
                                         geometry: geometry
                                     )
+                                    .id("confirmPassword")
                                     .opacity(contentOpacity)
                                     .offset(x: animateElements ? 0 : -20)
                                 }
@@ -503,6 +522,14 @@ struct ModernAuthenticationView: View {
                     }
                     .padding(.horizontal, geometry.adaptivePadding())
                     .padding(.bottom, ResponsiveDesign.adaptiveSpacing(baseSpacing: 24, for: geometry))
+                    .onChange(of: focusedTextField) { field in
+                        if let field = field {
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                proxy.scrollTo(field, anchor: .center)
+                            }
+                        }
+                    }
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -673,51 +700,53 @@ struct ModernTextField: View {
     @Binding var text: String
     let icon: String
     var keyboardType: UIKeyboardType = .default
+    let focusedTextField: FocusState<ModernAuthenticationView.FocusedField?>.Binding
+    let fieldType: ModernAuthenticationView.FocusedField
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(
-                    size: geometry.adaptiveFontSize(12),
-                    weight: .medium
+                    size: geometry.adaptiveFontSize(13),
+                    weight: .semibold
                 ))
                 .foregroundColor(.softPlum)
                 .lineLimit(1)
-                .minimumScaleFactor(0.9)
             
-            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry)) {
+            HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(
-                        size: geometry.adaptiveFontSize(17),
+                        size: 18,
                         weight: .semibold
                     ))
                     .foregroundStyle(
                         LinearGradient.primaryBrand
                     )
-                    .frame(width: geometry.adaptiveSize(22))
-                    .frame(minWidth: geometry.adaptiveSize(22))
+                    .frame(width: 24)
                 
                 TextField(title, text: $text)
                     .font(.system(
-                        size: geometry.adaptiveFontSize(15),
+                        size: 16,
                         weight: .medium
                     ))
                     .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                     .keyboardType(keyboardType)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
+                    .focused($focusedTextField, equals: fieldType)
             }
-            .padding(.horizontal, geometry.adaptivePadding())
-            .padding(.vertical, geometry.adaptivePadding())
+            .frame(height: 56)
+            .padding(.horizontal, 16)
             .background(
-                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
+                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
-                            .stroke(Color.subtleBorder, lineWidth: 1.5)
+                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                            .stroke(
+                                focusedTextField == fieldType ? LinearGradient.primaryBrand : Color.subtleBorder,
+                                lineWidth: focusedTextField == fieldType ? 2 : 1.5
+                            )
                     )
             )
         }
@@ -730,53 +759,51 @@ struct ModernPasswordField: View {
     let title: String
     @Binding var text: String
     @Binding var showPassword: Bool
+    @Binding var focusedTextField: ModernAuthenticationView.FocusedField?
+    let fieldType: ModernAuthenticationView.FocusedField
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 6, for: geometry)) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(
-                    size: geometry.adaptiveFontSize(12),
-                    weight: .medium
+                    size: geometry.adaptiveFontSize(13),
+                    weight: .semibold
                 ))
                 .foregroundColor(.softPlum)
                 .lineLimit(1)
-                .minimumScaleFactor(0.9)
             
-            HStack(spacing: ResponsiveDesign.adaptiveSpacing(baseSpacing: 10, for: geometry)) {
+            HStack(spacing: 12) {
                 Image(systemName: "lock.fill")
                     .font(.system(
-                        size: geometry.adaptiveFontSize(17),
+                        size: 18,
                         weight: .semibold
                     ))
                     .foregroundStyle(
                         LinearGradient.primaryBrand
                     )
-                    .frame(width: geometry.adaptiveSize(22))
-                    .frame(minWidth: geometry.adaptiveSize(22))
+                    .frame(width: 24)
                 
                 if showPassword {
                     TextField(title, text: $text)
                         .font(.system(
-                            size: geometry.adaptiveFontSize(15),
+                            size: 16,
                             weight: .medium
                         ))
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9)
+                        .focused($focusedTextField, equals: fieldType)
                 } else {
                     SecureField(title, text: $text)
                         .font(.system(
-                            size: geometry.adaptiveFontSize(15),
+                            size: 16,
                             weight: .medium
                         ))
                         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.3))
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9)
+                        .focused($focusedTextField, equals: fieldType)
                 }
                 
                 Button(action: {
@@ -784,22 +811,24 @@ struct ModernPasswordField: View {
                 }) {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
                         .font(.system(
-                            size: geometry.adaptiveFontSize(17),
+                            size: 18,
                             weight: .medium
                         ))
                         .foregroundColor(.softPlum)
-                        .frame(width: geometry.adaptiveSize(22))
-                        .frame(minWidth: geometry.adaptiveSize(22))
+                        .frame(width: 24)
                 }
             }
-            .padding(.horizontal, geometry.adaptivePadding())
-            .padding(.vertical, geometry.adaptivePadding())
+            .frame(height: 56)
+            .padding(.horizontal, 16)
             .background(
-                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
+                RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
                     .fill(Color(red: 0.97, green: 0.97, blue: 0.98))
                     .overlay(
-                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(14))
-                            .stroke(Color.subtleBorder, lineWidth: 1.5)
+                        RoundedRectangle(cornerRadius: geometry.adaptiveCornerRadius(16))
+                            .stroke(
+                                focusedTextField == fieldType ? LinearGradient.primaryBrand : Color.subtleBorder,
+                                lineWidth: focusedTextField == fieldType ? 2 : 1.5
+                            )
                     )
             )
         }

@@ -222,16 +222,18 @@ struct CreationCard: View {
             AsyncImage(url: creation.processedImageUrl.flatMap { URL(string: $0) }) { phase in
                 switch phase {
                 case .empty:
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .aspectRatio(3/4, contentMode: .fit)
-                        .overlay(
-                            ProgressView()
-                        )
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                        ProgressView()
+                            .tint(.blushPink)
+                    }
+                    .aspectRatio(3/4, contentMode: .fit)
                 case .success(let image):
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity)
                         .frame(height: geometry.size.width * 0.6)
                         .clipped()
                 case .failure:
@@ -246,6 +248,7 @@ struct CreationCard: View {
                     EmptyView()
                 }
             }
+            .background(Color.gray.opacity(0.05))
             
             // Info
             VStack(alignment: .leading, spacing: geometry.adaptiveSpacing(8)) {

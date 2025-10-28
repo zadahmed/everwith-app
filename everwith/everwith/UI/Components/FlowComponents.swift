@@ -103,7 +103,6 @@ struct ProgressAnimation: View {
     let queueTimeRemaining: Int
     let onPremiumTap: () -> Void
     
-    @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
     @State private var shimmerOffset: CGFloat = -200
     @State private var dotOffset1: Double = 0
@@ -125,57 +124,53 @@ struct ProgressAnimation: View {
                 
                 // Main Animation Container
                 VStack(spacing: adaptiveSpacing(32, for: geometry)) {
-                    // Enhanced Animated Logo Container
+                    // Modern Circular Progress Container
                     ZStack {
-                        // Outer rotating gradient ring
+                        // Outer static circle (background)
                         Circle()
-                            .trim(from: 0.25, to: 1.0)
                             .stroke(
-                                AngularGradient(
-                                    gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta, Color.blushPink]),
-                                    center: .center,
-                                    startAngle: .degrees(0),
-                                    endAngle: .degrees(360)
-                                ),
-                                style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                                Color.gray.opacity(0.15),
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
                             )
                             .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
-                            .rotationEffect(.degrees(rotationAngle))
-                            .blur(radius: 1)
                         
-                        // Middle rotating circle
+                        // Animated circular progress
                         Circle()
-                            .trim(from: 0.0, to: 0.5)
+                            .trim(from: 0, to: max(progress, 0.02))
                             .stroke(
-                                LinearGradient.primaryBrand,
-                                style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
                             )
-                            .frame(width: adaptiveSize(95, for: geometry), height: adaptiveSize(95, for: geometry))
-                            .rotationEffect(.degrees(-rotationAngle * 1.2))
+                            .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 0.3), value: progress)
                         
-                        // Inner pulsing circle with gradient
+                        // Pulsing background
                         Circle()
                             .fill(
                                 RadialGradient(
                                     gradient: Gradient(colors: [
-                                        Color.blushPink.opacity(0.6),
-                                        Color.roseMagenta.opacity(0.3)
+                                        Color.blushPink.opacity(0.15),
+                                        Color.roseMagenta.opacity(0.05)
                                     ]),
                                     center: .center,
-                                    startRadius: 15,
-                                    endRadius: 45
+                                    startRadius: 30,
+                                    endRadius: 60
                                 )
                             )
-                            .frame(width: adaptiveSize(90, for: geometry), height: adaptiveSize(90, for: geometry))
+                            .frame(width: adaptiveSize(100, for: geometry), height: adaptiveSize(100, for: geometry))
                             .scaleEffect(pulseScale)
-                            .blur(radius: 6)
                         
-                        // App logo with shadow
+                        // App logo
                         Image("AppLogo")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: adaptiveSize(52, for: geometry), height: adaptiveSize(52, for: geometry))
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .frame(width: adaptiveSize(50, for: geometry), height: adaptiveSize(50, for: geometry))
+                            .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
                     }
                     .frame(height: adaptiveSize(160, for: geometry))
                     
@@ -307,14 +302,9 @@ struct ProgressAnimation: View {
     }
     
     private func startAnimations() {
-        // Continuous rotation
-        withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
-            rotationAngle = 360
-        }
-        
         // Pulse animation
-        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-            pulseScale = 1.12
+        withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true)) {
+            pulseScale = 1.08
         }
         
         // Shimmer animation

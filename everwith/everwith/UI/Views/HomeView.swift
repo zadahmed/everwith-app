@@ -116,11 +116,6 @@ struct HomeView: View {
                                     .padding(.top, adaptiveSpacing(32, for: geometry))
                                     .opacity(cardOpacity)
                                 
-                                // Community Stories Feed
-                                CommunityStoriesFeed(recentImages: recentImages, geometry: geometry)
-                                    .padding(.top, adaptiveSpacing(32, for: geometry))
-                                    .opacity(cardOpacity)
-                                
                                 // Section: Go Premium
                                 VStack(alignment: .leading, spacing: adaptiveSpacing(8, for: geometry)) {
                                     Text("Go Premium")

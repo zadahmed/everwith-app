@@ -287,9 +287,9 @@ class MonetizationManager: ObservableObject {
             // Watermark configuration
             let watermarkText = "Made with EverWith"
             
-            // Calculate watermark size based on image size (responsive)
-            let baseFontSize = max(20, min(size.width * 0.025, 24))
-            let font = UIFont.systemFont(ofSize: baseFontSize, weight: .semibold)
+            // Calculate watermark size based on image size (responsive, but bigger now)
+            let baseFontSize = max(28, min(size.width * 0.035, 32))
+            let font = UIFont.systemFont(ofSize: baseFontSize, weight: .bold)
             
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: font,
@@ -298,24 +298,33 @@ class MonetizationManager: ObservableObject {
             
             let textSize = watermarkText.size(withAttributes: attributes)
             
-            // Position in bottom right corner with padding
-            let padding: CGFloat = max(20, size.width * 0.02)
-            let textRect = CGRect(
-                x: size.width - textSize.width - padding,
-                y: size.height - textSize.height - padding,
-                width: textSize.width,
-                height: textSize.height
+            // Icon size (slightly smaller than text height for balance)
+            let iconSize = textSize.height * 0.85
+            
+            // Position in bottom right corner with more padding
+            let padding: CGFloat = max(30, size.width * 0.035)
+            let iconSpacing: CGFloat = max(10, size.width * 0.015)
+            
+            // Calculate total watermark width (icon + spacing + text)
+            let totalWidth = iconSize + iconSpacing + textSize.width
+            let totalHeight = max(iconSize, textSize.height)
+            
+            // Background rectangle for the entire watermark
+            let backgroundPadding: CGFloat = padding * 0.8
+            let backgroundRect = CGRect(
+                x: size.width - totalWidth - backgroundPadding * 2,
+                y: size.height - totalHeight - backgroundPadding * 2,
+                width: totalWidth + backgroundPadding * 2,
+                height: totalHeight + backgroundPadding * 2
             )
             
-            // Draw background pill shape for watermark
-            let cornerRadius = textRect.height / 2
-            let backgroundRect = textRect.insetBy(dx: -padding * 0.4, dy: -padding * 0.2)
+            let cornerRadius = backgroundRect.height / 2
             
             // Shadow
             context.cgContext.setShadow(
-                offset: CGSize(width: 0, height: 2),
-                blur: 8,
-                color: UIColor.black.withAlphaComponent(0.3).cgColor
+                offset: CGSize(width: 0, height: 4),
+                blur: 12,
+                color: UIColor.black.withAlphaComponent(0.4).cgColor
             )
             
             // Background pill with gradient effect
@@ -324,11 +333,55 @@ class MonetizationManager: ObservableObject {
                 cornerRadius: cornerRadius
             )
             
-            // Semi-transparent dark background
-            UIColor.black.withAlphaComponent(0.6).setFill()
-            context.cgContext.fillPath()
+            // Semi-transparent dark background with gradient
+            let colors = [
+                UIColor.black.withAlphaComponent(0.75),
+                UIColor.black.withAlphaComponent(0.65)
+            ]
+            
+            context.cgContext.addPath(path.cgPath)
+            context.cgContext.clip()
+            
+            // Draw gradient background
+            let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors.map { $0.cgColor } as CFArray,
+                locations: [0.0, 1.0]
+            )
+            
+            context.cgContext.drawLinearGradient(
+                gradient!,
+                start: CGPoint(x: backgroundRect.minX, y: backgroundRect.minY),
+                end: CGPoint(x: backgroundRect.maxX, y: backgroundRect.maxY),
+                options: []
+            )
+            
+            // Reset shadow for icon and text
+            context.cgContext.setShadow(
+                offset: CGSize.zero,
+                blur: 0,
+                color: nil
+            )
+            
+            // Draw app icon
+            if let iconImage = UIImage(named: "AppLogo") {
+                let iconRect = CGRect(
+                    x: backgroundRect.minX + backgroundPadding,
+                    y: backgroundRect.minY + (backgroundRect.height - iconSize) / 2,
+                    width: iconSize,
+                    height: iconSize
+                )
+                iconImage.draw(in: iconRect)
+            }
             
             // Draw the text
+            let textRect = CGRect(
+                x: backgroundRect.minX + backgroundPadding + iconSize + iconSpacing,
+                y: backgroundRect.minY + (backgroundRect.height - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+            
             watermarkText.draw(in: textRect, withAttributes: attributes)
         }
     }

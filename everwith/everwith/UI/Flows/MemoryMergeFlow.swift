@@ -29,6 +29,10 @@ struct MemoryMergeFlow: View {
     @State private var showError = false
     @State private var queueTimeRemaining = 12
     @State private var queueTimer: Timer?
+    @State private var showShareModal = false
+    @State private var showShareSuccess = false
+    @State private var shareImage: UIImage?
+    @State private var shareFlowType: ShareFlowType = .merge
     
     enum MergeStep {
         case upload
@@ -140,6 +144,25 @@ struct MemoryMergeFlow: View {
         .sheet(isPresented: $monetizationManager.showPaywall) {
             PaywallView(trigger: monetizationManager.currentPaywallTrigger)
         }
+        .sheet(isPresented: $showShareModal) {
+            if let shareImage {
+                ViralShareModal(
+                    baseImage: shareImage,
+                    flowType: shareFlowType,
+                    onDismiss: { showShareModal = false },
+                    onVerified: {
+                        showShareModal = false
+                        showShareSuccess = true
+                        Task { await monetizationManager.fetchRealCredits() }
+                    }
+                )
+            }
+        }
+        .fullScreenCover(isPresented: $showShareSuccess) {
+            GeometryReader { modalGeometry in
+                ShareSuccessView(geometry: modalGeometry)
+            }
+        }
         .onReceive(imageProcessingService.$processingProgress) { progress in
             if let p = progress {
                 processingProgress = Double(p.currentStepIndex) / Double(p.totalSteps)
@@ -214,18 +237,9 @@ struct MemoryMergeFlow: View {
     private func sharePhoto() {
         guard let image = processedImage else { return }
         
-        // Use centralized export function
-        let imageToShare = monetizationManager.exportImageToShare(image: image)
-        
-        let activityVC = UIActivityViewController(
-            activityItems: [imageToShare],
-            applicationActivities: nil
-        )
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
+        shareImage = image
+        shareFlowType = .merge
+        showShareModal = true
     }
     
     private func resetFlow() {
@@ -579,6 +593,7 @@ struct MergeResultView: View {
     
     @State private var animateElements = false
     @State private var isSaved = false
+    @StateObject private var monetizationManager = MonetizationManager.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -638,6 +653,31 @@ struct MergeResultView: View {
             )
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : 40)
+            
+            // Upgrade Button for free users
+            if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
+                Button(action: {
+                    monetizationManager.triggerCreditNeededUpsell()
+                }) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                        Text("Upgrade to Premium")
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: adaptiveSize(50, for: geometry))
+                    .background(LinearGradient.primaryBrand)
+                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                    .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                .padding(.top, adaptiveSpacing(12, for: geometry))
+                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
+                .opacity(animateElements ? 1 : 0)
+                .offset(y: animateElements ? 0 : 20)
+            }
         }
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {

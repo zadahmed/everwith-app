@@ -21,7 +21,15 @@ struct AccessCheckResponse: Codable {
     let remainingCredits: Int
     let freeUsesRemaining: Int
     let subscriptionTier: String
-    let message: String
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case hasAccess = "has_access"
+        case remainingCredits = "remaining_credits"
+        case freeUsesRemaining = "free_uses_remaining"
+        case subscriptionTier = "subscription_tier"
+        case message
+    }
 }
 
 struct CreditUsageRequest: Codable {
@@ -32,13 +40,21 @@ struct CreditUsageResponse: Codable {
     let success: Bool
     let creditsUsed: Int
     let remainingCredits: Int
-    let message: String
+    let message: String?
     
     enum CodingKeys: String, CodingKey {
         case success
         case creditsUsed = "credits_used"
         case remainingCredits = "remaining_credits"
         case message
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        success = try container.decode(Bool.self, forKey: .success)
+        creditsUsed = try container.decodeIfPresent(Int.self, forKey: .creditsUsed) ?? 0
+        remainingCredits = try container.decodeIfPresent(Int.self, forKey: .remainingCredits) ?? 0
+        message = try container.decodeIfPresent(String.self, forKey: .message)
     }
 }
 

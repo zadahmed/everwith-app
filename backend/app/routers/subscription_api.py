@@ -55,6 +55,7 @@ class CreditUsageRequest(BaseModel):
 
 class CreditUsageResponse(BaseModel):
     success: bool
+    credits_used: int = 0
     remaining_credits: int
     free_uses_remaining: int
     message: Optional[str] = None
@@ -101,7 +102,11 @@ class UserCreditsResponse(BaseModel):
 
 # Helper functions
 def reset_free_user_monthly_credits(user: DBUser) -> bool:
-    """Reset free user's monthly credits if it's a new month. Returns True if reset occurred."""
+    """Add monthly free credits if it's a new month. Returns True if credits were added.
+    
+    IMPORTANT: This ADDS monthly credits to existing credits, it does NOT overwrite them.
+    Credits never expire and accumulate over time.
+    """
     if user.subscription_tier != "free":
         return False
     
@@ -110,13 +115,20 @@ def reset_free_user_monthly_credits(user: DBUser) -> bool:
     # If never reset before, do initial setup
     if user.monthly_credits_reset_date is None:
         user.monthly_credits_reset_date = now
-        user.credits = FREE_MONTHLY_CREDITS
+        # Only set to monthly credits if user has 0 credits (new user)
+        if user.credits == 0:
+            user.credits = FREE_MONTHLY_CREDITS
+        else:
+            # User already has credits (from purchase/reward), just add monthly allocation
+            user.credits += FREE_MONTHLY_CREDITS
         return True
     
     # Check if a new month has started
     if user.monthly_credits_reset_date.month != now.month or user.monthly_credits_reset_date.year != now.year:
         user.monthly_credits_reset_date = now
-        user.credits = FREE_MONTHLY_CREDITS  # Reset to monthly allocation
+        # ADD monthly credits to existing credits (credits never expire!)
+        user.credits += FREE_MONTHLY_CREDITS
+        logger.info(f"Added monthly credits to user {user.email}: {FREE_MONTHLY_CREDITS} credits added, new total: {user.credits}")
         return True
     
     return False
@@ -281,6 +293,7 @@ async def use_credit(request: CreditUsageRequest, current_user: DBUser = Depends
         
         return CreditUsageResponse(
             success=success,
+            credits_used=credits_used,
             remaining_credits=current_user.credits,
             free_uses_remaining=0,  # No free uses in credit-driven system
             message=message

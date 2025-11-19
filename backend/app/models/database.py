@@ -226,10 +226,16 @@ class ShareEvent(Document):
     
     user_id: Link[User]
     share_type: str  # "social", "direct", "link"
-    platform: Optional[str] = None  # "instagram", "facebook", "twitter", etc.
+    platform: Optional[str] = None  # "instagram", "tiktok", etc.
     image_id: Optional[Link[ProcessedImage]] = None
+    share_url: Optional[str] = None
+    caption: Optional[str] = None
+    hashtags: List[str] = Field(default_factory=list)
     reward_credits: int = 1
+    verification_status: str = "pending"  # pending, verified, rejected
     verified: bool = False
+    verified_at: Optional[datetime] = None
+    verification_notes: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -238,12 +244,15 @@ class ShareEvent(Document):
         name = "share_events"
         indexes = [
             "user_id",
+            "platform",
+            "share_url",
             "verified",
             "created_at"
         ]
     
     def __str__(self):
-        return f"ShareEvent(id={self.id}, user_id={self.user_id}, verified={self.verified})"
+        status = "verified" if self.verified else "pending"
+        return f"ShareEvent(id={self.id}, user_id={self.user_id}, platform={self.platform}, status={status})"
 
 
 class UsageLog(Document):

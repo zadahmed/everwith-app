@@ -23,6 +23,10 @@ struct ReuniteFlow: View {
     @State private var errorMessage: String?
     @State private var showError = false
     @State private var backgroundPrompt: String = "warm emotional background"
+    @State private var showShareModal = false
+    @State private var showShareSuccess = false
+    @State private var shareImage: UIImage?
+    @State private var shareFlowType: ShareFlowType = .reunite
     
     enum ReuniteStep {
         case upload
@@ -79,6 +83,25 @@ struct ReuniteFlow: View {
         }
         .sheet(isPresented: $monetizationManager.showPaywall) {
             PaywallView(trigger: monetizationManager.currentPaywallTrigger)
+        }
+        .sheet(isPresented: $showShareModal) {
+            if let shareImage {
+                ViralShareModal(
+                    baseImage: shareImage,
+                    flowType: shareFlowType,
+                    onDismiss: { showShareModal = false },
+                    onVerified: {
+                        showShareModal = false
+                        showShareSuccess = true
+                        Task { await monetizationManager.fetchRealCredits() }
+                    }
+                )
+            }
+        }
+        .fullScreenCover(isPresented: $showShareSuccess) {
+            GeometryReader { modalGeometry in
+                ShareSuccessView(geometry: modalGeometry)
+            }
         }
         .onReceive(imageProcessingService.$processingProgress) { progress in
             if let p = progress {
@@ -163,16 +186,9 @@ struct ReuniteFlow: View {
     
     private func sharePhoto() {
         guard let image = processedImage else { return }
-        let imageToShare = monetizationManager.exportImageToShare(image: image)
-        let activityVC = UIActivityViewController(
-            activityItems: [imageToShare],
-            applicationActivities: nil
-        )
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
+        shareImage = image
+        shareFlowType = .reunite
+        showShareModal = true
     }
     
     private func resetFlow() {

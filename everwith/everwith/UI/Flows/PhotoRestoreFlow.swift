@@ -8,7 +8,6 @@
 
 import SwiftUI
 import PhotosUI
-import UIKit
 
 // MARK: - Photo Restore Flow Coordinator
 struct PhotoRestoreFlow: View {
@@ -27,6 +26,10 @@ struct PhotoRestoreFlow: View {
     @State private var showError = false
     @State private var queueTimeRemaining = 12
     @State private var queueTimer: Timer?
+    @State private var showShareModal = false
+    @State private var showShareSuccess = false
+    @State private var shareImage: UIImage?
+    @State private var shareFlowType: ShareFlowType = .restore
     
     enum RestoreStep {
         case upload
@@ -86,6 +89,27 @@ struct PhotoRestoreFlow: View {
         .sheet(isPresented: $monetizationManager.showPaywall) {
             PaywallView(trigger: monetizationManager.currentPaywallTrigger)
         }
+        .sheet(isPresented: $showShareModal) {
+            if let shareImage {
+                ViralShareModal(
+                    baseImage: shareImage,
+                    flowType: shareFlowType,
+                    onDismiss: { showShareModal = false },
+                    onVerified: {
+                        showShareModal = false
+                        showShareSuccess = true
+                        Task {
+                            await monetizationManager.fetchRealCredits()
+                        }
+                    }
+                )
+            }
+        }
+        .fullScreenCover(isPresented: $showShareSuccess) {
+            GeometryReader { modalGeometry in
+                ShareSuccessView(geometry: modalGeometry)
+            }
+        }
         .onReceive(imageProcessingService.$processingProgress) { progress in
             if let p = progress {
                 processingProgress = Double(p.currentStepIndex) / Double(p.totalSteps)
@@ -138,6 +162,26 @@ struct PhotoRestoreFlow: View {
                 onError: { error in
                     Task { @MainActor in
                         isProcessing = false
+                        
+                        // Only show error alert if it's NOT a credit-related error
+                        // Credit errors should show paywall instead (handled in MonetizationManager)
+                        if let monetizationError = error as? MonetizationError {
+                            switch monetizationError {
+                            case .accessDenied, .insufficientCredits, .subscriptionExpired:
+                                // These are handled by paywall - don't show error alert
+                                return
+                            case .backendError(let msg):
+                                // Check if it's credit-related
+                                if msg.lowercased().contains("credit") || 
+                                   msg.lowercased().contains("insufficient") ||
+                                   msg.lowercased().contains("payment required") {
+                                    // Credit issue - paywall already shown, don't show error
+                                    return
+                                }
+                            }
+                        }
+                        
+                        // For non-credit errors, show error alert
                         errorMessage = error.localizedDescription
                         showError = true
                     }
@@ -160,18 +204,9 @@ struct PhotoRestoreFlow: View {
     private func sharePhoto() {
         guard let image = processedImage else { return }
         
-        // Use centralized export function
-        let imageToShare = monetizationManager.exportImageToShare(image: image)
-        
-        let activityVC = UIActivityViewController(
-            activityItems: [imageToShare],
-            applicationActivities: nil
-        )
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
+        shareImage = image
+        shareFlowType = .restore
+        showShareModal = true
     }
     
     private func resetFlow() {
@@ -450,13 +485,29 @@ struct RestoreResultView: View {
             .opacity(animateElements ? 1 : 0)
             .offset(y: animateElements ? 0 : 40)
             
-            // HD Upgrade Prompt for free users
+            // Upgrade Button for free users
             if monetizationManager.revenueCatService.subscriptionStatus.tier == .free {
-                HDUpgradePrompt()
-                    .padding(.horizontal, adaptiveSpacing(20, for: geometry))
-                    .padding(.top, adaptiveSpacing(16, for: geometry))
-                    .opacity(animateElements ? 1 : 0)
-                    .offset(y: animateElements ? 0 : 20)
+                Button(action: {
+                    MonetizationManager.shared.triggerCreditNeededUpsell()
+                }) {
+                    HStack(spacing: adaptiveSpacing(8, for: geometry)) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                        Text("Upgrade to Premium")
+                            .font(.system(size: adaptiveFontSize(16, for: geometry), weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: adaptiveSize(50, for: geometry))
+                    .background(LinearGradient.primaryBrand)
+                    .cornerRadius(adaptiveCornerRadius(16, for: geometry))
+                    .shadow(color: Color.blushPink.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .padding(.horizontal, adaptiveSpacing(20, for: geometry))
+                .padding(.top, adaptiveSpacing(12, for: geometry))
+                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom + 8 : 16)
+                .opacity(animateElements ? 1 : 0)
+                .offset(y: animateElements ? 0 : 20)
             }
         }
         .onAppear {
@@ -467,38 +518,6 @@ struct RestoreResultView: View {
     }
 }
 
-// MARK: - HD Upgrade Prompt
-struct HDUpgradePrompt: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Image(systemName: "4k.tv")
-                    .foregroundColor(.yellow)
-                Text("Unlock HD Quality")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-            }
-            
-            Text("Remove watermark and get crystal clear 4K quality")
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.8))
-                .multilineTextAlignment(.center)
-            
-            Button("Upgrade Now") {
-                MonetizationManager.shared.triggerPostResultUpsell(resultImage: UIImage())
-            }
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.black)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 8)
-            .background(Color.yellow)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .padding(16)
-        .background(Color.black.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
 
 #Preview {
     PhotoRestoreFlow()

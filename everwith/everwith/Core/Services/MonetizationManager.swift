@@ -104,23 +104,41 @@ class MonetizationManager: ObservableObject {
         let creditCost = getCreditCost(for: mode)
         let localCredits = userCredits
         
+        print("🔍 CHECK ACCESS: Mode=\(mode.rawValue), CreditCost=\(creditCost), LocalCredits=\(localCredits)")
+        
         // Always try to get latest credits from API
         do {
             let response = try await apiService.checkAccess(mode: mode.rawValue)
             await MainActor.run {
                 userCredits = response.remainingCredits
             }
+            
+            print("📡 API RESPONSE: hasAccess=\(response.hasAccess), remainingCredits=\(response.remainingCredits), message=\(response.message ?? "nil")")
+            
             // Use API response if available
             if response.hasAccess {
+                print("✅ Access granted by API")
                 return true
             }
+            
             // If API says no access, check if we have enough credits locally
             // (in case API is wrong or credits were just added)
-            return userCredits >= creditCost
+            let hasEnoughCredits = userCredits >= creditCost
+            print("⚠️ API says no access, but checking local credits: \(userCredits) >= \(creditCost) = \(hasEnoughCredits)")
+            
+            if hasEnoughCredits {
+                print("✅ Local credits sufficient, granting access")
+                return true
+            } else {
+                print("❌ Insufficient credits: need \(creditCost), have \(userCredits)")
+                return false
+            }
         } catch {
             print("❌ Failed to check access via API, using local credits: \(error)")
             // If API fails, fall back to local credits check
-            return localCredits >= creditCost
+            let hasEnoughCredits = localCredits >= creditCost
+            print("🔄 Fallback check: \(localCredits) >= \(creditCost) = \(hasEnoughCredits)")
+            return hasEnoughCredits
         }
     }
     
@@ -237,11 +255,41 @@ class MonetizationManager: ObservableObject {
                     
                     onResult(processedImage)
                 } else {
-                    // Credit usage failed - show the actual error message from backend
+                    // Credit usage failed - check if it's a credit issue
                     let errorMsg = errorMessage ?? "Failed to process payment. Please check your credits and try again."
-                    onError(MonetizationError.backendError(errorMsg))
+                    
+                    // Only show error if it's specifically about credits/insufficient funds
+                    if errorMsg.lowercased().contains("credit") || 
+                       errorMsg.lowercased().contains("insufficient") ||
+                       errorMsg.lowercased().contains("payment required") {
+                        // This is a credit issue - show paywall instead of error
+                        triggerCreditNeededUpsell()
+                    } else {
+                        // Other backend error - show error message
+                        onError(MonetizationError.backendError(errorMsg))
+                    }
+                }
+            } catch let error as MonetizationError {
+                // Handle monetization-specific errors
+                switch error {
+                case .accessDenied, .insufficientCredits:
+                    // These are credit-related - show paywall, not error
+                    triggerCreditNeededUpsell()
+                case .subscriptionExpired:
+                    // Subscription expired - show paywall
+                    triggerCreditNeededUpsell()
+                case .backendError(let msg):
+                    // Check if it's a credit-related backend error
+                    if msg.lowercased().contains("credit") || 
+                       msg.lowercased().contains("insufficient") ||
+                       msg.lowercased().contains("payment required") {
+                        triggerCreditNeededUpsell()
+                    } else {
+                        onError(error)
+                    }
                 }
             } catch {
+                // Other errors (network, processing, etc.) - show error
                 onError(error)
             }
             
@@ -346,7 +394,7 @@ class MonetizationManager: ObservableObject {
             image.draw(in: CGRect(origin: .zero, size: size))
             
             // Watermark configuration
-            let watermarkText = "Made with EverWith"
+            let watermarkText = "Made with Everwith"
             
             // Calculate watermark size based on image size (responsive, but bigger now)
             let baseFontSize = max(28, min(size.width * 0.035, 32))
@@ -457,6 +505,11 @@ class MonetizationManager: ObservableObject {
     }
     
     // MARK: - Viral Sharing Incentives
+    
+    func shareReadyImage(from image: UIImage) -> UIImage {
+        // Always enforce brand watermark for viral shares
+        return addWatermark(to: image)
+    }
     
     func shareForCredits() async -> Bool {
         // Implement viral sharing logic

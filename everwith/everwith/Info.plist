@@ -15,6 +15,13 @@
 	</array>
 	<key>GIDClientID</key>
 	<string>1033332546845-859k5rlpul70f5uu9sdi05rfevi45hgf.apps.googleusercontent.com</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>instagram</string>
+		<string>instagram-stories</string>
+		<string>musically</string>
+		<string>tiktok</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

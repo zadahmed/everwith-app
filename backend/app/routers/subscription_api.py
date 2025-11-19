@@ -13,6 +13,7 @@ import hashlib
 import json
 from app.models.database import User as DBUser, Subscription, CreditTransaction, UsageLog, Transaction
 from app.core.security import get_current_user
+from app.middleware.usage_validation import get_usage_status
 from app.core.credit_config import (
     ServiceType, get_credit_cost, get_all_costs, 
     FREE_MONTHLY_CREDITS, INITIAL_SIGNUP_CREDITS,
@@ -432,6 +433,9 @@ async def get_user_credits(user_id: str, current_user: DBUser = Depends(get_curr
 async def get_user_status(user_id: str, current_user: DBUser = Depends(get_current_user)):
     """Get comprehensive user subscription status (credit-driven system)."""
     try:
+        # Get fair-use quota status for all users
+        usage_status = await get_usage_status(current_user)
+        
         return {
             "user_id": str(current_user.id),
             "subscription_tier": current_user.subscription_tier,
@@ -439,7 +443,14 @@ async def get_user_status(user_id: str, current_user: DBUser = Depends(get_curre
             "credits": current_user.credits,
             "free_uses_remaining": 0,  # No free uses in credit-driven system
             "last_free_use_date": None,
-            "can_use_feature": can_use_feature(current_user)
+            "can_use_feature": can_use_feature(current_user),
+            "fair_use_quota": {
+                "usage_count": usage_status["usage_count"],
+                "soft_limit": usage_status["soft_limit"],
+                "cooldown_limit": usage_status["cooldown_limit"],
+                "in_cooldown": usage_status["in_cooldown"],
+                "message": usage_status["message"]
+            }
         }
     
     except Exception as e:
@@ -977,3 +988,17 @@ async def revenuecat_webhook(
 @router.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow()}
+
+
+@router.get("/usage-status")
+async def get_fair_use_status(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get current fair-use quota status for all users.
+    Returns usage count, limits, and any gentle messages.
+    """
+    try:
+        usage_status = await get_usage_status(current_user)
+        return usage_status
+    except Exception as e:
+        logger.error(f"Error getting usage status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -330,3 +330,26 @@ class UserStats(Document):
     
     def __str__(self):
         return f"UserStats(id={self.id}, user_id={self.user_id}, total_processed={self.total_images_processed})"
+
+
+class PremiumUsageTracking(Document):
+    """Fair-use quota tracking for all users (monthly usage)"""
+    
+    user_id: Link[User]
+    month: str  # Format: "YYYY-MM" (e.g., "2024-01")
+    usage_count: int = 0  # Number of images processed this month
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    class Settings:
+        name = "usage_tracking"  # Collection name for all users
+        indexes = [
+            ("user_id", "month"),  # Compound index for fast lookups
+            "month",
+            "user_id"
+        ]
+    
+    def __str__(self):
+        return f"UsageTracking(id={self.id}, user_id={self.user_id}, month={self.month}, usage={self.usage_count})"

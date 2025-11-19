@@ -3,6 +3,7 @@ from app.models.schemas import RestoreRequest, TogetherRequest, JobResult, Timel
 from app.models.database import User
 from app.core.security import get_current_user
 from app.services.image_processing import ImageProcessingService
+from app.middleware.usage_validation import validate_usage, increment_usage, get_usage_status
 import os
 import io
 import uuid
@@ -12,6 +13,17 @@ import boto3
 from botocore.exceptions import ClientError
 
 router = APIRouter(prefix="/api/v1", tags=["image-processing"])
+
+@router.get("/usage-status")
+async def get_usage_status_endpoint(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get current usage status before processing.
+    Frontend can call this to show warnings/cooldown info before user starts processing.
+    """
+    from app.middleware.usage_validation import get_usage_status
+    return await get_usage_status(current_user)
 
 # DigitalOcean Spaces Configuration for upload endpoint
 DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
@@ -125,7 +137,8 @@ async def upload_image(
 @router.post("/restore", response_model=JobResult)
 async def restore_photo(
     req: RestoreRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    usage_status: dict = Depends(validate_usage)
 ):
     """
     Restore and enhance a photo using AI image processing.
@@ -140,6 +153,28 @@ async def restore_photo(
         print(f"🔵 Restore API called with image_url: {req.image_url}")
         result = ImageProcessingService.restore_pipeline(req)
         print(f"✅ Restore successful: {result.output_url}")
+        
+        # Increment usage tracking for all users after successful processing
+        tracking = await increment_usage(current_user)
+        # Get updated status after incrementing
+        updated_status = await get_usage_status(current_user)
+        # Always include usage info in meta for frontend display
+        if result.meta is None:
+            result.meta = {}
+        result.meta["usage_info"] = {
+            "usage_count": updated_status["usage_count"],
+            "soft_limit": updated_status["soft_limit"],
+            "cooldown_limit": updated_status["cooldown_limit"],
+            "in_cooldown": updated_status["in_cooldown"],
+            "at_soft_limit": updated_status.get("at_soft_limit", False),
+            "approaching_limit": updated_status.get("approaching_limit", False),
+            "message": updated_status.get("message"),
+            "processing_speed_multiplier": updated_status.get("processing_speed_multiplier", 1.0),
+            "estimated_wait_seconds": updated_status.get("estimated_wait_seconds"),
+            "remaining_until_soft_limit": updated_status.get("remaining_until_soft_limit", 0),
+            "remaining_until_cooldown": updated_status.get("remaining_until_cooldown", 0)
+        }
+        
         return result
     except HTTPException:
         raise
@@ -155,7 +190,8 @@ async def restore_photo(
 @router.post("/together", response_model=JobResult)
 async def together_photo(
     req: TogetherRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    usage_status: dict = Depends(validate_usage)
 ):
     """
     Create a 'together' photo by combining two subjects into a single scene.
@@ -167,7 +203,30 @@ async def together_photo(
     - Applies finishing touches and aspect ratio adjustments
     """
     try:
-        return ImageProcessingService.together_pipeline(req)
+        result = ImageProcessingService.together_pipeline(req)
+        
+        # Increment usage tracking for all users after successful processing
+        tracking = await increment_usage(current_user)
+        # Get updated status after incrementing
+        updated_status = await get_usage_status(current_user)
+        # Always include usage info in meta for frontend display
+        if result.meta is None:
+            result.meta = {}
+        result.meta["usage_info"] = {
+            "usage_count": updated_status["usage_count"],
+            "soft_limit": updated_status["soft_limit"],
+            "cooldown_limit": updated_status["cooldown_limit"],
+            "in_cooldown": updated_status["in_cooldown"],
+            "at_soft_limit": updated_status.get("at_soft_limit", False),
+            "approaching_limit": updated_status.get("approaching_limit", False),
+            "message": updated_status.get("message"),
+            "processing_speed_multiplier": updated_status.get("processing_speed_multiplier", 1.0),
+            "estimated_wait_seconds": updated_status.get("estimated_wait_seconds"),
+            "remaining_until_soft_limit": updated_status.get("remaining_until_soft_limit", 0),
+            "remaining_until_cooldown": updated_status.get("remaining_until_cooldown", 0)
+        }
+        
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -177,7 +236,8 @@ async def together_photo(
 @router.post("/timeline", response_model=JobResult)
 async def timeline_photo(
     req: TimelineRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    usage_status: dict = Depends(validate_usage)
 ):
     """
     Create age progression or regression for a person.
@@ -185,7 +245,30 @@ async def timeline_photo(
     This endpoint transforms a photo to show the person at a different age.
     """
     try:
-        return ImageProcessingService.timeline_pipeline(req)
+        result = ImageProcessingService.timeline_pipeline(req)
+        
+        # Increment usage tracking for all users after successful processing
+        tracking = await increment_usage(current_user)
+        # Get updated status after incrementing
+        updated_status = await get_usage_status(current_user)
+        # Always include usage info in meta for frontend display
+        if result.meta is None:
+            result.meta = {}
+        result.meta["usage_info"] = {
+            "usage_count": updated_status["usage_count"],
+            "soft_limit": updated_status["soft_limit"],
+            "cooldown_limit": updated_status["cooldown_limit"],
+            "in_cooldown": updated_status["in_cooldown"],
+            "at_soft_limit": updated_status.get("at_soft_limit", False),
+            "approaching_limit": updated_status.get("approaching_limit", False),
+            "message": updated_status.get("message"),
+            "processing_speed_multiplier": updated_status.get("processing_speed_multiplier", 1.0),
+            "estimated_wait_seconds": updated_status.get("estimated_wait_seconds"),
+            "remaining_until_soft_limit": updated_status.get("remaining_until_soft_limit", 0),
+            "remaining_until_cooldown": updated_status.get("remaining_until_cooldown", 0)
+        }
+        
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -195,7 +278,8 @@ async def timeline_photo(
 @router.post("/celebrity", response_model=JobResult)
 async def celebrity_photo(
     req: CelebrityRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    usage_status: dict = Depends(validate_usage)
 ):
     """
     Transform a photo to give it a celebrity glamour treatment.
@@ -206,7 +290,30 @@ async def celebrity_photo(
     - Adds celebrity-like polish and refinement
     """
     try:
-        return ImageProcessingService.celebrity_pipeline(req)
+        result = ImageProcessingService.celebrity_pipeline(req)
+        
+        # Increment usage tracking for all users after successful processing
+        tracking = await increment_usage(current_user)
+        # Get updated status after incrementing
+        updated_status = await get_usage_status(current_user)
+        # Always include usage info in meta for frontend display
+        if result.meta is None:
+            result.meta = {}
+        result.meta["usage_info"] = {
+            "usage_count": updated_status["usage_count"],
+            "soft_limit": updated_status["soft_limit"],
+            "cooldown_limit": updated_status["cooldown_limit"],
+            "in_cooldown": updated_status["in_cooldown"],
+            "at_soft_limit": updated_status.get("at_soft_limit", False),
+            "approaching_limit": updated_status.get("approaching_limit", False),
+            "message": updated_status.get("message"),
+            "processing_speed_multiplier": updated_status.get("processing_speed_multiplier", 1.0),
+            "estimated_wait_seconds": updated_status.get("estimated_wait_seconds"),
+            "remaining_until_soft_limit": updated_status.get("remaining_until_soft_limit", 0),
+            "remaining_until_cooldown": updated_status.get("remaining_until_cooldown", 0)
+        }
+        
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -216,7 +323,8 @@ async def celebrity_photo(
 @router.post("/reunite", response_model=JobResult)
 async def reunite_photo(
     req: ReuniteRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    usage_status: dict = Depends(validate_usage)
 ):
     """
     Create a photo that reunites two people who couldn't be together in real life.
@@ -224,7 +332,30 @@ async def reunite_photo(
     This endpoint combines two people into a natural scene together.
     """
     try:
-        return ImageProcessingService.reunite_pipeline(req)
+        result = ImageProcessingService.reunite_pipeline(req)
+        
+        # Increment usage tracking for all users after successful processing
+        tracking = await increment_usage(current_user)
+        # Get updated status after incrementing
+        updated_status = await get_usage_status(current_user)
+        # Always include usage info in meta for frontend display
+        if result.meta is None:
+            result.meta = {}
+        result.meta["usage_info"] = {
+            "usage_count": updated_status["usage_count"],
+            "soft_limit": updated_status["soft_limit"],
+            "cooldown_limit": updated_status["cooldown_limit"],
+            "in_cooldown": updated_status["in_cooldown"],
+            "at_soft_limit": updated_status.get("at_soft_limit", False),
+            "approaching_limit": updated_status.get("approaching_limit", False),
+            "message": updated_status.get("message"),
+            "processing_speed_multiplier": updated_status.get("processing_speed_multiplier", 1.0),
+            "estimated_wait_seconds": updated_status.get("estimated_wait_seconds"),
+            "remaining_until_soft_limit": updated_status.get("remaining_until_soft_limit", 0),
+            "remaining_until_cooldown": updated_status.get("remaining_until_cooldown", 0)
+        }
+        
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -234,7 +365,8 @@ async def reunite_photo(
 @router.post("/family", response_model=JobResult)
 async def family_photo(
     req: FamilyRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    usage_status: dict = Depends(validate_usage)
 ):
     """
     Create enhanced family photos or memory collages.
@@ -242,7 +374,30 @@ async def family_photo(
     This endpoint combines and enhances multiple family photos.
     """
     try:
-        return ImageProcessingService.family_pipeline(req)
+        result = ImageProcessingService.family_pipeline(req)
+        
+        # Increment usage tracking for all users after successful processing
+        tracking = await increment_usage(current_user)
+        # Get updated status after incrementing
+        updated_status = await get_usage_status(current_user)
+        # Always include usage info in meta for frontend display
+        if result.meta is None:
+            result.meta = {}
+        result.meta["usage_info"] = {
+            "usage_count": updated_status["usage_count"],
+            "soft_limit": updated_status["soft_limit"],
+            "cooldown_limit": updated_status["cooldown_limit"],
+            "in_cooldown": updated_status["in_cooldown"],
+            "at_soft_limit": updated_status.get("at_soft_limit", False),
+            "approaching_limit": updated_status.get("approaching_limit", False),
+            "message": updated_status.get("message"),
+            "processing_speed_multiplier": updated_status.get("processing_speed_multiplier", 1.0),
+            "estimated_wait_seconds": updated_status.get("estimated_wait_seconds"),
+            "remaining_until_soft_limit": updated_status.get("remaining_until_soft_limit", 0),
+            "remaining_until_cooldown": updated_status.get("remaining_until_cooldown", 0)
+        }
+        
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,

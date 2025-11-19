@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, api, image_processing, image_history, feedback, subscription_api, share, legal
+from app.routers import auth, api, image_processing, image_history, feedback, subscription_api, share, legal, maintenance
 from app.core.database import init_db, close_db
 import os
 from dotenv import load_dotenv
@@ -44,6 +44,7 @@ app.include_router(feedback.router)
 app.include_router(subscription_api.router)
 app.include_router(share.router)
 app.include_router(legal.router)
+app.include_router(maintenance.router)
 
 @app.get("/")
 async def root():

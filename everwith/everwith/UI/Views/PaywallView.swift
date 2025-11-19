@@ -105,15 +105,28 @@ struct PaywallView: View {
         .navigationBarHidden(true)
         .onAppear {
             Task {
+                // Load offerings first to ensure packages are available
+                await revenueCatService.loadOfferings()
                 await revenueCatService.updateSubscriptionStatus()
-            }
-            
-            // Auto-select first subscription package if available
-            if selectedPackage == nil {
-                selectedPackage = revenueCatService.availablePackages.first { package in
-                    package.storeProduct.productIdentifier.contains("monthly") || 
-                    package.storeProduct.productIdentifier.contains("yearly")
-                } ?? revenueCatService.availablePackages.first
+                
+                // Auto-select first subscription package if available
+                await MainActor.run {
+                    if selectedPackage == nil {
+                        selectedPackage = revenueCatService.availablePackages.first { package in
+                            package.storeProduct.productIdentifier.contains("monthly") || 
+                            package.storeProduct.productIdentifier.contains("yearly")
+                        } ?? revenueCatService.availablePackages.first
+                        
+                        // If still no package, log for debugging
+                        if selectedPackage == nil {
+                            print("⚠️ PaywallView: No packages available after loading")
+                            print("   Available packages count: \(revenueCatService.availablePackages.count)")
+                            if let error = revenueCatService.errorMessage {
+                                print("   Error message: \(error)")
+                            }
+                        }
+                    }
+                }
             }
             
             // Staggered entrance animations

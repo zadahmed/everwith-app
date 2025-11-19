@@ -124,14 +124,23 @@ class RevenueCatService: NSObject, ObservableObject {
     
     // MARK: - Load Offerings
     func loadOfferings() async {
+        // Ensure user is identified first
+        await ensureUserIdentified()
+        
         do {
+            print("🔄 Loading offerings from RevenueCat...")
             let offerings = try await Purchases.shared.offerings()
             currentOfferings = offerings
+            
+            print("📦 RevenueCat offerings loaded:")
+            print("   - Total offerings: \(offerings.all.count)")
+            print("   - Current offering: \(offerings.current?.identifier ?? "none")")
+            print("   - All offering keys: \(Array(offerings.all.keys))")
             
             // Get available packages from the current offering
             if let currentOffering = offerings.current {
                 availablePackages = currentOffering.availablePackages
-                print("✅ Loaded \(availablePackages.count) packages")
+                print("✅ Loaded \(availablePackages.count) packages from current offering")
                 for package in availablePackages {
                     print("📦 Package: \(package.identifier) - Product: \(package.storeProduct.productIdentifier) - Price: \(package.storeProduct.localizedPriceString ?? "N/A")")
                 }
@@ -139,22 +148,96 @@ class RevenueCatService: NSObject, ObservableObject {
                 print("⚠️ No current offering found")
                 print("📦 Available offerings: \(offerings.all.keys)")
                 
-                // Try to get ANY offering as fallback
-                if let anyOffering = offerings.all.values.first {
+                // Try to get the specific offering by identifier
+                if let everwithOffering = offerings.all["everwith_offering"] {
+                    availablePackages = everwithOffering.availablePackages
+                    print("✅ Using everwith_offering: \(everwithOffering.identifier) with \(availablePackages.count) packages")
+                } else if let anyOffering = offerings.all.values.first {
                     availablePackages = anyOffering.availablePackages
-                    print("✅ Using fallback offering: \(anyOffering.identifier)")
+                    print("✅ Using fallback offering: \(anyOffering.identifier) with \(availablePackages.count) packages")
+                } else {
+                    print("❌ No offerings available at all")
+                    // Try fallback to StoreKit products
+                    await loadStoreKitProductsAsFallback()
                 }
             }
         } catch {
-            print("❌ Error loading offerings: \(error.localizedDescription)")
-            print("⚠️ This usually means products haven't been approved in App Store Connect yet")
-            print("ℹ️ For testing: Products must be approved before working in production")
+            print("❌ Error loading offerings from RevenueCat: \(error.localizedDescription)")
+            print("⚠️ Error details: \(error)")
             
-            // In debug mode, try to use StoreKit configuration
-            #if DEBUG
-            print("📱 DEBUG MODE: Attempting to use StoreKit configuration file")
-            await loadStoreKitOfferings()
-            #endif
+            // Always try fallback, not just in DEBUG
+            print("📱 Attempting fallback to StoreKit products...")
+            await loadStoreKitProductsAsFallback()
+        }
+    }
+    
+    // MARK: - Ensure User Identified
+    private func ensureUserIdentified() async {
+        // Check if user is already identified
+        let currentUserId = await Purchases.shared.appUserID
+        print("👤 Current RevenueCat user ID: \(currentUserId)")
+        
+        // If user is anonymous or not set, try to identify with backend user ID
+        if currentUserId == "$RCAnonymousID:" || currentUserId.isEmpty {
+            if let userId = UserDefaults.standard.string(forKey: "user_id"), !userId.isEmpty {
+                print("🔄 Identifying RevenueCat user with backend ID: \(userId)")
+                do {
+                    let (customerInfo, created) = try await Purchases.shared.logIn(userId)
+                    print("✅ RevenueCat user identified: \(userId) (created: \(created))")
+                } catch {
+                    print("⚠️ Failed to identify RevenueCat user: \(error)")
+                }
+            } else {
+                print("ℹ️ No backend user ID available yet, using anonymous RevenueCat user")
+            }
+        } else {
+            print("✅ RevenueCat user already identified: \(currentUserId)")
+        }
+    }
+    
+    // MARK: - Fallback to StoreKit Products
+    private func loadStoreKitProductsAsFallback() async {
+        print("🛠️ FALLBACK: Loading products directly from StoreKit")
+        
+        // Get all products from StoreKit
+        let productIds = [
+            "com.matrix.everwith.monthly",
+            "com.matrix.everwith.yearly",
+            "com.everwith.credits.5",
+            "com.everwith.credits.15",
+            "com.everwith.credits.50"
+        ]
+        
+        do {
+            let products = try await Product.products(for: productIds)
+            print("📦 FALLBACK: Loaded \(products.count) products from StoreKit")
+            
+            // Convert StoreKit products to mock packages for display
+            // Note: These won't work for actual purchases, but will show pricing
+            await MainActor.run {
+                // Clear existing packages
+                availablePackages = []
+                
+                // Log products for debugging
+                for product in products {
+                    print("📦 FALLBACK Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
+                }
+                
+                // Note: We can't create RevenueCat Package objects from StoreKit products
+                // But we can at least show that products exist
+                if products.isEmpty {
+                    print("⚠️ FALLBACK: No StoreKit products found either")
+                    errorMessage = "Subscription products are not available. Please check your internet connection and try again."
+                } else {
+                    print("ℹ️ FALLBACK: Found \(products.count) StoreKit products, but RevenueCat packages are required for purchases")
+                    errorMessage = "Subscription service temporarily unavailable. Please try again later."
+                }
+            }
+        } catch {
+            print("❌ FALLBACK: Failed to load StoreKit products: \(error)")
+            await MainActor.run {
+                errorMessage = "Unable to load subscription options. Please check your internet connection and try again."
+            }
         }
     }
     
@@ -637,7 +720,7 @@ enum ProcessingMode {
         case .restore:
             return "restore"
         case .merge:
-            return "merge"
+            return "together"  // Backend expects "together" for memory merge
         }
     }
 }

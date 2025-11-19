@@ -40,8 +40,7 @@ class SubscriptionStatus(str, Enum):
 
 # Pydantic models for RevenueCat integration
 class AccessCheckRequest(BaseModel):
-    user_id: str
-    mode: str
+    mode: str  # user_id comes from auth token via get_current_user
 
 class AccessCheckResponse(BaseModel):
     has_access: bool
@@ -51,8 +50,7 @@ class AccessCheckResponse(BaseModel):
     message: Optional[str] = None
 
 class CreditUsageRequest(BaseModel):
-    user_id: str
-    mode: str
+    mode: str  # user_id comes from auth token via get_current_user
     transaction_id: Optional[str] = None
 
 class CreditUsageResponse(BaseModel):

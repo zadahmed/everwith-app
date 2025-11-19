@@ -147,9 +147,23 @@ class SubscriptionAPIService: ObservableObject {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
+        }
+        
+        // Handle non-200 status codes
+        guard httpResponse.statusCode == 200 else {
+            // Try to decode error response
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                print("❌ API Error (\(httpResponse.statusCode)): \(errorResponse.detail)")
+                throw APIError.serverError(httpResponse.statusCode, errorResponse.detail)
+            } else if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ API Error (\(httpResponse.statusCode)): \(errorString)")
+                throw APIError.serverError(httpResponse.statusCode, errorString)
+            } else {
+                print("❌ API Error (\(httpResponse.statusCode)): No error message")
+                throw APIError.serverError(httpResponse.statusCode, "Server returned error \(httpResponse.statusCode)")
+            }
         }
         
         let decoder = JSONDecoder()
@@ -164,9 +178,26 @@ struct CreditsResponse: Codable {
     let credits: Int
 }
 
-enum APIError: Error {
+struct ErrorResponse: Codable {
+    let detail: String
+}
+
+enum APIError: Error, LocalizedError {
     case invalidURL
     case invalidResponse
-    case serverError(Int)
+    case serverError(Int, String)
     case decodingError
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Invalid URL"
+        case .invalidResponse:
+            return "Invalid response from server"
+        case .serverError(let code, let message):
+            return "Server error (\(code)): \(message)"
+        case .decodingError:
+            return "Failed to decode response"
+        }
+    }
 }

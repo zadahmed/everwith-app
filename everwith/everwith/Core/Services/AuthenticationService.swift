@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import Combine
 import GoogleSignIn
+import RevenueCat
 
 class AuthenticationService: ObservableObject {
     @Published var authenticationState: AuthenticationState = .loading
@@ -556,13 +557,51 @@ class AuthenticationService: ObservableObject {
                 
                 // Try to decode error response
                 let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
-                var errorMessage = errorResponse?.detail ?? "Authentication failed (Status: \(httpResponse.statusCode))"
+                let backendErrorDetail = errorResponse?.detail
                 
-                // If decoding failed, try to get raw response
-                if errorResponse == nil, let rawResponse = String(data: data, encoding: .utf8) {
-                    errorMessage = rawResponse.isEmpty ? "Server returned error \(httpResponse.statusCode)" : rawResponse
+                // Map backend error messages to user-friendly messages
+                var errorMessage: String
+                
+                if let detail = backendErrorDetail {
+                    // Handle specific backend error messages
+                    switch detail.lowercased() {
+                    case let msg where msg.contains("invalid email or password"):
+                        errorMessage = "The email or password you entered is incorrect. Please check your credentials and try again."
+                    case let msg where msg.contains("email already registered"):
+                        errorMessage = "An account with this email already exists. Please sign in instead or use a different email."
+                    case let msg where msg.contains("account is deactivated"):
+                        errorMessage = "Your account has been deactivated. Please contact support for assistance."
+                    case let msg where msg.contains("password must be"):
+                        errorMessage = detail // Use backend message for password validation
+                    default:
+                        errorMessage = detail
+                    }
+                } else {
+                    // If decoding failed, try to get raw response
+                    if let rawResponse = String(data: data, encoding: .utf8), !rawResponse.isEmpty {
+                        errorMessage = rawResponse
+                    } else {
+                        // Map HTTP status codes to user-friendly messages
+                        switch httpResponse.statusCode {
+                        case 400:
+                            errorMessage = "Invalid request. Please check your information and try again."
+                        case 401:
+                            errorMessage = "Invalid email or password. Please check your credentials and try again."
+                        case 403:
+                            errorMessage = "Access denied. Please contact support if you believe this is an error."
+                        case 404:
+                            errorMessage = "Service not found. Please try again later."
+                        case 429:
+                            errorMessage = "Too many requests. Please wait a moment and try again."
+                        case 500...599:
+                            errorMessage = "Server error. Please try again later or contact support."
+                        default:
+                            errorMessage = "Authentication failed. Please try again or contact support if the issue persists."
+                        }
+                    }
                 }
                 
+                print("📋 AUTH ERROR MESSAGE: \(errorMessage)")
                 return .failure(AuthenticationError.backendError(errorMessage))
             }
         } catch let error as URLError {
@@ -618,6 +657,25 @@ class AuthenticationService: ObservableObject {
         if let token = accessToken {
             storeToken(token)
         }
+        
+        // Identify RevenueCat user immediately after authentication
+        await identifyRevenueCatUser(userId: user.id)
+    }
+    
+    // MARK: - RevenueCat Integration
+    private func identifyRevenueCatUser(userId: String) async {
+        print("🔗 AUTH: Identifying RevenueCat user with ID: \(userId)")
+        do {
+            let (customerInfo, created) = try await Purchases.shared.logIn(userId)
+            print("✅ AUTH: RevenueCat user identified: \(userId) (created: \(created))")
+            
+            // Load offerings after user identification
+            await RevenueCatService.shared.loadOfferings()
+            await RevenueCatService.shared.updateSubscriptionStatus()
+        } catch {
+            print("⚠️ AUTH: Failed to identify RevenueCat user: \(error)")
+            // Don't fail authentication if RevenueCat fails - just log it
+        }
     }
     
     private func storeUser(_ user: User) {
@@ -648,6 +706,10 @@ enum AuthenticationError: LocalizedError {
     case googleConfigurationError
     case missingGoogleToken
     case backendError(String)
+    case invalidEmailOrPassword
+    case emailAlreadyRegistered
+    case accountDeactivated
+    case userNotFound
     
     var errorDescription: String? {
         switch self {
@@ -658,11 +720,19 @@ enum AuthenticationError: LocalizedError {
         case .invalidCredential:
             return "Invalid authentication credential"
         case .networkError:
-            return "Network error occurred"
+            return "Network error occurred. Please check your internet connection."
         case .googleConfigurationError:
             return "Google Sign In is not configured. Please try another sign-in method."
         case .missingGoogleToken:
             return "Google authentication token is missing"
+        case .invalidEmailOrPassword:
+            return "The email or password you entered is incorrect. Please check your credentials and try again."
+        case .emailAlreadyRegistered:
+            return "An account with this email already exists. Please sign in instead or use a different email."
+        case .accountDeactivated:
+            return "Your account has been deactivated. Please contact support for assistance."
+        case .userNotFound:
+            return "No account found with this email. Please check your email or sign up for a new account."
         case .backendError(let message):
             return message
         }
@@ -674,6 +744,14 @@ enum AuthenticationError: LocalizedError {
             return "Please try email/password authentication or contact support."
         case .networkError:
             return "Please check your internet connection and try again."
+        case .invalidEmailOrPassword:
+            return "Double-check your email and password. If you've forgotten your password, please contact support."
+        case .emailAlreadyRegistered:
+            return "Try signing in with your existing account, or use a different email address to create a new account."
+        case .userNotFound:
+            return "Make sure you've entered the correct email address, or create a new account if you don't have one yet."
+        case .accountDeactivated:
+            return "Please contact support at support@everwith.app to reactivate your account."
         case .backendError:
             return "Please try again or contact support if the issue persists."
         default:

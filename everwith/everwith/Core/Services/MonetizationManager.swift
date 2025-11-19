@@ -100,15 +100,27 @@ class MonetizationManager: ObservableObject {
         }
         #endif
         
+        // First, check local credits optimistically
+        let creditCost = getCreditCost(for: mode)
+        let localCredits = userCredits
+        
+        // Always try to get latest credits from API
         do {
             let response = try await apiService.checkAccess(mode: mode.rawValue)
             await MainActor.run {
                 userCredits = response.remainingCredits
             }
-            return response.hasAccess
+            // Use API response if available
+            if response.hasAccess {
+                return true
+            }
+            // If API says no access, check if we have enough credits locally
+            // (in case API is wrong or credits were just added)
+            return userCredits >= creditCost
         } catch {
-            print("❌ Failed to check access: \(error)")
-            return false
+            print("❌ Failed to check access via API, using local credits: \(error)")
+            // If API fails, fall back to local credits check
+            return localCredits >= creditCost
         }
     }
     
@@ -118,9 +130,28 @@ class MonetizationManager: ObservableObject {
             await MainActor.run {
                 userCredits = response.remainingCredits
             }
-            return response.success
+            
+            if !response.success {
+                print("⚠️ Credit usage returned success=false: \(response.message ?? "Unknown error")")
+                return false
+            }
+            
+            print("✅ Credit used successfully. Remaining credits: \(response.remainingCredits)")
+            return true
         } catch {
             print("❌ Failed to use credit: \(error)")
+            
+            // Provide more detailed error information
+            if let apiError = error as? APIError {
+                print("   API Error: \(apiError.localizedDescription ?? "Unknown API error")")
+            } else if let urlError = error as? URLError {
+                print("   URL Error: \(urlError.localizedDescription)")
+            } else if let decodingError = error as? DecodingError {
+                print("   Decoding Error: \(decodingError)")
+            } else {
+                print("   Error: \(error.localizedDescription)")
+            }
+            
             return false
         }
     }
@@ -187,7 +218,7 @@ class MonetizationManager: ObservableObject {
             do {
                 let processedImage = try await processImageWithService(image, mode: mode)
                 
-                // Use the credit/access
+                // Use the credit/access AFTER processing completes
                 let accessUsed = await requestAccess(for: mode)
                 
                 if accessUsed {
@@ -198,7 +229,9 @@ class MonetizationManager: ObservableObject {
                     
                     onResult(processedImage)
                 } else {
-                    onError(MonetizationError.accessDenied)
+                    // Credit usage failed - show more specific error
+                    let errorMsg = "Failed to process payment. Please check your credits and try again."
+                    onError(MonetizationError.backendError(errorMsg))
                 }
             } catch {
                 onError(error)
@@ -430,6 +463,7 @@ enum MonetizationError: Error, LocalizedError {
     case accessDenied
     case insufficientCredits
     case subscriptionExpired
+    case backendError(String)
     
     var errorDescription: String? {
         switch self {
@@ -439,6 +473,8 @@ enum MonetizationError: Error, LocalizedError {
             return "Insufficient credits. Please purchase more credits."
         case .subscriptionExpired:
             return "Subscription expired. Please renew to continue."
+        case .backendError(let message):
+            return message
         }
     }
 }

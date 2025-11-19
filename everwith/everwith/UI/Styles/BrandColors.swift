@@ -98,22 +98,76 @@ struct DesignTokens {
 // MARK: - Background Components
 struct CleanWhiteBackground: View {
     var body: some View {
-        ZStack {
-            // Pure white base
-            Color.pureWhite
-                .ignoresSafeArea(.all)
+        GeometryReader { geometry in
+            let width = max(geometry.size.width, 1)
+            let height = max(geometry.size.height, 1)
+            let maxDimension = max(width, height)
             
-            // Subtle gradient band at top
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.lightBlush.opacity(0.3),
-                    Color.pureWhite
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 200)
-            .ignoresSafeArea(.all, edges: .top)
+            ZStack {
+                // Base gradient wash
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.pureWhite,
+                        Color.softCream.opacity(0.95),
+                        Color.lightBlush.opacity(0.25)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                // Soft top glow
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0.9),
+                        Color.white.opacity(0.0)
+                    ]),
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: maxDimension * 0.9
+                )
+                .blendMode(.plusLighter)
+                .frame(width: maxDimension * 1.2, height: maxDimension * 1.2)
+                .offset(x: -width * 0.25, y: -height * 0.45)
+                
+                // Ambient blush orb
+                Circle()
+                    .fill(Color.lightBlush.opacity(0.25))
+                    .blur(radius: 90)
+                    .frame(width: maxDimension * 0.9, height: maxDimension * 0.9)
+                    .offset(x: width * 0.35, y: -height * 0.3)
+                    .allowsHitTesting(false)
+                
+                // Subtle lavender wash near bottom
+                Ellipse()
+                    .fill(Color.softLavender.opacity(0.35))
+                    .blur(radius: 120)
+                    .frame(width: width * 1.4, height: max(180, height * 0.45))
+                    .offset(x: -width * 0.2, y: height * 0.45)
+                    .allowsHitTesting(false)
+                
+                // Soft vignette to keep focus centered
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0.0),
+                        Color.white.opacity(0.25)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: height)
+                .allowsHitTesting(false)
+                
+                // Fine highlight border for a glassy feel
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(LinearGradient.subtleHighlight.opacity(0.35), lineWidth: 1)
+                    .blur(radius: 60)
+                    .padding(-80)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: width, height: height)
+            .background(Color.pureWhite)
+            .ignoresSafeArea()
         }
     }
 }

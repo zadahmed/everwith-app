@@ -124,7 +124,7 @@ class MonetizationManager: ObservableObject {
         }
     }
     
-    func requestAccess(for mode: ProcessingMode) async -> Bool {
+    func requestAccess(for mode: ProcessingMode) async -> (Bool, String?) {
         do {
             let response = try await apiService.useCredit(mode: mode.rawValue)
             await MainActor.run {
@@ -132,27 +132,35 @@ class MonetizationManager: ObservableObject {
             }
             
             if !response.success {
-                print("⚠️ Credit usage returned success=false: \(response.message ?? "Unknown error")")
-                return false
+                let errorMsg = response.message ?? "Failed to use credit"
+                print("⚠️ Credit usage returned success=false: \(errorMsg)")
+                return (false, errorMsg)
             }
             
             print("✅ Credit used successfully. Remaining credits: \(response.remainingCredits)")
-            return true
+            return (true, nil)
         } catch {
             print("❌ Failed to use credit: \(error)")
             
+            var errorMessage: String? = nil
+            
             // Provide more detailed error information
             if let apiError = error as? APIError {
-                print("   API Error: \(apiError.localizedDescription ?? "Unknown API error")")
+                let msg = apiError.localizedDescription ?? "Unknown API error"
+                print("   API Error: \(msg)")
+                errorMessage = msg
             } else if let urlError = error as? URLError {
                 print("   URL Error: \(urlError.localizedDescription)")
+                errorMessage = "Network error: \(urlError.localizedDescription)"
             } else if let decodingError = error as? DecodingError {
                 print("   Decoding Error: \(decodingError)")
+                errorMessage = "Failed to process server response"
             } else {
                 print("   Error: \(error.localizedDescription)")
+                errorMessage = error.localizedDescription
             }
             
-            return false
+            return (false, errorMessage)
         }
     }
     
@@ -219,7 +227,7 @@ class MonetizationManager: ObservableObject {
                 let processedImage = try await processImageWithService(image, mode: mode)
                 
                 // Use the credit/access AFTER processing completes
-                let accessUsed = await requestAccess(for: mode)
+                let (accessUsed, errorMessage) = await requestAccess(for: mode)
                 
                 if accessUsed {
                     // Trigger post-result upsell for free users
@@ -229,8 +237,8 @@ class MonetizationManager: ObservableObject {
                     
                     onResult(processedImage)
                 } else {
-                    // Credit usage failed - show more specific error
-                    let errorMsg = "Failed to process payment. Please check your credits and try again."
+                    // Credit usage failed - show the actual error message from backend
+                    let errorMsg = errorMessage ?? "Failed to process payment. Please check your credits and try again."
                     onError(MonetizationError.backendError(errorMsg))
                 }
             } catch {

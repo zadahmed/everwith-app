@@ -178,9 +178,7 @@ struct CreditsResponse: Codable {
     let credits: Int
 }
 
-struct ErrorResponse: Codable {
-    let detail: String
-}
+// ErrorResponse is already defined in AuthenticationModels.swift
 
 enum APIError: Error, LocalizedError {
     case invalidURL

@@ -63,7 +63,7 @@ struct FeedbackView: View {
                                 QuickActionCard(
                                     icon: "envelope.fill",
                                     title: "Contact Support",
-                                    subtitle: "support@everwith.app",
+                                    subtitle: "hello@codeai.studio",
                                     iconColor: .blushPink,
                                     geometry: geometry
                                 )
@@ -170,7 +170,7 @@ struct FeedbackView: View {
     }
     
     private func openEmail(subject: String, body: String) {
-        let email = "support@everwith.app"
+        let email = "hello@codeai.studio"
         let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let bodyEncoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         

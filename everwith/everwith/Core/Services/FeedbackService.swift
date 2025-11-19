@@ -248,7 +248,7 @@ class FeedbackService: ObservableObject {
     }
     
     func openEmailSupport(subject: String = "Support Request", body: String = "") {
-        let email = "support@everwith.app"
+        let email = "hello@codeai.studio"
         let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let bodyEncoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         

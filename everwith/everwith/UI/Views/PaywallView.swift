@@ -29,6 +29,8 @@ struct PaywallView: View {
     @State private var contentOpacity: Double = 0
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var isLoadingOfferings = true
+    @State private var retryCount = 0
     @State private var purchaseSuccess = false
     
     var body: some View {
@@ -101,41 +103,27 @@ struct PaywallView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            
+            // Loading indicator while offerings are loading
+            if isLoadingOfferings {
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.deepPlum)
+                    Text("Loading subscription plans...")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.deepPlum.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.pureWhite.opacity(0.95))
+            }
         }
         .navigationBarHidden(true)
         .onAppear {
-            Task {
-                // Load offerings first to ensure packages are available
-                await revenueCatService.loadOfferings()
-                await revenueCatService.updateSubscriptionStatus()
-                
-                // Auto-select first subscription package if available
-                await MainActor.run {
-                    if selectedPackage == nil {
-                        selectedPackage = revenueCatService.availablePackages.first { package in
-                            package.storeProduct.productIdentifier.contains("monthly") || 
-                            package.storeProduct.productIdentifier.contains("yearly")
-                        } ?? revenueCatService.availablePackages.first
-                        
-                        // If still no package, log for debugging
-                        if selectedPackage == nil {
-                            print("⚠️ PaywallView: No packages available after loading")
-                            print("   Available packages count: \(revenueCatService.availablePackages.count)")
-                            if let error = revenueCatService.errorMessage {
-                                print("   Error message: \(error)")
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Staggered entrance animations
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
-                animateElements = true
-            }
-            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
-                contentOpacity = 1.0
-            }
+            loadOfferingsWithRetry()
+        }
+        .refreshable {
+            await loadOfferingsWithRetryAsync()
         }
         .alert("Purchase Error", isPresented: $showingError) {
             Button("OK") { }
@@ -144,6 +132,75 @@ struct PaywallView: View {
         }
         .sheet(isPresented: $purchaseSuccess) {
             PurchaseSuccessView()
+        }
+    }
+    
+    // MARK: - Load Offerings with Retry
+    private func loadOfferingsWithRetry() {
+        Task {
+            await loadOfferingsWithRetryAsync()
+        }
+    }
+    
+    private func loadOfferingsWithRetryAsync() async {
+        await MainActor.run {
+            isLoadingOfferings = true
+        }
+        
+        // Load offerings with retry logic
+        var success = false
+        var attempts = 0
+        let maxAttempts = 3
+        
+        while !success && attempts < maxAttempts {
+            attempts += 1
+            print("🔄 Loading offerings (attempt \(attempts)/\(maxAttempts))...")
+            
+            // Load offerings first to ensure packages are available
+            await revenueCatService.loadOfferings()
+            await revenueCatService.updateSubscriptionStatus()
+            
+            // Check if we got packages
+            await MainActor.run {
+                if !revenueCatService.availablePackages.isEmpty {
+                    success = true
+                    print("✅ Successfully loaded \(revenueCatService.availablePackages.count) packages")
+                    
+                    // Auto-select first subscription package if available
+                    if selectedPackage == nil {
+                        selectedPackage = revenueCatService.availablePackages.first { package in
+                            package.storeProduct.productIdentifier.contains("monthly") || 
+                            package.storeProduct.productIdentifier.contains("yearly")
+                        } ?? revenueCatService.availablePackages.first
+                    }
+                    
+                    isLoadingOfferings = false
+                    
+                    // Staggered entrance animations
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                        animateElements = true
+                    }
+                    withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                        contentOpacity = 1.0
+                    }
+                } else {
+                    print("⚠️ No packages loaded (attempt \(attempts)/\(maxAttempts))")
+                    if attempts < maxAttempts {
+                        // Wait before retry (exponential backoff) - done in Task.sleep below
+                    } else {
+                        // Final attempt failed
+                        isLoadingOfferings = false
+                        errorMessage = "Unable to load subscription plans. Please check your internet connection and try again."
+                        showingError = true
+                        print("❌ Failed to load offerings after \(maxAttempts) attempts")
+                    }
+                }
+            }
+            
+            if !success && attempts < maxAttempts {
+                // Wait before retry (exponential backoff)
+                try? await Task.sleep(nanoseconds: UInt64(attempts * 1_000_000_000)) // 1s, 2s, 3s
+            }
         }
     }
     

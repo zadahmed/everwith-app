@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Foundation
+import WebKit
 
 struct SettingsView: View {
     @StateObject private var authService = AuthenticationService()
@@ -361,7 +362,7 @@ struct LegalSection: View {
                                         LegalView(type: .terms)
                                     } label: {
                 SettingsActionRow(
-                                            icon: "doc.text.circle.fill",
+                                            icon: "doc.text.fill",
                                             title: "Terms of Service",
                                             iconColor: .softPlum,
                                             geometry: geometry
@@ -736,126 +737,190 @@ struct SettingsToggleRow: View {
 struct LegalView: View {
     enum LegalType {
         case privacy, terms
+        
+        var endpoint: String {
+            switch self {
+            case .privacy:
+                return "/legal/privacy"
+            case .terms:
+                return "/legal/terms"
+            }
+        }
+        
+        var title: String {
+            switch self {
+            case .privacy:
+                return "Privacy Policy"
+            case .terms:
+                return "Terms & Conditions"
+            }
+        }
     }
     
     let type: LegalType
     @Environment(\.dismiss) private var dismiss
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+    @State private var reloadToken = UUID()
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                CleanWhiteBackground()
-                    .ignoresSafeArea()
+        ZStack {
+            CleanWhiteBackground()
+                .ignoresSafeArea()
+            
+            if let url = documentURL {
+                LegalRemoteDocumentView(
+                    url: url,
+                    isLoading: $isLoading,
+                    errorMessage: $errorMessage
+                )
+                .id(reloadToken)
                 
-            ScrollView {
-                    VStack(alignment: .leading, spacing: adaptiveSpacing(20, for: geometry)) {
-                    Text(type == .privacy ? privacyPolicyText : termsOfServiceText)
-                        .font(.system(size: adaptiveFontSize(15, for: geometry), weight: .regular))
-                        .foregroundColor(.deepPlum)
-                            .lineSpacing(6)
-                    }
-                    .padding(adaptivePadding(for: geometry))
-                    .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top + 20 : 30)
+                if isLoading {
+                    ProgressView("Loading \(type.title)…")
+                        .font(.system(size: 15, weight: .medium))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                        .background(.thinMaterial)
+                        .cornerRadius(16)
                 }
+            } else {
+                VStack(spacing: 12) {
+                    Text("Unable to form a valid legal URL.")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.deepPlum)
+                        .multilineTextAlignment(.center)
+                    Text("Check AppConfiguration.API.baseURL or contact support.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.softPlum)
+                        .multilineTextAlignment(.center)
+                    Button("Close") {
+                        dismiss()
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.deepPlum.opacity(0.1))
+                    .cornerRadius(12)
+                }
+                .padding()
+                .background(Color.pureWhite)
+                .cornerRadius(20)
+                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+                .padding()
             }
-            .navigationTitle(type == .privacy ? "Privacy Policy" : "Terms of Service")
-            .navigationBarTitleDisplayMode(.inline)
+        }
+        .navigationTitle(type.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay(alignment: .bottom) {
+            if let message = errorMessage {
+                VStack(spacing: 12) {
+                    Text("Unable to load \(type.title.lowercased()).")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.deepPlum)
+                    Text(message)
+                        .font(.system(size: 14))
+                        .foregroundColor(.softPlum)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                    Button(action: reloadDocument) {
+                        Text("Try Again")
+                            .font(.system(size: 15, weight: .semibold))
+                            .padding(.horizontal, 28)
+                            .padding(.vertical, 10)
+                            .background(Color.blushPink.opacity(0.2))
+                            .cornerRadius(14)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.pureWhite)
+                .cornerRadius(24)
+                .shadow(color: Color.black.opacity(0.1), radius: 18, x: 0, y: 8)
+                .padding()
+            }
         }
     }
     
-    private var privacyPolicyText: String {
-        """
-        Privacy Policy
-        
-        Last updated: October 2025
-        
-        At Everwith, we take your privacy seriously. This policy explains how we handle your data.
-        
-        Data Collection:
-        • We only access photos you explicitly select for processing
-        • Processed images are temporarily stored during creation
-        • No photos are permanently stored without your consent
-        
-        Data Usage:
-        • Images are processed using AI technology
-        • Processing happens securely on our servers
-        • Results are delivered back to your device
-        
-        Data Storage:
-        • Original photos remain on your device
-        • Processed images can be saved to your photo library
-        • Cloud sync is optional and requires explicit permission
-        
-        Third Parties:
-        • We use secure payment processors for purchases
-        • Analytics data is anonymized and aggregated
-        • No personal data is sold to third parties
-        
-        Your Rights:
-        • Access your data at any time
-        • Delete your account and all associated data
-        • Export your created images
-        
-        Contact: privacy@everwith.app
-        """
+    private var documentURL: URL? {
+        URL(string: AppConfiguration.fullURL(for: type.endpoint))
     }
     
-    private var termsOfServiceText: String {
-        """
-        Terms of Service
-        
-        Last updated: October 2025
-        
-        By using Everwith, you agree to these terms.
-        
-        Service Description:
-        • Everwith provides AI-powered photo restoration and merging
-        • Results may vary based on input quality
-        • Processing times depend on server load
-        
-        User Responsibilities:
-        • Use the service for personal, non-commercial purposes
-        • Own or have rights to photos you process
-        • Do not process illegal or inappropriate content
-        
-        Subscriptions:
-        • Premium features require active subscription
-        • Subscriptions auto-renew unless cancelled
-        • Cancel anytime through device settings
-        
-        Credits:
-        • One-time credit purchases available
-        • Credits never expire
-        • Non-refundable once used
-        
-        Limitations:
-        • Service provided "as is"
-        • Results are not guaranteed
-        • We reserve the right to modify features
-        
-        Termination:
-        • You may delete your account at any time
-        • We may suspend accounts violating these terms
-        
-        Contact: legal@everwith.app
-        """
+    private func reloadDocument() {
+        errorMessage = nil
+        isLoading = true
+        reloadToken = UUID()
+    }
+}
+
+// MARK: - WKWebView Wrapper
+struct LegalRemoteDocumentView: UIViewRepresentable {
+    let url: URL
+    @Binding var isLoading: Bool
+    @Binding var errorMessage: String?
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isLoading: $isLoading, errorMessage: $errorMessage)
     }
     
-    private func adaptiveSpacing(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return base * scaleFactor
+    func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.preferredContentMode = .mobile
+        
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = context.coordinator
+        webView.allowsBackForwardNavigationGestures = false
+        webView.allowsLinkPreview = false
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        
+        loadRequest(in: webView)
+        return webView
     }
     
-    private func adaptiveFontSize(_ base: CGFloat, for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        let scaleFactor = screenWidth / 375.0
-        return max(base * 0.9, min(base * 1.1, base * scaleFactor))
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        guard uiView.url != url else { return }
+        loadRequest(in: uiView)
     }
     
-    private func adaptivePadding(for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return max(12, min(20, screenWidth * 0.05))
+    private func loadRequest(in webView: WKWebView) {
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        request.setValue("EverWith iOS", forHTTPHeaderField: "User-Agent")
+        webView.load(request)
+    }
+    
+    final class Coordinator: NSObject, WKNavigationDelegate {
+        @Binding var isLoading: Bool
+        @Binding var errorMessage: String?
+        
+        init(isLoading: Binding<Bool>, errorMessage: Binding<String?>) {
+            _isLoading = isLoading
+            _errorMessage = errorMessage
+        }
+        
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            isLoading = true
+            errorMessage = nil
+        }
+        
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            isLoading = false
+        }
+        
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            handle(error)
+        }
+        
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            handle(error)
+        }
+        
+        private func handle(_ error: Error) {
+            isLoading = false
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

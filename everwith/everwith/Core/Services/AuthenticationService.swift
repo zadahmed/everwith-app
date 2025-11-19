@@ -751,7 +751,7 @@ enum AuthenticationError: LocalizedError {
         case .userNotFound:
             return "Make sure you've entered the correct email address, or create a new account if you don't have one yet."
         case .accountDeactivated:
-            return "Please contact support at support@everwith.app to reactivate your account."
+            return "Please contact support at hello@codeai.studio to reactivate your account."
         case .backendError:
             return "Please try again or contact support if the issue persists."
         default:

@@ -248,11 +248,7 @@ class MonetizationManager: ObservableObject {
                 let (accessUsed, errorMessage) = await requestAccess(for: mode)
                 
                 if accessUsed {
-                    // Trigger post-result upsell for free users
-                    if revenueCatService.subscriptionStatus.tier == .free {
-                        triggerPostResultUpsell(resultImage: processedImage)
-                    }
-                    
+                    // Don't automatically trigger paywall - user can upgrade via button if they want
                     onResult(processedImage)
                 } else {
                     // Credit usage failed - check if it's a credit issue

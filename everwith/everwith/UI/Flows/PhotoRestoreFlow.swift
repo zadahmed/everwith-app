@@ -157,6 +157,11 @@ struct PhotoRestoreFlow: View {
                         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                             currentStep = .result
                         }
+                        
+                        if case .completed(let jobResult) = imageProcessingService.processingState {
+                            processedImageUrl = jobResult.outputUrl
+                            saveResultToHistory(jobResult: jobResult)
+                        }
                     }
                 },
                 onError: { error in
@@ -207,6 +212,24 @@ struct PhotoRestoreFlow: View {
         shareImage = image
         shareFlowType = .restore
         showShareModal = true
+    }
+    
+    private func saveResultToHistory(jobResult: JobResult) {
+        Task {
+            do {
+                let _ = try await imageProcessingService.saveToHistory(
+                    imageType: "restore",
+                    originalImageUrl: originalImageUrl,
+                    processedImageUrl: jobResult.outputUrl,
+                    qualityTarget: "premium",
+                    outputFormat: "jpg",
+                    aspectRatio: "original"
+                )
+                print("✅ Saved restore image to history")
+            } catch {
+                print("❌ Failed to save restore image to history: \(error)")
+            }
+        }
     }
     
     private func resetFlow() {

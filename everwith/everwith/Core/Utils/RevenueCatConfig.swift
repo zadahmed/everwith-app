@@ -36,35 +36,39 @@ class RevenueCatConfig {
     private init() {}
     
     func configure() {
-        // Configure RevenueCat with error handling
+        // Configure RevenueCat following RevenueCat sample patterns
+        // Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Lifecycle/AppDelegate.swift
+        
         print("🚀 Configuring RevenueCat with project ID: app660b5a6b08")
         
-        // Only enable debug logging in debug builds
+        // Enable debug logs before calling configure (following sample pattern)
         #if DEBUG
         Purchases.logLevel = .debug
         #else
         Purchases.logLevel = .info
         #endif
         
-        // Configure RevenueCat - this may show warnings if packages aren't set up yet
-        // but won't crash the app
-        Purchases.configure(withAPIKey: apiKey)
+        /*
+         Initialize the RevenueCat Purchases SDK following sample pattern.
+         Using Configuration.Builder with StoreKit2 for modern iOS support.
+         appUserID is nil by default, so an anonymous ID will be generated automatically.
+         */
+        Purchases.configure(
+            with: Configuration.Builder(withAPIKey: apiKey)
+                .with(storeKitVersion: .storeKit2)
+                .build()
+        )
         
-        // Set up delegate
+        // Set the delegate to RevenueCatService (following sample pattern)
         Purchases.shared.delegate = RevenueCatService.shared
         
         // Enable automatic collection of attribution
         Purchases.shared.collectDeviceIdentifiers()
         
-        // Configure offerings (may show warnings if not configured in dashboard)
-        configureOfferings()
-        
         print("✅ RevenueCat configuration completed")
-        print("⚠️ Note: Configure offerings with packages in RevenueCat dashboard to enable purchases")
-        
-        // Log configuration status
         print("📊 RevenueCat debug mode: \(Purchases.logLevel == .debug)")
         print("📊 Using API Key: \(apiKey.prefix(20))...")
+        print("📊 StoreKit version: StoreKit2")
     }
     
     private func configureOfferings() {

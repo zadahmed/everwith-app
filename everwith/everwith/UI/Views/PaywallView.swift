@@ -162,16 +162,19 @@ struct PaywallView: View {
             
             // Check if we got packages
             await MainActor.run {
-                if !revenueCatService.availablePackages.isEmpty {
+                let availablePackages = revenueCatService.availablePackages
+                let hasPackages = !availablePackages.isEmpty
+                
+                if hasPackages {
                     success = true
-                    print("✅ Successfully loaded \(revenueCatService.availablePackages.count) packages")
+                    print("✅ Successfully loaded \(availablePackages.count) paywall packages from RevenueCat")
                     
-                    // Auto-select first subscription package if available
+                    // Auto-select first subscription plan
                     if selectedPackage == nil {
-                        selectedPackage = revenueCatService.availablePackages.first { package in
-                            package.storeProduct.productIdentifier.contains("monthly") || 
+                        selectedPackage = availablePackages.first { package in
+                            package.storeProduct.productIdentifier.contains("monthly") ||
                             package.storeProduct.productIdentifier.contains("yearly")
-                        } ?? revenueCatService.availablePackages.first
+                        } ?? availablePackages.first
                     }
                     
                     isLoadingOfferings = false
@@ -207,16 +210,16 @@ struct PaywallView: View {
     // MARK: - Purchase Handling
     private func handlePurchase(geometry: GeometryProxy) {
         Task {
-            guard let package = selectedPackage else {
-                errorMessage = "Please select a subscription plan"
-                showingError = true
-                return
-            }
-            
             // Use the service's purchase methods
             let success: Bool
             
             if showingCreditPacks {
+                guard let package = selectedPackage else {
+                    errorMessage = "Credit packs are unavailable right now. Please try again later."
+                    showingError = true
+                    return
+                }
+                
                 // For credit packs, convert package to CreditPack
                 let credits = extractCreditsFromProductId(package.storeProduct.productIdentifier)
                 let pack = CreditPack(
@@ -228,8 +231,14 @@ struct PaywallView: View {
                 success = await revenueCatService.purchaseCreditPack(pack)
             } else {
                 // For subscriptions, determine tier
-                let tier: SubscriptionTier = package.storeProduct.productIdentifier.contains("yearly") ? .premiumYearly : .premiumMonthly
-                success = await revenueCatService.purchaseSubscription(tier: tier)
+                if let package = selectedPackage {
+                    let tier: SubscriptionTier = package.storeProduct.productIdentifier.contains("yearly") ? .premiumYearly : .premiumMonthly
+                    success = await revenueCatService.purchaseSubscription(tier: tier)
+                } else {
+                    errorMessage = "Please select a subscription plan"
+                    showingError = true
+                    return
+                }
             }
             
             if success {
@@ -482,21 +491,53 @@ struct PricingSection: View {
             PricingToggle(showingCreditPacks: $showingCreditPacks, geometry: geometry)
             
             if showingCreditPacks {
-                CreditPacksView(selectedPackage: $selectedPackage, packages: creditPackages, geometry: geometry)
+                if creditPackages.isEmpty {
+                    EmptyPricingState(message: "Top-ups are unavailable right now. Please try again later.", geometry: geometry)
+                } else {
+                    CreditPacksView(selectedPackage: $selectedPackage, packages: creditPackages, geometry: geometry)
+                }
             } else {
-                SubscriptionPlansView(selectedPackage: $selectedPackage, packages: subscriptionPackages, geometry: geometry)
+                if subscriptionPackages.isEmpty {
+                    EmptyPricingState(message: "Subscription plans are unavailable right now. Please try again later.", geometry: geometry)
+                } else {
+                    SubscriptionPlansView(selectedPackage: $selectedPackage, packages: subscriptionPackages, geometry: geometry)
+                }
             }
         }
     }
     
     private var subscriptionPackages: [RevenueCat.Package] {
-        availablePackages.filter { $0.storeProduct.productIdentifier.contains("monthly") || $0.storeProduct.productIdentifier.contains("yearly") }
+        availablePackages.filter { package in
+            let identifier = package.storeProduct.productIdentifier.lowercased()
+            return identifier.contains("monthly") || identifier.contains("yearly")
+        }
     }
     
     private var creditPackages: [RevenueCat.Package] {
-        availablePackages.filter { $0.storeProduct.productIdentifier.contains("credits") }
+        availablePackages.filter { package in
+            package.storeProduct.productIdentifier.lowercased().contains("credits") ||
+            package.identifier.lowercased().contains("credits")
+        }
     }
 }
+
+struct EmptyPricingState: View {
+    let message: String
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        Text(message)
+            .font(.system(size: geometry.adaptiveFontSize(14), weight: .medium))
+            .foregroundColor(.deepPlum.opacity(0.7))
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: ResponsiveDesign.adaptiveCornerRadius(baseRadius: 12, for: geometry))
+                    .fill(Color.pureWhite.opacity(0.9))
+            )
+    }
+}
+
 
 // MARK: - Pricing Toggle
 struct PricingToggle: View {

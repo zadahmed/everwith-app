@@ -155,6 +155,33 @@ class SubscriptionService: ObservableObject {
     @Published var creditCosts: CreditCosts?
     @Published var isLoading = false
     
+    private static let dateFormats = [
+        "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS",
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd'T'HH:mm:ssZ",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    ]
+    
+    private static let sharedDateFormatters: [DateFormatter] = {
+        let locale = Locale(identifier: "en_US_POSIX")
+        let timeZone = TimeZone(secondsFromGMT: 0)
+        return SubscriptionService.dateFormats.map { format in
+            let formatter = DateFormatter()
+            formatter.locale = locale
+            formatter.timeZone = timeZone
+            formatter.dateFormat = format
+            return formatter
+        }
+    }()
+    
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
+    
     private let networkService = NetworkService.shared
     private let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -162,26 +189,14 @@ class SubscriptionService: ObservableObject {
             let container = try decoder.singleValueContainer()
             let dateString = try container.decode(String.self)
             
-            // Try multiple date formats
-            let formatters = [
-                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",  // 2025-10-11T23:19:17.783000
-                "yyyy-MM-dd'T'HH:mm:ss.SSS",      // 2025-10-11T23:19:17.783
-                "yyyy-MM-dd'T'HH:mm:ss",          // 2025-10-11T23:19:17
-                "yyyy-MM-dd'T'HH:mm:ssZ",         // 2025-10-11T23:19:17Z
-                "yyyy-MM-dd'T'HH:mm:ss.SSSZ"      // 2025-10-11T23:19:17.783Z
-            ]
-            
-            for formatter in formatters {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = formatter
-                if let date = dateFormatter.date(from: dateString) {
+            for formatter in SubscriptionService.sharedDateFormatters {
+                if let date = formatter.date(from: dateString) {
                     return date
                 }
             }
             
             // Fallback to ISO8601
-            let iso8601Formatter = ISO8601DateFormatter()
-            if let date = iso8601Formatter.date(from: dateString) {
+            if let date = SubscriptionService.iso8601Formatter.date(from: dateString) {
                 return date
             }
             

@@ -123,6 +123,8 @@ class RevenueCatService: NSObject, ObservableObject {
     }
     
     // MARK: - Load Offerings
+    // Following RevenueCat sample pattern for fetching offerings
+    // Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/WeatherViewController.swift#L38
     func loadOfferings() async {
         // Ensure user is identified first
         await ensureUserIdentified()
@@ -137,37 +139,39 @@ class RevenueCatService: NSObject, ObservableObject {
             print("   - Current offering: \(offerings.current?.identifier ?? "none")")
             print("   - All offering keys: \(Array(offerings.all.keys))")
             
-            // Get available packages from the current offering
-            if let currentOffering = offerings.current {
-                availablePackages = currentOffering.availablePackages
-                print("✅ Loaded \(availablePackages.count) packages from current offering")
+            // Try to get offering by placement first (following sample pattern)
+            // Then fallback to current offering, then specific offering ID
+            var selectedOffering: Offering?
+            
+            // Try placement-based offering (if configured in RevenueCat dashboard)
+            if let placementOffering = offerings.currentOffering(forPlacement: "everwith_offering") {
+                selectedOffering = placementOffering
+                print("✅ Using placement-based offering: everwith_offering")
+            } else if let currentOffering = offerings.current {
+                selectedOffering = currentOffering
+                print("✅ Using current offering: \(currentOffering.identifier)")
+            } else if let everwithOffering = offerings.all["everwith_offering"] {
+                selectedOffering = everwithOffering
+                print("✅ Using everwith_offering: \(everwithOffering.identifier)")
+            } else if let anyOffering = offerings.all.values.first {
+                selectedOffering = anyOffering
+                print("✅ Using fallback offering: \(anyOffering.identifier)")
+            }
+            
+            if let offering = selectedOffering {
+                availablePackages = offering.availablePackages
+                print("✅ Loaded \(availablePackages.count) packages from offering: \(offering.identifier)")
                 for package in availablePackages {
                     print("📦 Package: \(package.identifier) - Product: \(package.storeProduct.productIdentifier) - Price: \(package.storeProduct.localizedPriceString ?? "N/A")")
                 }
             } else {
-                print("⚠️ No current offering found")
-                print("📦 Available offerings: \(offerings.all.keys)")
-                
-                // Try to get the specific offering by identifier
-                if let everwithOffering = offerings.all["everwith_offering"] {
-                    availablePackages = everwithOffering.availablePackages
-                    print("✅ Using everwith_offering: \(everwithOffering.identifier) with \(availablePackages.count) packages")
-                } else if let anyOffering = offerings.all.values.first {
-                    availablePackages = anyOffering.availablePackages
-                    print("✅ Using fallback offering: \(anyOffering.identifier) with \(availablePackages.count) packages")
-                } else {
-                    print("❌ No offerings available at all")
-                    // Try fallback to StoreKit products
-                    await loadStoreKitProductsAsFallback()
-                }
+                print("❌ No offerings available at all")
+                errorMessage = "Subscription products are not available. Please try again later."
             }
         } catch {
             print("❌ Error loading offerings from RevenueCat: \(error.localizedDescription)")
             print("⚠️ Error details: \(error)")
-            
-            // Always try fallback, not just in DEBUG
-            print("📱 Attempting fallback to StoreKit products...")
-            await loadStoreKitProductsAsFallback()
+            errorMessage = "Unable to load subscription options. Please check your connection and try again."
         }
     }
     
@@ -195,160 +199,52 @@ class RevenueCatService: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Fallback to StoreKit Products
-    private func loadStoreKitProductsAsFallback() async {
-        print("🛠️ FALLBACK: Loading products directly from StoreKit")
-        
-        // Get all products from StoreKit
-        let productIds = [
-            "com.matrix.everwith.monthly",
-            "com.matrix.everwith.yearly",
-            "com.everwith.credits.5",
-            "com.everwith.credits.15",
-            "com.everwith.credits.50"
-        ]
-        
-        do {
-            let products = try await Product.products(for: productIds)
-            print("📦 FALLBACK: Loaded \(products.count) products from StoreKit")
-            
-            // Convert StoreKit products to mock packages for display
-            // Note: These won't work for actual purchases, but will show pricing
-            await MainActor.run {
-                // Clear existing packages
-                availablePackages = []
-                
-                // Log products for debugging
-                for product in products {
-                    print("📦 FALLBACK Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
-                }
-                
-                // Note: We can't create RevenueCat Package objects from StoreKit products
-                // But we can at least show that products exist
-                if products.isEmpty {
-                    print("⚠️ FALLBACK: No StoreKit products found either")
-                    errorMessage = "Subscription products are not available. Please check your internet connection and try again."
-                } else {
-                    print("ℹ️ FALLBACK: Found \(products.count) StoreKit products, but RevenueCat packages are required for purchases")
-                    errorMessage = "Subscription service temporarily unavailable. Please try again later."
-                }
-            }
-        } catch {
-            print("❌ FALLBACK: Failed to load StoreKit products: \(error)")
-            await MainActor.run {
-                errorMessage = "Unable to load subscription options. Please check your internet connection and try again."
-            }
-        }
-    }
-    
-    #if DEBUG
-    private func loadStoreKitOfferings() async {
-        // Try to load products directly from StoreKit for testing
-        print("🛠️ DEBUG: Loading from StoreKit configuration file")
-        
-        // Get all products from StoreKit
-        let productIds = [
-            "com.matrix.everwith.monthly",
-            "com.matrix.everwith.yearly",
-            "com.everwith.credits.5",
-            "com.everwith.credits.15",
-            "com.everwith.credits.50"
-        ]
-        
-        do {
-            let products = try await Product.products(for: productIds)
-            print("📦 DEBUG: Loaded \(products.count) products from StoreKit")
-            
-            // Clear available packages
-            await MainActor.run {
-                availablePackages = []
-            }
-            
-            // For each product, we need to create a mock offering
-            // Since RevenueCat can't use these directly, we'll just log them
-            for product in products {
-                print("📦 DEBUG Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
-            }
-        } catch {
-            print("❌ DEBUG: Failed to load StoreKit products: \(error)")
-        }
-    }
-    #endif
     
     // MARK: - Subscription Management
+    // Following RevenueCat sample pattern for purchases
+    // Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/WeatherViewController.swift#L38
     func purchaseSubscription(tier: SubscriptionTier) async -> Bool {
         isLoading = true
         errorMessage = nil
         
         do {
+            // Get offerings following sample pattern
             let offerings = try await Purchases.shared.offerings()
             
-            print("📦 REVENUECAT DEBUG:")
-            print("📦 Available offerings: \(offerings.all.keys)")
-            print("📦 Total offerings count: \(offerings.all.count)")
-            print("📦 Current offering: \(offerings.current?.identifier ?? "none")")
+            // Try placement-based offering first, then fallback to current offering
+            // Following sample pattern: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/WeatherViewController.swift#L38
+            let selectedOffering = offerings.currentOffering(forPlacement: "everwith_offering") 
+                ?? offerings.current 
+                ?? offerings.all["everwith_offering"]
+                ?? offerings.all.values.first
             
-            // Debug: Print all available offerings
-            for (key, offering) in offerings.all {
-                print("📦 Offering '\(key)': \(offering.identifier) with \(offering.availablePackages.count) packages")
-                for package in offering.availablePackages {
-                    print("   📦 Package: \(package.identifier) - Product: \(package.storeProduct.productIdentifier)")
-                }
-            }
-            
-            // Try to use the specific offering identifier first
-            var offering: Offering?
-            if let everwithOffering = offerings.all["everwith_offering"] {
-                offering = everwithOffering
-                print("✅ Using offering: everwith_offering")
-            } else if let currentOffering = offerings.current {
-                offering = currentOffering
-                print("⚠️ Using current offering: \(currentOffering.identifier)")
-            } else if let firstOffering = offerings.all.values.first {
-                offering = firstOffering
-                print("⚠️ Using first available offering: \(firstOffering.identifier)")
-            } else {
-                print("❌ No offerings available at all!")
-            }
-            
-            // Try to use the specific offering, fallback to current, then to first available
-            var chosenOffering: Offering?
-            
-            if let everwithOffering = offerings.all["everwith_offering"] {
-                chosenOffering = everwithOffering
-                print("✅ Using offering: everwith_offering")
-            } else if let currentOffering = offerings.current {
-                chosenOffering = currentOffering
-                print("⚠️ Using current offering: \(currentOffering.identifier)")
-            } else if let firstOffering = offerings.all.values.first {
-                chosenOffering = firstOffering
-                print("⚠️ Using first available offering: \(firstOffering.identifier)")
-            }
-            
-            guard let selectedOffering = chosenOffering else {
-                print("❌ No offerings available at all!")
+            guard let offering = selectedOffering else {
                 errorMessage = "Subscription service is not configured. Please contact support."
                 isLoading = false
                 return false
             }
             
-            print("📦 Using offering: \(selectedOffering.identifier)")
-            print("📦 Available packages: \(selectedOffering.availablePackages.map { $0.storeProduct.productIdentifier })")
-            
+            // Find the package for the requested tier
             var package: Package?
             
             switch tier {
             case .premiumMonthly:
-                // Try to find monthly package by product ID
-                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.matrix.everwith.monthly" }
+                // Try to find monthly package by product ID first
+                package = offering.availablePackages.first { 
+                    $0.storeProduct.productIdentifier == RevenueCatConfig.ProductIDs.premiumMonthly 
+                }
+                // Fallback to monthly package type
                 if package == nil {
-                    package = selectedOffering.monthly // Fallback to monthly package type
+                    package = offering.monthly
                 }
             case .premiumYearly:
-                // Try to find yearly package by product ID
-                package = selectedOffering.availablePackages.first { $0.storeProduct.productIdentifier == "com.matrix.everwith.yearly" }
+                // Try to find yearly package by product ID first
+                package = offering.availablePackages.first { 
+                    $0.storeProduct.productIdentifier == RevenueCatConfig.ProductIDs.premiumYearly 
+                }
+                // Fallback to annual package type
                 if package == nil {
-                    package = selectedOffering.annual // Fallback to annual package type
+                    package = offering.annual
                 }
             case .free:
                 return false // Can't purchase free tier
@@ -360,34 +256,38 @@ class RevenueCatService: NSObject, ObservableObject {
                 return false
             }
             
+            // Purchase the package
             let result = try await Purchases.shared.purchase(package: selectedPackage)
             
             if !result.userCancelled {
                 await updateSubscriptionStatus()
                 await notifyBackendOfPurchase(result.customerInfo)
                 
-                // Track purchase completion
-                print("📊 Purchase completed: \(selectedPackage.storeProduct.productIdentifier)")
-                
+                print("✅ Purchase completed: \(selectedPackage.storeProduct.productIdentifier)")
                 isLoading = false
                 return true
             } else {
-                // Track purchase cancellation
-                print("📊 Purchase cancelled: \(selectedPackage.storeProduct.productIdentifier)")
+                print("ℹ️ Purchase cancelled by user")
+                isLoading = false
+                return false
             }
-            
-            isLoading = false
-            return false
             
         } catch {
-            print("❌ Subscription purchase error: \(error.localizedDescription)")
-            if error.localizedDescription.contains("offerings") {
-                errorMessage = "Unable to load subscription options. Please check your connection and try again."
+            // Handle STORE_PROBLEM error with fallback
+            if let purchasesError = error as? RevenueCat.ErrorCode,
+               purchasesError == .storeProblemError {
+                print("⚠️ RevenueCat purchase failed with STORE_PROBLEM. Trying StoreKit fallback...")
+                let fallbackSuccess = await purchaseSubscriptionWithStoreKitFallback(tier: tier, productId: nil)
+                isLoading = false
+                return fallbackSuccess
             } else {
-                errorMessage = error.localizedDescription
+                print("❌ Subscription purchase error: \(error.localizedDescription)")
+                errorMessage = error.localizedDescription.contains("offerings") 
+                    ? "Unable to load subscription options. Please check your connection and try again."
+                    : error.localizedDescription
+                isLoading = false
+                return false
             }
-            isLoading = false
-            return false
         }
     }
     
@@ -434,14 +334,29 @@ class RevenueCatService: NSObject, ObservableObject {
     }
     
     // MARK: - Access Control
+    // Following RevenueCat sample pattern for checking entitlements
+    // Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/WeatherViewController.swift#L38
     func checkAccess(for mode: ProcessingMode) async -> Bool {
-        await updateSubscriptionStatus()
-        
-        switch subscriptionStatus.tier {
-        case .premiumMonthly, .premiumYearly:
-            return true
-        case .free:
+        do {
+            // Get customer info directly (following sample pattern)
+            let customerInfo = try await Purchases.shared.customerInfo()
+            
+            // Check if user has active subscription entitlement
+            let hasMonthly = customerInfo.entitlements[RevenueCatConfig.Entitlements.premiumMonthly]?.isActive == true
+            let hasYearly = customerInfo.entitlements[RevenueCatConfig.Entitlements.premiumYearly]?.isActive == true
+            
+            if hasMonthly || hasYearly {
+                return true
+            }
+            
+            // For free tier, check local free uses
+            await updateSubscriptionStatus()
             return subscriptionStatus.freeUsesRemaining > 0
+        } catch {
+            print("❌ Error checking access: \(error)")
+            // Fallback to subscription status check
+            await updateSubscriptionStatus()
+            return subscriptionStatus.canUseFeature
         }
     }
     
@@ -637,15 +552,23 @@ class RevenueCatService: NSObject, ObservableObject {
     }
     
     // MARK: - Restore Purchases
+    // Following RevenueCat sample pattern for restoring purchases
+    // Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/UserViewController.swift#L116
     func restorePurchases() async -> Bool {
         isLoading = true
+        errorMessage = nil
         
         do {
-            _ = try await Purchases.shared.restorePurchases()
+            let customerInfo = try await Purchases.shared.restorePurchases()
+            print("✅ Purchases restored successfully")
+            
+            // Update subscription status after restore
             await updateSubscriptionStatus()
+            
             isLoading = false
             return true
         } catch {
+            print("❌ Error restoring purchases: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             isLoading = false
             return false
@@ -653,8 +576,11 @@ class RevenueCatService: NSObject, ObservableObject {
     }
     
     // MARK: - User Identification & Logout
+    // Following RevenueCat sample pattern for login/logout
+    // Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/UserViewController.swift#L73
     
     /// Identify user with RevenueCat after authentication
+    /// Following sample pattern: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/UserViewController.swift#L73
     func identifyUser(userId: String) async {
         do {
             let (customerInfo, created) = try await Purchases.shared.logIn(userId)
@@ -665,11 +591,14 @@ class RevenueCatService: NSObject, ObservableObject {
             // Update subscription status after identification
             await updateSubscriptionStatus()
         } catch {
-            print("⚠️ RevenueCat: Failed to identify user: \(error)")
+            print("⚠️ RevenueCat: Failed to identify user: \(error.localizedDescription)")
         }
     }
     
     /// Log out from RevenueCat (returns to anonymous user)
+    /// Following sample pattern: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Controllers/UserViewController.swift#L116
+    /// Note: Each time you call logOut, a new installation will be logged in the RevenueCat dashboard
+    /// as that metric tracks unique user ID's that are in-use.
     func logOut() async {
         do {
             let customerInfo = try await Purchases.shared.logOut()
@@ -686,7 +615,7 @@ class RevenueCatService: NSObject, ObservableObject {
                 lastFreeUseDate: nil
             )
         } catch {
-            print("⚠️ RevenueCat: Failed to log out: \(error)")
+            print("⚠️ RevenueCat: Failed to log out: \(error.localizedDescription)")
         }
     }
     
@@ -701,10 +630,101 @@ class RevenueCatService: NSObject, ObservableObject {
     }
 }
 
+// MARK: - StoreKit Fallback Purchasing
+private extension RevenueCatService {
+    func productIdentifier(for tier: SubscriptionTier) -> String? {
+        switch tier {
+        case .premiumMonthly:
+            return RevenueCatConfig.ProductIDs.premiumMonthly
+        case .premiumYearly:
+            return RevenueCatConfig.ProductIDs.premiumYearly
+        case .free:
+            return nil
+        }
+    }
+    
+    func purchaseSubscriptionWithStoreKitFallback(tier: SubscriptionTier, productId overrideProductId: String?) async -> Bool {
+        guard #available(iOS 15.0, *) else {
+            errorMessage = "App Store is unavailable on this device. Please try again later."
+            return false
+        }
+        
+        let resolvedProductId = overrideProductId ?? productIdentifier(for: tier)
+        
+        guard let productId = resolvedProductId else {
+            errorMessage = "Subscription tier not available."
+            return false
+        }
+        
+        do {
+            print("🛠️ StoreKit fallback: Loading product \(productId)")
+            let products = try await Product.products(for: [productId])
+            guard let product = products.first else {
+                errorMessage = "Subscription product is currently unavailable."
+                return false
+            }
+            
+            let result = try await product.purchase()
+            
+            switch result {
+            case .success(let verificationResult):
+                let transaction = try verifiedTransaction(from: verificationResult)
+                await transaction.finish()
+                
+                // Sync with RevenueCat to ensure entitlements are updated
+                try await Purchases.shared.syncPurchases()
+                await updateSubscriptionStatus()
+                
+                if let customerInfo = try? await Purchases.shared.customerInfo() {
+                    await notifyBackendOfPurchase(customerInfo)
+                }
+                
+                print("✅ StoreKit fallback purchase succeeded for \(productId)")
+                return true
+                
+            case .pending:
+                errorMessage = "Purchase is pending approval. Please try again later."
+                return false
+                
+            case .userCancelled:
+                print("ℹ️ StoreKit fallback purchase cancelled by user")
+                return false
+                
+            @unknown default:
+                errorMessage = "Unknown App Store response. Please try again."
+                return false
+            }
+        } catch {
+            print("❌ StoreKit fallback purchase error: \(error)")
+            errorMessage = "Unable to complete purchase: \(error.localizedDescription)"
+            return false
+        }
+    }
+    
+    @available(iOS 15.0, *)
+    func verifiedTransaction(from result: StoreKit.VerificationResult<StoreKit.Transaction>) throws -> StoreKit.Transaction {
+        switch result {
+        case .verified(let transaction):
+            return transaction
+        case .unverified(_, let verificationError):
+            throw verificationError ?? NSError(
+                domain: "com.everwith.storekit",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Unable to verify App Store transaction."]
+            )
+        }
+    }
+}
+
 // MARK: - RevenueCat Delegate
+// Following RevenueCat sample pattern for delegate implementation
+// Reference: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Lifecycle/AppDelegate.swift
 extension RevenueCatService: PurchasesDelegate {
+    /// Called whenever the shared instance of Purchases updates the CustomerInfo cache
+    /// Following sample pattern: https://github.com/RevenueCat/purchases-ios/blob/main/Examples/MagicWeather/MagicWeather/Sources/Lifecycle/AppDelegate.swift
     func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
-        Task {
+        // If necessary, refresh app UI from updated CustomerInfo
+        Task { @MainActor in
             await updateSubscriptionStatus()
         }
     }

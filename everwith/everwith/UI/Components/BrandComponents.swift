@@ -149,13 +149,26 @@ struct BrandProgressView: View {
     var body: some View {
         VStack(spacing: DesignTokens.spacingMedium) {
             ZStack {
+                // Background circle with subtle white/gray
                 Circle()
-                    .stroke(Color.charcoal.opacity(0.2), lineWidth: 4)
+                    .stroke(Color.white.opacity(0.3), lineWidth: 4)
                     .frame(width: 60, height: 60)
                 
+                // Progress circle with subtle white-to-brand gradient
                 Circle()
                     .trim(from: 0, to: progress)
-                    .stroke(Color.honeyGold, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.4),
+                                Color.blushPink.opacity(0.5),
+                                Color.roseMagenta.opacity(0.4)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
                     .frame(width: 60, height: 60)
                     .rotationEffect(.degrees(-90))
                     .animation(.easeInOut(duration: DesignTokens.animationDuration), value: progress)

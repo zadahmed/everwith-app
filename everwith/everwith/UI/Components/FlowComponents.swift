@@ -134,12 +134,17 @@ struct ProgressAnimation: View {
                             )
                             .frame(width: adaptiveSize(120, for: geometry), height: adaptiveSize(120, for: geometry))
                         
-                        // Animated circular progress
+                        // Animated circular progress with subtle white-to-brand gradient
                         Circle()
                             .trim(from: 0, to: max(progress, 0.02))
                             .stroke(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color.blushPink, Color.roseMagenta]),
+                                    gradient: Gradient(colors: [
+                                        Color.white.opacity(0.4),
+                                        Color.white.opacity(0.3),
+                                        Color.blushPink.opacity(0.5),
+                                        Color.roseMagenta.opacity(0.4)
+                                    ]),
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -149,13 +154,14 @@ struct ProgressAnimation: View {
                             .rotationEffect(.degrees(-90))
                             .animation(.easeInOut(duration: 0.3), value: progress)
                         
-                        // Pulsing background
+                        // Subtle pulsing background
                         Circle()
                             .fill(
                                 RadialGradient(
                                     gradient: Gradient(colors: [
-                                        Color.blushPink.opacity(0.15),
-                                        Color.roseMagenta.opacity(0.05)
+                                        Color.white.opacity(0.2),
+                                        Color.blushPink.opacity(0.08),
+                                        Color.roseMagenta.opacity(0.03)
                                     ]),
                                     center: .center,
                                     startRadius: 30,

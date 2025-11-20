@@ -100,6 +100,12 @@ class MonetizationManager: ObservableObject {
         }
         #endif
         
+        // Premium users always have access (follow RevenueCat entitlement state)
+        if revenueCatService.subscriptionStatus.hasActiveSubscription {
+            print("✅ Premium subscription detected - access granted for mode=\(mode.rawValue)")
+            return true
+        }
+        
         // First, check local credits optimistically
         let creditCost = getCreditCost(for: mode)
         let localCredits = userCredits
@@ -143,6 +149,12 @@ class MonetizationManager: ObservableObject {
     }
     
     func requestAccess(for mode: ProcessingMode) async -> (Bool, String?) {
+        // Premium users have unlimited access - no need to consume credits
+        if revenueCatService.subscriptionStatus.hasActiveSubscription {
+            print("✅ Premium subscription - skipping credit deduction for mode=\(mode.rawValue)")
+            return (true, nil)
+        }
+        
         do {
             let response = try await apiService.useCredit(mode: mode.rawValue)
             await MainActor.run {
